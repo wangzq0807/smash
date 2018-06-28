@@ -1,0 +1,31 @@
+#gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
+com1: enabled=1, mode=file, dev=serial.txt
+#=======================================================================
+# MEGS
+#=======================================================================
+megs: 64
+
+#=======================================================================
+# ROMIMAGE:
+# The ROM BIOS controls what the PC does when it first powers on.
+#=======================================================================
+romimage: file=$BXSHARE/BIOS-bochs-latest 
+
+#=======================================================================
+# VGAROMIMAGE
+# You now need to load a VGA ROM BIOS into C0000.
+#=======================================================================
+vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
+
+#=======================================================================
+# FLOPPYA, FLOPPYB:
+# Point this to pathname of floppy image file or device
+#=======================================================================
+#floppya: 1_44="floopy.img", status=inserted
+ata0-master: type=disk, path="hd.img", mode=flat
+
+#=======================================================================
+# BOOT:
+#=======================================================================
+boot: disk
+
