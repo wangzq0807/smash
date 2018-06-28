@@ -28,8 +28,6 @@
 #define IDE0_MAJOR          3
 #define HD_MAJOR            IDE0_MAJOR
 
-typedef     uint32_t    lba_t;
-
 int init_disk(void);
 // 读磁盘
 int ata_read(struct BlockBuffer *buffer);
