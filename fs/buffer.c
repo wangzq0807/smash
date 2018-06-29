@@ -131,7 +131,7 @@ _get_block(uint16_t dev, uint32_t blk)
             // TODO: sleep for empty
             continue;
         }
-        else if (new_buffer->bf_status == BUF_DELAYWRITE) {
+        else if (new_buffer->bf_status & BUF_DELAYWRITE) {
             // 3. 新申请的缓冲区的状态是"delay write"，因此需要先写入，然后申请另一块
             // TODO : 这个状态太复杂，暂不实现
             // TODO : 写磁盘，写完成后重新放入队列头部
@@ -208,8 +208,9 @@ release_block(struct BlockBuffer *buf)
     }
     else {
         if (buf->bf_status & BUF_DIRTY) {
-            // TODO : write to disk
-            buf->bf_status = BUF_FREE;
+            buf->bf_status = BUF_BUSY;
+            ata_write(buf);
+            wait_for(buf);
         }
         _put_to_freelist(buf);
     }

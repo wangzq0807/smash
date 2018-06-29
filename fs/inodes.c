@@ -28,7 +28,7 @@ static struct IndexNode *ihash_map[BUFFER_HASH_LEN];
 struct BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
 
 error_t
-init_inodes(uint16_t dev)
+init_inodes(dev_t dev)
 {
     const uint32_t superblk_begin = get_super_block_begin(dev);
     const struct SuperBlock *super_block = get_super_block(dev);
@@ -62,7 +62,7 @@ _alloc_bit(struct BlockBuffer **node_map, uint32_t cnt)
 }
 
 static inline uint32_t
-_get_inode_begin(uint16_t dev)
+_get_inode_begin(dev_t dev)
 {
     const struct SuperBlock *super_block = get_super_block(dev);
     const uint32_t superblk_begin = get_super_block_begin(dev);
@@ -91,7 +91,7 @@ _remove_hash_entity(struct IndexNode *inode)
 }
 
 static struct IndexNode *
-_get_hash_entity(uint16_t dev, uint32_t idx)
+_get_hash_entity(dev_t dev, uint32_t idx)
 {
     uint32_t hash_val = HASH(idx);
     struct IndexNode *inode = ihash_map[hash_val];
@@ -123,7 +123,7 @@ _put_hash_entity(struct IndexNode *inode)
 }
 
 struct IndexNode *
-alloc_inode(uint16_t dev)
+alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
     struct IndexNode *inode = NULL;
@@ -155,7 +155,7 @@ free_inode(struct IndexNode *inode)
 
 
 struct IndexNode *
-get_inode(uint16_t dev, uint16_t inode_index)
+get_inode(dev_t dev, uint16_t inode_index)
 {
     struct IndexNode *inode = NULL;
     while (inode == NULL) {

@@ -17,7 +17,7 @@
 struct BlockBuffer *znode_map[MAX_ZMAP_NUM] = {0};
 
 error_t
-init_zones(uint16_t dev)
+init_zones(dev_t dev)
 {
     const uint32_t superblk_begin = get_super_block_begin(dev);
     const struct SuperBlock *super_block = get_super_block(dev);
@@ -50,7 +50,7 @@ _alloc_bit(struct BlockBuffer **node_map, uint32_t cnt)
 }
 
 uint32_t
-alloc_zone(uint16_t dev)
+alloc_zone(dev_t dev)
 {
     const struct SuperBlock *super_block = get_super_block(dev);
     const uint32_t zcnt = super_block->sb_zmap_blocks;
@@ -122,7 +122,7 @@ get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk
 }
 
 static inline uint32_t
-_get_znone_begin(uint16_t dev)
+_get_znone_begin(dev_t dev)
 {
     struct PartionEntity *entity = get_partion_entity(dev);
     const uint32_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;

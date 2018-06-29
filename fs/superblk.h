@@ -16,12 +16,12 @@ struct SuperBlock {
     uint32_t    sb_zones;               // 区块总数
 };
 
-error_t init_super_block(uint16_t dev);
+error_t init_super_block(dev_t dev);
 
-uint32_t get_super_block_begin(uint16_t dev);
+uint32_t get_super_block_begin(dev_t dev);
 
-const struct SuperBlock * get_super_block(uint16_t dev);
+const struct SuperBlock * get_super_block(dev_t dev);
 
-void dump_super_block(uint16_t dev);
+void dump_super_block(dev_t dev);
 
 #endif // __SUPERBLK_H__

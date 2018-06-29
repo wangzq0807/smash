@@ -19,7 +19,7 @@ struct PyIndexNode {
 
 struct IndexNode {
     struct PyIndexNode  in_inode;       // 磁盘上inode内容
-    uint16_t            in_dev;         // 设备号
+    dev_t               in_dev;         // 设备号
     uint32_t            in_status;      // 状态
     uint16_t            in_inum;        // inode编号
     uint16_t            in_refs;        // 引用计数
@@ -29,16 +29,16 @@ struct IndexNode {
 };
 
 error_t
-init_inodes(uint16_t dev);
+init_inodes(dev_t dev);
 
 struct IndexNode *
-alloc_inode(uint16_t dev);
+alloc_inode(dev_t dev);
 
 error_t
 free_inode(struct IndexNode *inode);
 
 struct IndexNode *
-get_inode(uint16_t dev, uint16_t idx);
+get_inode(dev_t dev, uint16_t idx);
 
 void
 release_inode(struct IndexNode *inode);

@@ -14,7 +14,7 @@ static struct SuperBlock super_blk[4];
 
 // NOTE : dev unused
 uint32_t
-get_super_block_begin(uint16_t dev)
+get_super_block_begin(dev_t dev)
 {
     struct PartionEntity *entity = get_partion_entity(dev);
     const uint32_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
@@ -24,7 +24,7 @@ get_super_block_begin(uint16_t dev)
 
 // NOTE : dev unused
 error_t
-init_super_block(uint16_t dev)
+init_super_block(dev_t dev)
 {
     error_t ret = 0;
     uint32_t pos = get_super_block_begin(dev);
@@ -40,13 +40,13 @@ init_super_block(uint16_t dev)
 
 // NOTE : dev unused
 const struct SuperBlock *
-get_super_block(uint16_t dev)
+get_super_block(dev_t dev)
 {
     return &super_blk[0];
 }
 
 void
-dump_super_block(uint16_t dev)
+dump_super_block(dev_t dev)
 {
     const struct SuperBlock *sb = get_super_block(dev);
     print("sb_magic"); printx(sb->sb_magic); print("\n");
