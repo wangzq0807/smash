@@ -20,7 +20,8 @@ static struct BlockBufferHead free_buffers;
 static struct BlockBuffer *hash_map[BUFFER_HASH_LEN];
 
 static struct BlockBuffer *buffer_new();
-error_t remove_from_freelist(struct BlockBuffer *buf);
+static error_t _put_to_freelist(struct BlockBuffer *buf);
+static error_t _remove_from_freelist(struct BlockBuffer *buf);
 static void wait_for(struct BlockBuffer *buffer);
 
 error_t
@@ -32,11 +33,12 @@ init_block_buffer()
     struct BlockBuffer *iter;
     struct BlockBuffer *prev = &buf[0];
     prev->bf_data = (uint8_t*)BLK_BUFFER;
+    prev->bf_refs = 0;
 
     for (int i = 1; i < BUFFER_LIST_LEN; ++i) {
         iter = &buf[i];
         iter->bf_data = (uint8_t*)(BLK_BUFFER + i*BLK_BUFFER_SIZE);
-
+        iter->bf_refs = 0;
         iter->bf_prev = prev;
         prev->bf_next = iter;
         prev = iter;
@@ -109,19 +111,21 @@ _get_block(uint16_t dev, uint32_t blk)
     while (1) {
         struct BlockBuffer *buf = _get_hash_entity(dev, blk);
         if (buf != NULL) {
-            if (buf->bf_status == BUF_BUSY) {
+            if (buf->bf_refs++ == 0)
+                _remove_from_freelist(buf);
+            if (buf->bf_status & BUF_BUSY) {
                 // 5. 缓存命中，但缓冲区状态为"busy"
                 // TODO: sleep for buf
-                continue;
+                // NOTE: 醒来后无须再次搜索，
+                // 引用计数可以保证在进程醒来后，buf没有被释放
             }
-            else if (buf->bf_status == BUF_FREE) {
+            else if (buf->bf_status & BUF_FREE) {
                 // 1. 在Hash表中找到了指定block，并且这个block是空闲的
                 // buf->bf_status = BUF_BUSY;
-                remove_from_freelist(buf);
             }
             return buf;
         }
-        struct BlockBuffer * new_buffer = buffer_new();
+        struct BlockBuffer *new_buffer = buffer_new();
         if (new_buffer == NULL) {
             // 4. free list已经为空
             // TODO: sleep for empty
@@ -129,6 +133,7 @@ _get_block(uint16_t dev, uint32_t blk)
         }
         else if (new_buffer->bf_status == BUF_DELAYWRITE) {
             // 3. 新申请的缓冲区的状态是"delay write"，因此需要先写入，然后申请另一块
+            // TODO : 这个状态太复杂，暂不实现
             // TODO : 写磁盘，写完成后重新放入队列头部
             // NOTE : 不能由中断响应函数来释放这个缓冲区
             continue;
@@ -170,6 +175,7 @@ buffer_new( )
         return NULL;
 
     struct BlockBuffer *ret = free_buffers.bf_buf;
+    ret->bf_refs = 0;
     free_buffers.bf_buf = ret->bf_next;
 
     if (free_buffers.bf_buf == ret) {
@@ -193,15 +199,26 @@ buffer_new( )
 error_t
 release_block(struct BlockBuffer *buf)
 {
+    if ((buf->bf_refs) && (--buf->bf_refs != 0)) return 0;
     // TODO: 唤醒等待当前缓冲区的进程
     // TODO: 唤醒等待空闲缓冲区的进程
-    if (buf->bf_status == BUF_DELAYWRITE) {
-        // TODO : 唤醒等待这个buf的进程
+    if (buf->bf_status & BUF_BUSY) {
+        // 读写尚未完成，就想释放buf?
+        // 此时buf当然不会被释放，读写完成后，会再次进行释放
     }
-    else if (buf->bf_status == BUF_BUSY) {
-        // TODO : 这是非法操作
+    else {
+        if (buf->bf_status & BUF_DIRTY) {
+            // TODO : write to disk
+            buf->bf_status = BUF_FREE;
+        }
+        _put_to_freelist(buf);
     }
-    else if (free_buffers.bf_buf != NULL) {
+    return 0;
+}
+
+static error_t
+_put_to_freelist(struct BlockBuffer *buf) {
+    if (free_buffers.bf_buf != NULL) {
         // 放到队列尾部
         buf->bf_next = free_buffers.bf_buf;
         buf->bf_prev = free_buffers.bf_buf->bf_prev;
@@ -213,12 +230,11 @@ release_block(struct BlockBuffer *buf)
         buf->bf_next = buf;
         buf->bf_prev = buf;
     }
-
     return 0;
 }
 
-error_t
-remove_from_freelist(struct BlockBuffer *buf) {
+static error_t
+_remove_from_freelist(struct BlockBuffer *buf) {
     struct BlockBuffer *iter = free_buffers.bf_buf;
     do {
         if (iter == buf) {
