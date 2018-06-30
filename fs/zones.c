@@ -7,7 +7,7 @@
 #define PER_BLOCK_BYTES     (1 << BLOCK_LOG_SIZE)
 #define PER_BLOCK_SECTORS   (PER_BLOCK_BYTES/SECTOR_SIZE)
 // 间接索引块数
-#define INDIRECT_ZONES      (PER_BLOCK_BYTES / sizeof(uint32_t))
+#define INDIRECT_ZONES      (PER_BLOCK_BYTES / sizeof(zone_t))
 // 双间接索引
 #define DINDIRECT_ZONES     (INDIRECT_ZONES * INDIRECT_ZONES)
 // 三间接索引
@@ -19,29 +19,30 @@ struct BlockBuffer *znode_map[MAX_ZMAP_NUM] = {0};
 error_t
 init_zones(dev_t dev)
 {
-    const uint32_t superblk_begin = get_super_block_begin(dev);
+    const blk_t superblk_begin = get_super_block_begin(dev);
     const struct SuperBlock *super_block = get_super_block(dev);
-    const uint32_t icnt = super_block->sb_imap_blocks;
-    const uint32_t zcnt = super_block->sb_zmap_blocks;
+    const blk_t icnt = super_block->sb_imap_blocks;
+    const blk_t zcnt = super_block->sb_zmap_blocks;
 
-    const uint32_t inode_begin = superblk_begin + SUPER_BLOCK_SIZE;
-    const uint32_t znode_pos = inode_begin + icnt;
+    const blk_t inode_begin = superblk_begin + SUPER_BLOCK_SIZE;
+    const blk_t znode_pos = inode_begin + icnt;
     for (int i = 0; i < zcnt && i < MAX_ZMAP_NUM; ++i) {
         znode_map[i] = get_block(dev, znode_pos + i);
     }
     return 0;
 }
 
-static uint32_t
-_alloc_bit(struct BlockBuffer **node_map, uint32_t cnt)
+static zone_t
+_alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
 {
-    for (uint32_t blk = 0; blk < cnt; ++blk) {
+    for (blk_t blk = 0; blk < cnt; ++blk) {
         struct BlockBuffer *buffer = node_map[blk];
-        for (uint32_t byte = 0; byte < PER_BLOCK_BYTES; ++byte) {
-            for (uint32_t bit = 0; bit < 8; ++bit) {
-                if (_get_bit(&buffer->bf_data[byte], bit) == 0) {
-                    _set_bit(&buffer->bf_data[byte], bit);
-                    return ((blk * PER_BLOCK_BYTES) << 3) + (byte << 3) + bit;
+        for (int num = 0; num < PER_BLOCK_BYTES/sizeof(int); ++num) {
+            int bits = sizeof(int) * 8;
+            for (int bit = 0; bit < bits; ++bit) {
+                if (_get_bit(((int *)buffer->bf_data)[num], bit) == 0) {
+                    _set_bit(&((int *)buffer->bf_data)[num], bit);
+                    return ((blk * PER_BLOCK_BYTES) << 3) + num * bits + bit;
                 }
             }
         }
@@ -49,22 +50,22 @@ _alloc_bit(struct BlockBuffer **node_map, uint32_t cnt)
     return 0;
 }
 
-uint32_t
+zone_t
 alloc_zone(dev_t dev)
 {
     const struct SuperBlock *super_block = get_super_block(dev);
-    const uint32_t zcnt = super_block->sb_zmap_blocks;
-    uint32_t znode = _alloc_bit(znode_map, zcnt);
+    const blk_t zcnt = super_block->sb_zmap_blocks;
+    zone_t znode = _alloc_bit(znode_map, zcnt);
     return znode;
 }
 
-uint32_t
+zone_t
 get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk)
 {
     struct PartionEntity *entity = get_partion_entity(inode->in_dev);
-    const uint32_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
+    const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
     // TODO : 这里暂时假设zone和block大小相同
-    uint32_t block_num;
+    blk_t block_num;
     const uint32_t zone_num = bytes_offset >> BLOCK_LOG_SIZE;
     if (offset_in_blk)
         *offset_in_blk = bytes_offset & (PER_BLOCK_BYTES - 1);

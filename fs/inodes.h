@@ -21,7 +21,7 @@ struct IndexNode {
     struct PyIndexNode  in_inode;       // 磁盘上inode内容
     dev_t               in_dev;         // 设备号
     uint32_t            in_status;      // 状态
-    uint16_t            in_inum;        // inode编号
+    ino_t               in_inum;        // inode编号
     uint16_t            in_refs;        // 引用计数
     struct IndexNode    *in_next;       // 下一个空闲inode
     struct IndexNode    *in_hash_prev;  // hash表
@@ -44,17 +44,17 @@ void
 release_inode(struct IndexNode *inode);
 
 static inline void
-_set_bit(uint8_t *byte, uint32_t num)
+_set_bit(int *byte, int num)
 {
-    const uint32_t val = 1 << (num & 7);
+    const int val = 1 << num;
     *byte |= val;
 }
 
-static inline uint32_t
-_get_bit(uint8_t *byte, uint32_t num)
+static inline int
+_get_bit(int byte, int num)
 {
-    const uint32_t val = 1 << (num & 7);
-    return (*byte) & val;
+    const int val = 1 << num;
+    return byte & val;
 }
 
 #endif // __NODES_H__

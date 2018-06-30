@@ -14,7 +14,7 @@ typedef uint32_t        size_t;
 
 typedef int32_t         time_t;
 typedef int32_t         error_t;
-typedef uint16_t        dev_t;
+// proc
 typedef int32_t         pid_t;
 typedef int32_t         gid_t;
 typedef int32_t         uid_t;
@@ -22,7 +22,11 @@ typedef int32_t         uid_t;
 typedef uint32_t        pde_t;
 typedef uint32_t        pte_t;
 // fs
-typedef     uint32_t    lba_t;
+typedef uint16_t        dev_t;
+typedef uint32_t        lba_t;
+typedef uint32_t        blk_t;
+typedef uint16_t        ino_t;
+typedef uint32_t        zone_t;
 
 #define NO_ERROR    (0)
 

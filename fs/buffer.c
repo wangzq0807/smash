@@ -15,7 +15,7 @@ struct BlockBufferHead {
     uint32_t            bf_lock;
     struct BlockBuffer  *bf_buf;
 };
-
+// 空闲双向循环链表
 static struct BlockBufferHead free_buffers;
 static struct BlockBuffer *hash_map[BUFFER_HASH_LEN];
 
@@ -73,7 +73,7 @@ _remove_hash_entity(struct BlockBuffer *buf)
 }
 
 static struct BlockBuffer *
-_get_hash_entity(uint16_t dev, uint32_t blk)
+_get_hash_entity(dev_t dev, blk_t blk)
 {
     uint32_t hash_val = HASH(blk);
     struct BlockBuffer *buf = hash_map[hash_val];
@@ -105,7 +105,7 @@ _put_hash_entity(struct BlockBuffer *buf)
 }
 
 static struct BlockBuffer *
-_get_block(uint16_t dev, uint32_t blk)
+_get_block(dev_t dev, blk_t blk)
 {
     // 参考《unix操作系统设计》的五种场景。
     while (1) {
@@ -119,7 +119,7 @@ _get_block(uint16_t dev, uint32_t blk)
                 // NOTE: 醒来后无须再次搜索，
                 // 引用计数可以保证在进程醒来后，buf没有被释放
             }
-            else if (buf->bf_status & BUF_FREE) {
+            else {
                 // 1. 在Hash表中找到了指定block，并且这个block是空闲的
                 // buf->bf_status = BUF_BUSY;
             }
@@ -153,7 +153,7 @@ _get_block(uint16_t dev, uint32_t blk)
 }
 
 struct BlockBuffer *
-get_block(uint16_t dev, uint32_t blk) 
+get_block(dev_t dev, blk_t blk) 
 {
     struct BlockBuffer *buf = _get_block(dev, blk);
     if (buf->bf_status == BUF_BUSY) {
@@ -175,7 +175,7 @@ buffer_new( )
         return NULL;
 
     struct BlockBuffer *ret = free_buffers.bf_buf;
-    ret->bf_refs = 0;
+    ret->bf_refs = 1;
     free_buffers.bf_buf = ret->bf_next;
 
     if (free_buffers.bf_buf == ret) {
@@ -195,7 +195,6 @@ buffer_new( )
     return ret;
 }
 // 1. 一个进程不再需要这个缓冲区
-// 2. 磁盘读/写完成后
 error_t
 release_block(struct BlockBuffer *buf)
 {
@@ -204,16 +203,16 @@ release_block(struct BlockBuffer *buf)
     // TODO: 唤醒等待空闲缓冲区的进程
     if (buf->bf_status & BUF_BUSY) {
         // 读写尚未完成，就想释放buf?
-        // 此时buf当然不会被释放，读写完成后，会再次进行释放
+        // 必须先等待读写完成!!!
+        wait_for(buf);
     }
-    else {
-        if (buf->bf_status & BUF_DIRTY) {
-            buf->bf_status = BUF_BUSY;
-            ata_write(buf);
-            wait_for(buf);
-        }
-        _put_to_freelist(buf);
+    else if (buf->bf_status & BUF_DIRTY) {
+        buf->bf_status = BUF_BUSY;
+        ata_write(buf);
+        wait_for(buf);
     }
+
+    _put_to_freelist(buf);
     return 0;
 }
 
@@ -236,19 +235,23 @@ _put_to_freelist(struct BlockBuffer *buf) {
 
 static error_t
 _remove_from_freelist(struct BlockBuffer *buf) {
-    struct BlockBuffer *iter = free_buffers.bf_buf;
-    do {
-        if (iter == buf) {
-            struct BlockBuffer *prev = iter->bf_prev;
-            struct BlockBuffer *next = iter->bf_next;
-            prev->bf_next = next;
-            next->bf_prev = prev;
-            if (iter == free_buffers.bf_buf)
-                free_buffers.bf_buf = free_buffers.bf_buf->bf_next;
-            return 0;
-        }
-        iter = iter->bf_next;
-    } while(iter != NULL && iter != free_buffers.bf_buf);
+    if (free_buffers.bf_buf == NULL)
+        return 0;
+    if (buf->bf_prev == NULL || buf->bf_next == NULL)
+        return 0;
+    struct BlockBuffer* next = buf->bf_next;
+    struct BlockBuffer* prev = buf->bf_prev;
+    if (next != buf && prev != buf) {
+        next->bf_prev = prev;
+        prev->bf_next = next;
+        if (buf == free_buffers.bf_buf)
+            free_buffers.bf_buf = next;
+    }
+    else {
+        free_buffers.bf_buf = NULL;
+    }
+    buf->bf_next = NULL;
+    buf->bf_prev = NULL;
 
     return -1;
 }
