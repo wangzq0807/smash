@@ -27,6 +27,7 @@ typedef uint32_t        lba_t;
 typedef uint32_t        blk_t;
 typedef uint16_t        ino_t;
 typedef uint32_t        zone_t;
+typedef uint32_t        seek_t;
 
 #define NO_ERROR    (0)
 

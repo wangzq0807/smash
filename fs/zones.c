@@ -59,16 +59,14 @@ alloc_zone(dev_t dev)
     return znode;
 }
 
-zone_t
-get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk)
+blk_t
+get_zone(struct IndexNode *inode, seek_t bytes_offset)
 {
     struct PartionEntity *entity = get_partion_entity(inode->in_dev);
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
     // TODO : 这里暂时假设zone和block大小相同
-    blk_t block_num;
-    const uint32_t zone_num = bytes_offset >> BLOCK_LOG_SIZE;
-    if (offset_in_blk)
-        *offset_in_blk = bytes_offset & (PER_BLOCK_BYTES - 1);
+    blk_t block_num = 0;
+    const zone_t zone_num = bytes_offset >> BLOCK_LOG_SIZE;
     // 直接索引
     if (zone_num < DIRECT_ZONE) {
         block_num = inode->in_inode.in_zones[zone_num];
@@ -76,18 +74,18 @@ get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk
     // 间接索引
     else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES)) {
         const uint32_t in_blk = inode->in_inode.in_zones[DIRECT_ZONE];
-        const uint32_t in_num = zone_num - DIRECT_ZONE;
+        const zone_t in_total_num = zone_num - DIRECT_ZONE;
         struct BlockBuffer *buf = get_block(inode->in_dev, nstart+in_blk);
-        block_num = ((uint32_t *)buf->bf_data)[in_num];
+        block_num = ((uint32_t *)buf->bf_data)[in_total_num];
         release_block(buf);
     }
     // 双间接索引
     else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES)) {
         uint32_t db_blk = inode->in_inode.in_zones[DIRECT_ZONE + 1];
-        uint32_t db_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES;
+        zone_t db_total_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES;
 
-        uint32_t db_offset = db_num / INDIRECT_ZONES;
-        uint32_t db_inoffset = db_num % INDIRECT_ZONES;
+        zone_t db_offset = db_total_num / INDIRECT_ZONES;
+        zone_t db_inoffset = db_total_num % INDIRECT_ZONES;
 
         struct BlockBuffer *buf = get_block(inode->in_dev, nstart+db_blk);
         uint32_t inblock_num = ((uint32_t *)buf->bf_data)[db_offset];
@@ -100,11 +98,11 @@ get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk
     // 三间接索引
     else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES + TINDIRECT_ZONES)) {
         uint32_t tr_blk = inode->in_inode.in_zones[DIRECT_ZONE + 2];
-        uint32_t tr_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES - DINDIRECT_ZONES;
+        zone_t tr_total_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES - DINDIRECT_ZONES;
 
-        uint32_t tr_offset = tr_num / DINDIRECT_ZONES;
-        uint32_t tr_inoffset = (tr_num % DINDIRECT_ZONES)/INDIRECT_ZONES;
-        uint32_t tr_dboffset = tr_num % INDIRECT_ZONES;
+        zone_t tr_offset = tr_total_num / DINDIRECT_ZONES;
+        zone_t tr_inoffset = (tr_total_num % DINDIRECT_ZONES)/INDIRECT_ZONES;
+        zone_t tr_dboffset = tr_total_num % INDIRECT_ZONES;
 
         struct BlockBuffer *buf = get_block(inode->in_dev, nstart+tr_blk);
         uint32_t inblock_num = ((uint32_t *)buf->bf_data)[tr_offset];
@@ -118,8 +116,10 @@ get_zone(struct IndexNode *inode, uint32_t bytes_offset, uint32_t *offset_in_blk
         block_num = ((uint32_t *)buf->bf_data)[tr_dboffset];
         release_block(buf);
     }
-
-    return nstart + block_num;
+    if (block_num != 0)
+        return nstart + block_num;
+    else
+        return 0;
 }
 
 static inline uint32_t

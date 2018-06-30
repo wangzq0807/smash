@@ -9,7 +9,7 @@ struct SuperBlock {
     int16_t     sb_imap_blocks;         // i节点位图所占的块数
     int16_t     sb_zmap_blocks;         // 区块位图所占的块数
     uint16_t    sb_first_datazone;      // 数据区的开始块号
-    int16_t     sb_log_zone_size;       // log2 块/区块
+    int16_t     sb_log_zone_size;       // log2 块/区块(废弃)
     uint32_t    sb_max_file_size;       // 最大文件长度
     int16_t     sb_magic;               // 文件系统魔数
     int16_t     sb_padding;             // （无用）
