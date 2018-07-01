@@ -54,6 +54,7 @@ _alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
             for (int bit = 0; bit < bits; ++bit) {
                 if (_get_bit(((int *)buffer->bf_data)[num], bit) == 0) {
                     _set_bit(&((int *)buffer->bf_data)[num], bit);
+                    buffer->bf_status |= BUF_DIRTY;
                     return ((blk * PER_BLOCK_BYTES) << 3) + num * bits  + bit;
                 }
             }

@@ -121,7 +121,6 @@ _get_block(dev_t dev, blk_t blk)
             }
             else {
                 // 1. 在Hash表中找到了指定block，并且这个block是空闲的
-                // buf->bf_status = BUF_BUSY;
             }
             return buf;
         }
@@ -195,24 +194,31 @@ buffer_new( )
     return ret;
 }
 // 1. 一个进程不再需要这个缓冲区
+// 2. 读写完成时
 error_t
 release_block(struct BlockBuffer *buf)
 {
     if ((buf->bf_refs) && (--buf->bf_refs != 0)) return 0;
     // TODO: 唤醒等待当前缓冲区的进程
     // TODO: 唤醒等待空闲缓冲区的进程
-    if (buf->bf_status & BUF_BUSY) {
+    if (buf->bf_status == BUF_FREE) {
+        _put_to_freelist(buf);
+    }
+    else if (buf->bf_status & BUF_BUSY) {
         // 读写尚未完成，就想释放buf?
         // 必须先等待读写完成!!!
+        // TODO: 以异步方式等待磁盘
         wait_for(buf);
+        _put_to_freelist(buf);
     }
     else if (buf->bf_status & BUF_DIRTY) {
         buf->bf_status = BUF_BUSY;
         ata_write(buf);
+        // TODO: 以异步方式写磁盘
         wait_for(buf);
+        _put_to_freelist(buf);
     }
 
-    _put_to_freelist(buf);
     return 0;
 }
 
