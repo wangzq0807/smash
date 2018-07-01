@@ -45,14 +45,14 @@ struct DiskRequest *disk_queue_tail = NULL;
 #define ATA_STATUS_READY    0x40    // 能处理接收到的命令，没有发生错误
 #define ATA_STATUS_BUSY     0x80    // 正在准备发送/接口数据
 
-extern void on_disk_intr();
+int on_disk_handler(struct IrqFrame *irq);
 static int do_request();
 
 int
 init_disk()
 {
     // 设置中磁盘中断
-    set_intr_gate(INTR_DISK, on_disk_intr);
+    set_trap_handler(IRQ_DISK, on_disk_handler);
     // 初始化磁盘请求队列
     struct DiskRequest *req = alloc_page();
     for (int i = 0; i < QUEUE_COUNT; ++i) {
@@ -169,13 +169,9 @@ do_request()
     return 0;
 }
 
-void
-on_disk_handler()
+int
+on_disk_handler(struct IrqFrame *irq)
 {
-    /* 设置8259A的OCW2,发送结束中断命令 */
-    outb(0x20, 0x20);
-    outb(0x20, 0xA0);
-
     struct DiskRequest *req = disk_queue.dr_req;
     struct BlockBuffer *buffer = req->dr_buf;
 
@@ -192,4 +188,5 @@ on_disk_handler()
     disk_queue.dr_req = req->dr_next;
     unlock(&disk_queue.dr_lock);
     do_request();
+    return 0;
 }

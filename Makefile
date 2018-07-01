@@ -6,7 +6,7 @@ INCLUDES = -I ./ -I ./include
 BUILD_PATH = _build
 
 # 汇编源文件
-ASMSRCS = arch/head.S \
+ASMSRCS = arch/boot/head.S \
 		  arch/intr.S
 # 查找所有的.c文件
 SOURCES = $(shell find ./ -name '*.c' -printf '%T@\t%p\n' \
@@ -32,7 +32,7 @@ hd.img : boot kernel
 	@dd if=kernel.img of=hd.img bs=512 count=120 seek=1 conv=notrunc
 
 # 引导程序的链接规则
-boot : $(BUILD_PATH)/arch/boot.o
+boot : $(BUILD_PATH)/arch/boot/boot.o
 	$(LD) $(LDFLAGS) -Ttext 0x00 $^ -o boot
 
 # 内核的链接规则

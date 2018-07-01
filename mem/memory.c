@@ -22,11 +22,12 @@ init_memory(uint32_t start, uint32_t end)
         return;
     }
 
+    uint32_t next = start;
     free_memory.pl_free = NULL;
     /* 建立空闲页表链表 */
-    while ((start + PAGE_SIZE) <= end) {
-        free_page((void*)start);
-        start += PAGE_SIZE;
+    while ((next + PAGE_SIZE) <= end) {
+        free_page((void*)next);
+        next += PAGE_SIZE;
     }
 }
 

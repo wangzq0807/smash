@@ -3,8 +3,8 @@
 #include "defs.h"
 
 #define PAGE_SIZE     (4096)
-#define PG_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PG_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
+#define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
+#define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
 
 #define LOG_SIZE(val) ({    \
     int32_t n = (val) - 1;  \
@@ -41,7 +41,6 @@ mfree(void *obj, uint32_t log_size);
 // 对象管理
 enum EObjectType {
     ENoneType = 0,
-    EBlockBuffer,
     EIndexNode,
     EObjectMax
 };

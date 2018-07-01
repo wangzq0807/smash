@@ -32,7 +32,7 @@ file_tail(uint16_t dev, uint16_t inode_num)
     release_inode(one_inode);
 }
 
-static void
+void
 init_filesystem(uint16_t dev)
 {
     init_partion(dev);
@@ -70,8 +70,8 @@ init_filesystem(uint16_t dev)
 void
 start_main()
 {
-    init_cpu();
-    init_memory(5*1024*1024, 64*1024*1024);
+    init_memory(5*1024*1024, 8*1024*1024);
+    init_isa();
     init_disk();
     init_block_buffer();
     init_filesystem(ROOT_DEVICE);
