@@ -17,12 +17,7 @@
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
-struct IndexNodeHead {
-    int                 in_lock;
-    struct IndexNode    *in_free;
-};
-
-static struct IndexNodeHead free_inodes;
+static struct ListHead free_inodes;
 static struct IndexNode *ihash_map[BUFFER_HASH_LEN];
 
 struct BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
@@ -39,8 +34,8 @@ init_inodes(dev_t dev)
         inode_map[i] = get_block(dev, inode_begin + i);
     }
 
-    free_inodes.in_free = NULL;
-    free_inodes.in_lock = 0;
+    free_inodes.lh_list = NULL;
+    free_inodes.lh_lock = 0;
     return 0;
 }
 
@@ -129,11 +124,10 @@ alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
     struct IndexNode *inode = NULL;
-    if (free_inodes.in_free == NULL)
+    if (free_inodes.lh_list == NULL)
         inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
     else {
-        inode = free_inodes.in_free;
-        free_inodes.in_free = inode->in_next;
+        push_front(&free_inodes, inode->in_link);
     }
     // 为新inode分配一个bit位
     const struct SuperBlock *super_block = get_super_block(dev);
@@ -163,21 +157,20 @@ get_inode(dev_t dev, ino_t inode_index)
     while (inode == NULL) {
         inode = _get_hash_entity(dev, inode_index);
         if (inode != NULL) {
+            inode->in_refs += 1;
             if (inode->in_status == INODE_LOCK) {
                 inode = NULL;
                 // TODO : sleep for inode
-                continue;
+                // continue;
             }
-            inode->in_refs += 1;
             return inode;
         }
         else {
             // 申请一个新的IndexNode
-            if (free_inodes.in_free == NULL)
+            if (free_inodes.lh_list == NULL)
                 inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
             else {
-                inode = free_inodes.in_free;
-                free_inodes.in_free = inode->in_next;
+                push_front(&free_inodes, inode->in_link);
             }
             // 读磁盘上的inode
             const blk_t inode_begin = _get_inode_begin(dev);
@@ -206,8 +199,7 @@ release_inode(struct IndexNode *inode)
     inode->in_refs -= 1;
     if (inode->in_refs == 0) {
         // 将inode放入空闲列表
-        inode->in_next = free_inodes.in_free;
-        free_inodes.in_free = inode;
+        push_back(&free_inodes, inode->in_link);
         _remove_hash_entity(inode);
         // 读磁盘上的inode缓冲区
         const blk_t inode_begin = _get_inode_begin(inode->in_dev);
