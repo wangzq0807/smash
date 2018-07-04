@@ -11,17 +11,11 @@
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
-struct BlockBufferHead {
-    uint32_t            bf_lock;
-    struct BlockBuffer  *bf_buf;
-};
 // 空闲双向循环链表
-static struct BlockBufferHead free_buffers;
+static struct ListHead free_buffers;
 static struct BlockBuffer *hash_map[BUFFER_HASH_LEN];
 
 static struct BlockBuffer *buffer_new();
-static error_t _put_to_freelist(struct BlockBuffer *buf);
-static error_t _remove_from_freelist(struct BlockBuffer *buf);
 static void wait_for(struct BlockBuffer *buffer);
 
 error_t
@@ -31,23 +25,14 @@ init_block_buffer()
     // hash_map = (struct BlockBuffer*)alloc_page();
 
     struct BlockBuffer *iter;
-    struct BlockBuffer *prev = &buf[0];
-    prev->bf_data = (uint8_t*)BLK_BUFFER;
-    prev->bf_refs = 0;
 
-    for (int i = 1; i < BUFFER_LIST_LEN; ++i) {
+    for (int i = 0; i < BUFFER_LIST_LEN; ++i) {
         iter = &buf[i];
         iter->bf_data = (uint8_t*)(BLK_BUFFER + i*BLK_BUFFER_SIZE);
         iter->bf_refs = 0;
-        iter->bf_prev = prev;
-        prev->bf_next = iter;
-        prev = iter;
+        push_back(&free_buffers, &iter->bf_link);
     }
-    // 连接链表的头和尾
-    iter->bf_next = &buf[0];
-    buf[0].bf_prev = iter;
-    free_buffers.bf_buf = buf;
-    free_buffers.bf_lock = 0;
+    free_buffers.lh_lock = 0;
 
     return 0;
 }
@@ -112,7 +97,7 @@ _get_block(dev_t dev, blk_t blk)
         struct BlockBuffer *buf = _get_hash_entity(dev, blk);
         if (buf != NULL) {
             if (buf->bf_refs++ == 0)
-                _remove_from_freelist(buf);
+                remove_entity(&free_buffers, &buf->bf_link);
             if (buf->bf_status & BUF_BUSY) {
                 // 5. 缓存命中，但缓冲区状态为"busy"
                 // TODO: sleep for buf
@@ -170,26 +155,12 @@ get_block(dev_t dev, blk_t blk)
 static struct BlockBuffer *
 buffer_new( )
 {
-    if (free_buffers.bf_buf == NULL)
+    if (free_buffers.lh_list == NULL)
         return NULL;
 
-    struct BlockBuffer *ret = free_buffers.bf_buf;
+    struct ListEntity *p = pop_front(&free_buffers);
+    struct BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
     ret->bf_refs = 1;
-    free_buffers.bf_buf = ret->bf_next;
-
-    if (free_buffers.bf_buf == ret) {
-        // 最后一个空缓冲被分配完
-        free_buffers.bf_buf = NULL;
-    }
-    else {
-        if (ret->bf_prev != NULL)
-            ret->bf_prev->bf_next = ret->bf_next;
-        if (ret->bf_next != NULL)
-            ret->bf_next->bf_prev = ret->bf_prev;
-    }
-
-    ret->bf_prev = NULL;
-    ret->bf_next = NULL;
 
     return ret;
 }
@@ -202,64 +173,24 @@ release_block(struct BlockBuffer *buf)
     // TODO: 唤醒等待当前缓冲区的进程
     // TODO: 唤醒等待空闲缓冲区的进程
     if (buf->bf_status == BUF_FREE) {
-        _put_to_freelist(buf);
+        push_back(&free_buffers, &buf->bf_link);
     }
     else if (buf->bf_status & BUF_BUSY) {
         // 读写尚未完成，就想释放buf?
         // 必须先等待读写完成!!!
         // TODO: 以异步方式等待磁盘
         wait_for(buf);
-        _put_to_freelist(buf);
+        push_back(&free_buffers, &buf->bf_link);
     }
     else if (buf->bf_status & BUF_DIRTY) {
         buf->bf_status = BUF_BUSY;
         ata_write(buf);
         // TODO: 以异步方式写磁盘
         wait_for(buf);
-        _put_to_freelist(buf);
+        push_back(&free_buffers, &buf->bf_link);
     }
 
     return 0;
-}
-
-static error_t
-_put_to_freelist(struct BlockBuffer *buf) {
-    if (free_buffers.bf_buf != NULL) {
-        // 放到队列尾部
-        buf->bf_next = free_buffers.bf_buf;
-        buf->bf_prev = free_buffers.bf_buf->bf_prev;
-        buf->bf_prev->bf_next = buf;
-        free_buffers.bf_buf->bf_prev = buf;
-    }
-    else {
-        free_buffers.bf_buf = buf;
-        buf->bf_next = buf;
-        buf->bf_prev = buf;
-    }
-    return 0;
-}
-
-static error_t
-_remove_from_freelist(struct BlockBuffer *buf) {
-    if (free_buffers.bf_buf == NULL)
-        return 0;
-    if (buf->bf_prev == NULL || buf->bf_next == NULL)
-        return 0;
-    struct BlockBuffer* next = buf->bf_next;
-    struct BlockBuffer* prev = buf->bf_prev;
-    if (next != buf && prev != buf) {
-        next->bf_prev = prev;
-        prev->bf_next = next;
-        if (buf == free_buffers.bf_buf)
-            free_buffers.bf_buf = next;
-    }
-    else {
-        free_buffers.bf_buf = NULL;
-    }
-    buf->bf_next = NULL;
-    buf->bf_prev = NULL;
-
-    return -1;
 }
 
 static void

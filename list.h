@@ -2,60 +2,93 @@
 #define __LIST_H__
 #include "defs.h"
 
-struct ListEntry {
-    struct ListEntry    *le_prev;
-    struct ListEntry    *le_next; 
+struct ListEntity {
+    struct ListEntity   *le_prev;
+    struct ListEntity   *le_next; 
 };
 
 struct ListHead {
     int                 lh_lock;
-    struct ListEntry    *lh_list;
+    struct ListEntity   *lh_list;
 };
 
+#define TO_INSTANCE(entity, stype, lname) ({     \
+    struct stype *tmp = (struct stype *)0;      \
+    size_t diff = (size_t)&(tmp->lname) - (size_t)(tmp);\
+    (struct stype *)((size_t)entity - diff);     \
+})
+
 static inline void
-push_back(struct ListHead *phead, struct ListEntry *pentry)
+push_back(struct ListHead *phead, struct ListEntity *pentity)
 {
     if (!phead->lh_list) {
-        phead->lh_list = pentry;
-        phead->lh_list->le_prev = pentry;
-        phead->lh_list->le_next = pentry;
+        phead->lh_list = pentity;
+        phead->lh_list->le_prev = pentity;
+        phead->lh_list->le_next = pentity;
     }
     else {
-        struct ListEntry *prev = phead->lh_list->le_prev;
-        pentry->le_prev = prev;
-        pentry->le_next = phead->lh_list;
-        prev->le_next = pentry;
-        phead->lh_list->le_prev = pentry;
+        struct ListEntity *prev = phead->lh_list->le_prev;
+        pentity->le_prev = prev;
+        pentity->le_next = phead->lh_list;
+        prev->le_next = pentity;
+        phead->lh_list->le_prev = pentity;
     }
 }
 
 static inline void
-push_front(struct ListHead *phead, struct ListEntry *pentry)
+push_front(struct ListHead *phead, struct ListEntity *pentity)
 {
-    push_back(phead, pentry);
-    phead->lh_list = pentry;
+    if (!phead->lh_list) {
+        phead->lh_list = pentity;
+        phead->lh_list->le_prev = pentity;
+        phead->lh_list->le_next = pentity;
+    }
+    else {
+        struct ListEntity *prev = phead->lh_list->le_prev;
+        pentity->le_prev = prev;
+        pentity->le_next = phead->lh_list;
+        prev->le_next = pentity;
+        phead->lh_list->le_prev = pentity;
+        phead->lh_list = pentity;
+    }
+}
+
+static inline struct ListEntity *
+pop_front(struct ListHead *phead)
+{
+    if (phead->lh_list == NULL)
+        return NULL;
+    struct ListEntity *ret = phead->lh_list;
+    if (phead->lh_list == ret) {
+        phead->lh_list = NULL;
+    }
+    else {
+        ret->le_prev->le_next = ret->le_next;
+        ret->le_next->le_prev = ret->le_prev;
+    }
+    return ret;
 }
 
 static inline void
-remove_entity(struct ListHead *phead, struct ListEntry *pentry)
+remove_entity(struct ListHead *phead, struct ListEntity *pentity)
 {
     if (phead->lh_list == NULL)
         return;
-    if (pentry->le_next == NULL || pentry->le_prev == NULL)
+    if (pentity->le_next == NULL || pentity->le_prev == NULL)
         return;
-    struct ListEntry* next = pentry->le_next;
-    struct ListEntry* prev = pentry->le_prev;
-    if (next != pentry && prev != pentry) {
+    struct ListEntity* next = pentity->le_next;
+    struct ListEntity* prev = pentity->le_prev;
+    if (next != pentity && prev != pentity) {
         next->le_prev = prev;
         prev->le_next = next;
-        if (pentry == phead->lh_list)
+        if (pentity == phead->lh_list)
             phead->lh_list = next;
     }
     else {
         phead->lh_list = NULL;
     }
-    pentry->le_next = NULL;
-    pentry->le_prev = NULL;
+    pentity->le_next = NULL;
+    pentity->le_prev = NULL;
 }
 
 #endif  // __LIST_H__

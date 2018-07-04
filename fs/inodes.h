@@ -24,7 +24,7 @@ struct IndexNode {
     uint32_t            in_status;      // 状态
     ino_t               in_inum;        // inode编号
     uint16_t            in_refs;        // 引用计数
-    struct ListEntry    *in_link;
+    struct ListEntity   *in_link;
     struct IndexNode    *in_hash_prev;  // hash表
     struct IndexNode    *in_hash_next;
 };

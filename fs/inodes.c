@@ -127,7 +127,8 @@ alloc_inode(dev_t dev)
     if (free_inodes.lh_list == NULL)
         inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
     else {
-        push_front(&free_inodes, inode->in_link);
+        struct ListEntity *p = pop_front(&free_inodes);
+        inode = TO_INSTANCE(p, IndexNode, in_link);
     }
     // 为新inode分配一个bit位
     const struct SuperBlock *super_block = get_super_block(dev);
@@ -170,7 +171,8 @@ get_inode(dev_t dev, ino_t inode_index)
             if (free_inodes.lh_list == NULL)
                 inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
             else {
-                push_front(&free_inodes, inode->in_link);
+                struct ListEntity *p = pop_front(&free_inodes);
+                inode = TO_INSTANCE(p, IndexNode, in_link);
             }
             // 读磁盘上的inode
             const blk_t inode_begin = _get_inode_begin(dev);
