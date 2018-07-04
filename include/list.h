@@ -59,10 +59,11 @@ pop_front(struct ListHead *phead)
     if (phead->lh_list == NULL)
         return NULL;
     struct ListEntity *ret = phead->lh_list;
-    if (phead->lh_list == ret) {
+    if (ret->le_next == ret) {
         phead->lh_list = NULL;
     }
     else {
+        phead->lh_list = ret->le_next;
         ret->le_prev->le_next = ret->le_next;
         ret->le_next->le_prev = ret->le_prev;
     }

@@ -129,6 +129,7 @@ alloc_inode(dev_t dev)
     else {
         struct ListEntity *p = pop_front(&free_inodes);
         inode = TO_INSTANCE(p, IndexNode, in_link);
+        _remove_hash_entity(inode);
     }
     // 为新inode分配一个bit位
     const struct SuperBlock *super_block = get_super_block(dev);
@@ -173,6 +174,7 @@ get_inode(dev_t dev, ino_t inode_index)
             else {
                 struct ListEntity *p = pop_front(&free_inodes);
                 inode = TO_INSTANCE(p, IndexNode, in_link);
+                _remove_hash_entity(inode);
             }
             // 读磁盘上的inode
             const blk_t inode_begin = _get_inode_begin(dev);
@@ -201,8 +203,7 @@ release_inode(struct IndexNode *inode)
     inode->in_refs -= 1;
     if (inode->in_refs == 0) {
         // 将inode放入空闲列表
-        push_back(&free_inodes, inode->in_link);
-        _remove_hash_entity(inode);
+        push_back(&free_inodes, &inode->in_link);
         // 读磁盘上的inode缓冲区
         const blk_t inode_begin = _get_inode_begin(inode->in_dev);
         const blk_t block_num = (inode->in_inum - 1) / PER_BLOCK_INODES + inode_begin;

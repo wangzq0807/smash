@@ -30,6 +30,9 @@ init_block_buffer()
         iter = &buf[i];
         iter->bf_data = (uint8_t*)(BLK_BUFFER + i*BLK_BUFFER_SIZE);
         iter->bf_refs = 0;
+        iter->bf_dev = 0;
+        iter->bf_blk = 0;
+        iter->bf_status = BUF_FREE;
         push_back(&free_buffers, &iter->bf_link);
     }
     free_buffers.lh_lock = 0;
@@ -124,7 +127,6 @@ _get_block(dev_t dev, blk_t blk)
         }
         else {
             // 2. Hash表中没有找到指定block，新申请一块空的缓冲区
-            _remove_hash_entity(new_buffer);
             new_buffer->bf_dev = dev;
             new_buffer->bf_blk = blk;
             new_buffer->bf_status = BUF_BUSY;
@@ -161,6 +163,7 @@ buffer_new( )
     struct ListEntity *p = pop_front(&free_buffers);
     struct BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
     ret->bf_refs = 1;
+    _remove_hash_entity(ret);
 
     return ret;
 }
