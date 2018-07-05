@@ -36,7 +36,7 @@ struct IndexNode *
 alloc_inode(dev_t dev);
 
 error_t
-free_inode(struct IndexNode *inode);
+delete_inode(struct IndexNode *inode);
 
 struct IndexNode *
 get_inode(dev_t dev, uint16_t idx);
@@ -49,6 +49,13 @@ _set_bit(int *byte, int num)
 {
     const int val = 1 << num;
     *byte |= val;
+}
+
+static inline void
+_clear_bit(int *byte, int num)
+{
+    const int val = 1 << num;
+    *byte &= ~val;
 }
 
 static inline int

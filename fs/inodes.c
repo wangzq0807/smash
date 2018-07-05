@@ -40,7 +40,7 @@ init_inodes(dev_t dev)
 }
 
 static ino_t
-_alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
+_alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
         struct BlockBuffer *buffer = node_map[blk];
@@ -55,6 +55,19 @@ _alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
             }
         }
     }
+    return 0;
+}
+
+static error_t
+_clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+{
+    int blkbits = PER_BLOCK_BYTES << 3;
+    blk_t num = cnt / blkbits;
+    blk_t bits = cnt % blkbits;
+    blk_t index = bits / sizeof(int);
+    int bit = bits % sizeof(int);
+    struct BlockBuffer *buffer = node_map[num];
+    _clear_bit(&((int *)buffer->bf_data)[index], bit);
     return 0;
 }
 
@@ -134,7 +147,7 @@ alloc_inode(dev_t dev)
     // 为新inode分配一个bit位
     const struct SuperBlock *super_block = get_super_block(dev);
     const blk_t icnt = super_block->sb_imap_blocks;
-    const ino_t inode_index = _alloc_bit(inode_map, icnt);
+    const ino_t inode_index = _alloc_bitmap(inode_map, icnt);
     // 初始化
     inode->in_dev = dev;
     inode->in_status = INODE_LOCK;
@@ -145,12 +158,11 @@ alloc_inode(dev_t dev)
 }
 
 error_t
-free_inode(struct IndexNode *inode)
+delete_inode(struct IndexNode *inode)
 {
-
+    _clear_bitmap(inode_map, inode->in_inum);
     return 0;
 }
-
 
 struct IndexNode *
 get_inode(dev_t dev, ino_t inode_index)

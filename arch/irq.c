@@ -18,17 +18,6 @@ DECL_TRAP_FUNC(IRQ_IGNORE)
 
 #define TRAP_FUNC(num) trap##num
 
-struct TrapsCall{
-    uint32_t    sc_num;
-    trap_func   sc_func;
-};
-
-struct TrapsCall syscall[] = {
-    {0, knl_fork},
-    {0, knl_print},
-    {0, knl_exec},
-};
-
 struct TrapsCall trapcall[48] = { 0 };
 
 void on_timer_handler(struct IrqFrame *irqframe);

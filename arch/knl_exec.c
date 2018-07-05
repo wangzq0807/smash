@@ -1,4 +1,3 @@
-#include "syscall.h"
 #include "irq.h"
 #include "asm.h"
 #include "task.h"

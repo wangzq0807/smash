@@ -33,7 +33,7 @@ init_zones(dev_t dev)
 }
 
 static zone_t
-_alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
+_alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
         struct BlockBuffer *buffer = node_map[blk];
@@ -51,16 +51,36 @@ _alloc_bit(struct BlockBuffer **node_map, blk_t cnt)
     return 0;
 }
 
+static error_t
+_clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+{
+    int blkbits = PER_BLOCK_BYTES << 3;
+    blk_t num = cnt / blkbits;
+    blk_t bits = cnt % blkbits;
+    blk_t index = bits / sizeof(int);
+    int bit = bits % sizeof(int);
+    struct BlockBuffer *buffer = node_map[num];
+    _clear_bit(&((int *)buffer->bf_data)[index], bit);
+    return 0;
+}
+
 zone_t
 alloc_zone(dev_t dev)
 {
     const struct SuperBlock *super_block = get_super_block(dev);
     const blk_t zcnt = super_block->sb_zmap_blocks;
-    zone_t znode = _alloc_bit(znode_map, zcnt);
+    zone_t znode = _alloc_bitmap(znode_map, zcnt);
     return znode;
 }
 
-blk_t
+error_t
+delete_zone(dev_t dev, zone_t num)
+{
+    _clear_bitmap(znode_map, num);
+    return 0;
+}
+
+zone_t
 get_zone(struct IndexNode *inode, seek_t bytes_offset)
 {
     struct PartionEntity *entity = get_partion_entity(inode->in_dev);
@@ -121,6 +141,12 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
         return nstart + block_num;
     else
         return 0;
+}
+
+error_t
+truncate_zones(struct IndexNode *inode)
+{
+    return 0;
 }
 
 static inline uint32_t

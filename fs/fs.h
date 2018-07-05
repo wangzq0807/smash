@@ -10,7 +10,7 @@
 #define MINIX_V2                0x2478      // minix v2文件系统标识
 
 #define MAX_IMAP_NUM            8           // inode位图最大区块数
-#define MAX_ZMAP_NUM            64          // znode位图最大区块数
+#define MAX_ZMAP_NUM            256         // znode位图最大区块数
 
 #define DIRECT_ZONE             7           // 直接索引区块数
 #define NUMBER_ZONE             10          // 总的索引区块数

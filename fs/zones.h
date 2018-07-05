@@ -10,7 +10,13 @@ init_zones(dev_t dev);
 zone_t
 alloc_zone(dev_t dev);
 
-blk_t
+error_t
+delete_zone(dev_t dev, zone_t num);
+
+zone_t
 get_zone(struct IndexNode *inode, seek_t bytes_offset);
+
+error_t
+truncate_zones(struct IndexNode *inode);
 
 #endif // __ZONES_H
