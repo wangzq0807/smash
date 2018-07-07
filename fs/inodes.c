@@ -2,7 +2,7 @@
 #include "superblk.h"
 #include "buffer.h"
 #include "memory.h"
-#include "fs.h"
+#include "fsdefs.h"
 #include "log.h"
 #include "string.h"
 #include "partion.h"

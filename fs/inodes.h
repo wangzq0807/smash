@@ -1,7 +1,7 @@
 #ifndef __NODES_H__
 #define __NODES_H__
 #include "defs.h"
-#include "fs.h"
+#include "fsdefs.h"
 #include "list.h"
 
 #define INODE_LOCK        1

@@ -5,7 +5,7 @@
 #include "partion.h"
 #include "log.h"
 #include "buffer.h"
-#include "fs.h"
+#include "fsdefs.h"
 #include "partion.h"
 
 static struct SuperBlock super_blk[4];

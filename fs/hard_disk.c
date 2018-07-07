@@ -3,7 +3,7 @@
 #include "arch/arch.h"
 #include "hard_disk.h"
 #include "log.h"
-#include "fs.h"
+#include "fsdefs.h"
 
 struct DiskRequest {
     struct BlockBuffer  *dr_buf;

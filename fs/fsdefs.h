@@ -1,5 +1,5 @@
-#ifndef __FS_H__
-#define __FS_H__
+#ifndef __FSDEFS_H__
+#define __FSDEFS_H__
 
 #define ROOT_DEVICE    0
 
@@ -20,4 +20,4 @@
 #define INVALID_ZONE            0
 #define INVALID_INODE           0
 
-#endif // __FS_H__
+#endif // __FSDEFS_H__

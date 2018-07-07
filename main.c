@@ -4,7 +4,7 @@
 #include "string.h"
 #include "memory.h"
 #include "sys/stat.h"
-#include "fs/fs.h"
+#include "fs/fsdefs.h"
 #include "fs/hard_disk.h"
 #include "fs/buffer.h"
 #include "fs/partion.h"
@@ -40,8 +40,10 @@ init_filesystem(uint16_t dev)
     dump_super_block(dev);
     init_inodes(dev);
     init_zones(dev);
-    uint32_t node_66m = name_to_inode("/1M");
-    file_tail(dev, node_66m);
+    struct IndexNode* inode_1m = name_to_inode("/1M");
+    ino_t ino_1m = inode_1m->in_inum;
+    release_inode(inode_1m);
+    file_tail(dev, ino_1m);
 
     struct IndexNode *inode = get_inode(dev, 1);
     uint32_t blk = 0;

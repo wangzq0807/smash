@@ -41,11 +41,11 @@ _search_file(struct IndexNode *inode, const char *name, int len)
     return INVALID_INODE;
 }
 
-ino_t
-name_to_inode(const char *name)
+struct IndexNode *
+dirname_to_inode(const char *name)
 {
-    uint16_t work_inode = ROOT_INODE;
-    uint16_t work_dev = ROOT_DEVICE;
+    ino_t work_inode = ROOT_INODE;
+    dev_t work_dev = ROOT_DEVICE;
     if (name[0] == '/') {
         work_inode = ROOT_INODE;
         work_dev = ROOT_DEVICE;
@@ -58,19 +58,37 @@ name_to_inode(const char *name)
 
     while (*name) {
         const char *next = strstr(name, "/");
-        const int len = next - name;
+        if (*next == 0)
+            return get_inode(work_dev, work_inode);
 
+        const int len = next - name;
         struct IndexNode *inode = get_inode(work_dev, work_inode);
         work_inode = _search_file(inode, name, len);
         // TODO: 不确定
         work_dev = inode->in_dev;
         release_inode(inode);
 
-        if (*next == '/')
-            name = next + 1;
-        else if (*next == 0)
-            name = next;
-    }
+        if (work_inode == INVALID_INODE)
+            return NULL;
 
-    return work_inode;
+        name = next + 1;
+    }
+    return NULL;
+}
+
+struct IndexNode *
+name_to_inode(const char *name)
+{
+    struct IndexNode *inode = dirname_to_inode(name);
+    if (inode == NULL)
+        return NULL;
+    const char *fname = file_name(name);
+    dev_t work_dev = inode->in_dev;
+    ino_t work_inode = _search_file(inode, fname, strlen(fname));
+    release_inode(inode);
+
+    if (work_inode == INVALID_INODE)
+        return NULL;
+    else
+        return get_inode(work_dev, work_inode);
 }
