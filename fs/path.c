@@ -25,7 +25,7 @@ _next_file(struct IndexNode *inode, uint32_t next, struct Direction *dir)
     return next + sizeof(struct Direction);
 }
 
-static uint32_t
+static ino_t
 _search_file(struct IndexNode *inode, const char *name, int len)
 {
     if (S_ISDIR(inode->in_inode.in_file_mode)) {
@@ -38,11 +38,10 @@ _search_file(struct IndexNode *inode, const char *name, int len)
             }
         }
     }
-    // TODO: 非法的zone号
-    return 0;
+    return INVALID_INODE;
 }
 
-uint32_t
+ino_t
 name_to_inode(const char *name)
 {
     uint16_t work_inode = ROOT_INODE;

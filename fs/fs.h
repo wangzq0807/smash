@@ -17,5 +17,7 @@
 #define FILENAME_LEN            30          // 文件名长度
 
 #define ROOT_INODE              1           // 根节点
+#define INVALID_ZONE            0
+#define INVALID_INODE           0
 
 #endif // __FS_H__

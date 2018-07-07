@@ -143,9 +143,115 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
         return 0;
 }
 
+static error_t
+_truncate_direct_zones(struct IndexNode *inode, blk_t nstart)
+{
+    for (blk_t num = 0; num < DIRECT_ZONE; ++num) {
+        blk_t zone = inode->in_inode.in_zones[num];
+        if(zone == INVALID_ZONE)
+            return 0;
+        _clear_bitmap(znode_map, zone);
+        inode->in_inode.in_zones[num] = INVALID_ZONE;
+    }
+    return 0;
+}
+
+static error_t
+_truncate_indirect_zones(struct IndexNode *inode, blk_t nstart)
+{
+    blk_t inblk = inode->in_inode.in_zones[DIRECT_ZONE];
+    if (inblk == INVALID_ZONE)
+        return 0;
+    struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+    for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+        blk_t zone = ((blk_t *)buf->bf_data)[innum];
+        if(zone == INVALID_ZONE)
+            return 0;
+        _clear_bitmap(znode_map, zone);
+    }
+    release_block(buf);
+    _clear_bitmap(znode_map, inblk);
+    inode->in_inode.in_zones[DIRECT_ZONE] = INVALID_ZONE;
+    return 0;
+}
+
+static error_t
+_truncate_dbdirect_zones(struct IndexNode *inode, blk_t nstart)
+{
+    blk_t dbblk = inode->in_inode.in_zones[DIRECT_ZONE+1];
+    if (dbblk == INVALID_ZONE)
+        return 0;
+    struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
+    for (blk_t dbnum = 0; dbnum < PER_BLOCK_BYTES / sizeof(blk_t); ++dbnum) {
+        blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
+        if (inblk == INVALID_ZONE)
+            return 0;
+        struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+        for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+            blk_t zone = ((blk_t *)buf->bf_data)[innum];
+            if(zone == INVALID_ZONE)
+                return 0;
+            _clear_bitmap(znode_map, zone);
+        }
+        release_block(buf);
+        _clear_bitmap(znode_map, inblk);
+    }
+    release_block(dbbuf);
+    _clear_bitmap(znode_map, dbblk);
+    inode->in_inode.in_zones[DIRECT_ZONE+1] = INVALID_ZONE;
+    return 0;
+}
+
+static error_t
+_truncate_trdirect_zones(struct IndexNode *inode, blk_t nstart)
+{
+    blk_t trblk = inode->in_inode.in_zones[DIRECT_ZONE+2];
+    if (trblk == INVALID_ZONE)
+        return 0;
+    struct BlockBuffer *trbuf = get_block(inode->in_dev, nstart+trblk);
+    for (blk_t trnum = 0; trnum < PER_BLOCK_BYTES / sizeof(blk_t); ++trnum) {
+        blk_t dbblk = ((blk_t *)trbuf->bf_data)[trnum];
+        if (dbblk == INVALID_ZONE)
+            return 0;
+        struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
+        for (blk_t dbnum = 0; dbnum < PER_BLOCK_BYTES / sizeof(blk_t); ++dbnum) {
+            blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
+            if (inblk == INVALID_ZONE)
+                return 0;
+            struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+            for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+                blk_t zone = ((blk_t *)buf->bf_data)[innum];
+                if(zone == INVALID_ZONE)
+                    return 0;
+                _clear_bitmap(znode_map, zone);
+            }
+            release_block(buf);
+            _clear_bitmap(znode_map, inblk);
+        }
+        release_block(dbbuf);
+        _clear_bitmap(znode_map, dbblk);
+    }
+    release_block(trbuf);
+    _clear_bitmap(znode_map, trblk);
+    inode->in_inode.in_zones[DIRECT_ZONE+2] = INVALID_ZONE;
+    return 0;
+}
+
 error_t
 truncate_zones(struct IndexNode *inode)
 {
+    struct PartionEntity *entity = get_partion_entity(inode->in_dev);
+    const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
+    // 直接索引
+    _truncate_direct_zones(inode, nstart);
+    // 间接索引
+    _truncate_indirect_zones(inode, nstart);
+    // 双间接索引
+    _truncate_dbdirect_zones(inode, nstart);
+    // 三间接索引
+    _truncate_trdirect_zones(inode, nstart);
+    inode->in_inode.in_file_size = 0;
+
     return 0;
 }
 
