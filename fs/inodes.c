@@ -7,9 +7,8 @@
 #include "string.h"
 #include "partion.h"
 
-#define PER_BLOCK_BYTES     (1 << BLOCK_LOG_SIZE)
 // NOTE : 这里要能整除
-#define PER_BLOCK_INODES    (PER_BLOCK_BYTES/sizeof(struct PyIndexNode))
+#define PER_BLOCK_INODES    (BLOCK_SIZE/sizeof(struct PyIndexNode))
 // 内存中inode最大数量
 #define MAX_INODE_NUM   1024
 // IndexNode的hash表
@@ -44,13 +43,13 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
         struct BlockBuffer *buffer = node_map[blk];
-        for (int num = 0; num < PER_BLOCK_BYTES/sizeof(int); ++num) {
+        for (int num = 0; num < BLOCK_SIZE/sizeof(int); ++num) {
             const int bits = sizeof(int) * 8;
             for (int bit = 0; bit < bits; ++bit) {
                 if (_get_bit(((int *)buffer->bf_data)[num], bit) == 0) {
                     _set_bit(&((int *)buffer->bf_data)[num], bit);
                     buffer->bf_status |= BUF_DIRTY;
-                    return ((blk * PER_BLOCK_BYTES) << 3) + num * bits  + bit;
+                    return ((blk * BLOCK_SIZE) << 3) + num * bits  + bit;
                 }
             }
         }
@@ -61,7 +60,7 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 static error_t
 _clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
-    int blkbits = PER_BLOCK_BYTES << 3;
+    int blkbits = BLOCK_SIZE << 3;
     blk_t num = cnt / blkbits;
     blk_t bits = cnt % blkbits;
     blk_t index = bits / sizeof(int);

@@ -10,15 +10,25 @@
 
 static struct SuperBlock super_blk[4];
 
-#define PER_BLOCK_SECTORS   ((1<<BLOCK_LOG_SIZE) / SECTOR_SIZE);
-
+#define SECTORS_PER_BLOCK (BLOCK_SIZE / SECTOR_SIZE)
+#define PH 255
+#define PS 63
 // NOTE : dev unused
 uint32_t
 get_super_block_begin(dev_t dev)
 {
+    uint32_t superblk_pos = 0;
     struct PartionEntity *entity = get_partion_entity(dev);
-    const uint32_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
-    const uint32_t superblk_pos = nstart + SUPER_BLOCK_BEGAIN;
+    if (entity->pe_lba_start > 0) {
+        const uint32_t nstart = entity->pe_lba_start / SECTORS_PER_BLOCK;
+        superblk_pos = nstart + SUPER_BLOCK_BEGAIN;
+    }
+    else {
+        superblk_pos = entity->pe_start_cylinder * PH * PS
+                    + entity->pe_start_header * PS
+                    + entity->pe_start_sector - 1;
+        superblk_pos = superblk_pos / SECTORS_PER_BLOCK + SUPER_BLOCK_BEGAIN;
+    }
     return superblk_pos;
 }
 

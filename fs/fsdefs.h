@@ -20,4 +20,7 @@
 #define INVALID_ZONE            0
 #define INVALID_INODE           0
 
+
+#define BLOCK_SIZE     (1 << BLOCK_LOG_SIZE)
+
 #endif // __FSDEFS_H__

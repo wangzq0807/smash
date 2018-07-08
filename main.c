@@ -13,7 +13,9 @@
 #include "fs/zones.h"
 #include "fs/path.h"
 
-#define PER_BLOCK_BYTES     (1 << BLOCK_LOG_SIZE)
+int
+file_create(const char *pathname, int mode);
+
 void
 file_tail(uint16_t dev, uint16_t inode_num)
 {
@@ -21,7 +23,7 @@ file_tail(uint16_t dev, uint16_t inode_num)
     struct IndexNode *one_inode = get_inode(dev, inode_num);
     if (S_ISREG(one_inode->in_inode.in_file_mode)) {
         uint32_t bytes = one_inode->in_inode.in_file_size - 3;
-        uint32_t offset = bytes & (PER_BLOCK_BYTES - 1);
+        uint32_t offset = bytes & (BLOCK_SIZE - 1);
         blk = get_zone(one_inode, bytes);
         printx(blk);
         struct BlockBuffer *one_buf = get_block(one_inode->in_dev, blk);
@@ -40,10 +42,11 @@ init_filesystem(uint16_t dev)
     dump_super_block(dev);
     init_inodes(dev);
     init_zones(dev);
-    struct IndexNode* inode_1m = name_to_inode("/1M");
-    ino_t ino_1m = inode_1m->in_inum;
-    release_inode(inode_1m);
-    file_tail(dev, ino_1m);
+    // struct IndexNode* inode_1m = name_to_inode("/1M");
+    // ino_t ino_1m = inode_1m->in_inum;
+    // release_inode(inode_1m);
+    // file_tail(dev, ino_1m);
+    file_create("/2M", 1);
 
     struct IndexNode *inode = get_inode(dev, 1);
     uint32_t blk = 0;

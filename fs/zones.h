@@ -8,7 +8,7 @@ error_t
 init_zones(dev_t dev);
 
 zone_t
-alloc_zone(dev_t dev);
+alloc_zone(struct IndexNode *inode);
 
 error_t
 delete_zone(dev_t dev, zone_t num);

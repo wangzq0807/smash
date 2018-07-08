@@ -7,15 +7,13 @@
 #include "log.h"
 #include "asm.h"
 
-#define PER_BLOCK_BYTES     (1 << BLOCK_LOG_SIZE)
-
 uint16_t cur_inode = ROOT_INODE;
 uint16_t cur_dev = ROOT_DEVICE;
 
 uint32_t
 _next_file(struct IndexNode *inode, uint32_t next, struct Direction *dir)
 {
-    uint32_t offset = next & (PER_BLOCK_BYTES - 1);
+    uint32_t offset = next & (BLOCK_SIZE - 1);
     uint32_t zone = get_zone(inode, next);
     // TODO: zone和block
     struct BlockBuffer *blk = get_block(inode->in_dev, zone);

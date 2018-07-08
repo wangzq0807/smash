@@ -28,6 +28,7 @@ typedef uint32_t        blk_t;
 typedef uint16_t        ino_t;
 typedef uint32_t        zone_t;
 typedef uint32_t        seek_t;
+typedef uint32_t        file_offset_t;
 
 #define NO_ERROR    (0)
 
@@ -35,6 +36,9 @@ typedef uint32_t        seek_t;
 #define BYTE2(val) ((val) >> 8 & 0xFF)
 #define BYTE3(val) ((val) >> 16 & 0xFF)
 #define BYTE4(val) ((val) >> 24 & 0xFF)
+
+#define MIN(a, b)   (a > b ? b : a)
+#define MAX(a, b)   (a > b ? a : b)
 
 #define NULL    0
 

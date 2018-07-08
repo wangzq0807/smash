@@ -4,10 +4,9 @@
 #include "superblk.h"
 #include "partion.h"
 
-#define PER_BLOCK_BYTES     (1 << BLOCK_LOG_SIZE)
-#define PER_BLOCK_SECTORS   (PER_BLOCK_BYTES/SECTOR_SIZE)
+#define PER_BLOCK_SECTORS   (BLOCK_SIZE/SECTOR_SIZE)
 // 间接索引块数
-#define INDIRECT_ZONES      (PER_BLOCK_BYTES / sizeof(zone_t))
+#define INDIRECT_ZONES      (BLOCK_SIZE / sizeof(zone_t))
 // 双间接索引
 #define DINDIRECT_ZONES     (INDIRECT_ZONES * INDIRECT_ZONES)
 // 三间接索引
@@ -37,13 +36,13 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
         struct BlockBuffer *buffer = node_map[blk];
-        for (int num = 0; num < PER_BLOCK_BYTES/sizeof(int); ++num) {
+        for (int num = 0; num < BLOCK_SIZE/sizeof(int); ++num) {
             int bits = sizeof(int) * 8;
             for (int bit = 0; bit < bits; ++bit) {
                 if (_get_bit(((int *)buffer->bf_data)[num], bit) == 0) {
                     _set_bit(&((int *)buffer->bf_data)[num], bit);
                     buffer->bf_status |= BUF_DIRTY;
-                    return ((blk * PER_BLOCK_BYTES) << 3) + num * bits + bit;
+                    return ((blk * BLOCK_SIZE) << 3) + num * bits + bit;
                 }
             }
         }
@@ -54,7 +53,7 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 static error_t
 _clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 {
-    int blkbits = PER_BLOCK_BYTES << 3;
+    int blkbits = BLOCK_SIZE << 3;
     blk_t num = cnt / blkbits;
     blk_t bits = cnt % blkbits;
     blk_t index = bits / sizeof(int);
@@ -65,8 +64,9 @@ _clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 }
 
 zone_t
-alloc_zone(dev_t dev)
+alloc_zone(struct IndexNode *inode)
 {
+    dev_t dev = inode->in_dev;
     const struct SuperBlock *super_block = get_super_block(dev);
     const blk_t zcnt = super_block->sb_zmap_blocks;
     zone_t znode = _alloc_bitmap(znode_map, zcnt);
@@ -163,7 +163,7 @@ _truncate_indirect_zones(struct IndexNode *inode, blk_t nstart)
     if (inblk == INVALID_ZONE)
         return 0;
     struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
-    for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+    for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
         blk_t zone = ((blk_t *)buf->bf_data)[innum];
         if(zone == INVALID_ZONE)
             return 0;
@@ -182,12 +182,12 @@ _truncate_dbdirect_zones(struct IndexNode *inode, blk_t nstart)
     if (dbblk == INVALID_ZONE)
         return 0;
     struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
-    for (blk_t dbnum = 0; dbnum < PER_BLOCK_BYTES / sizeof(blk_t); ++dbnum) {
+    for (blk_t dbnum = 0; dbnum < BLOCK_SIZE / sizeof(blk_t); ++dbnum) {
         blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
         if (inblk == INVALID_ZONE)
             return 0;
         struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
-        for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+        for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
             blk_t zone = ((blk_t *)buf->bf_data)[innum];
             if(zone == INVALID_ZONE)
                 return 0;
@@ -209,17 +209,17 @@ _truncate_trdirect_zones(struct IndexNode *inode, blk_t nstart)
     if (trblk == INVALID_ZONE)
         return 0;
     struct BlockBuffer *trbuf = get_block(inode->in_dev, nstart+trblk);
-    for (blk_t trnum = 0; trnum < PER_BLOCK_BYTES / sizeof(blk_t); ++trnum) {
+    for (blk_t trnum = 0; trnum < BLOCK_SIZE / sizeof(blk_t); ++trnum) {
         blk_t dbblk = ((blk_t *)trbuf->bf_data)[trnum];
         if (dbblk == INVALID_ZONE)
             return 0;
         struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
-        for (blk_t dbnum = 0; dbnum < PER_BLOCK_BYTES / sizeof(blk_t); ++dbnum) {
+        for (blk_t dbnum = 0; dbnum < BLOCK_SIZE / sizeof(blk_t); ++dbnum) {
             blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
             if (inblk == INVALID_ZONE)
                 return 0;
             struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
-            for (blk_t innum = 0; innum < PER_BLOCK_BYTES / sizeof(blk_t); ++innum) {
+            for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
                 blk_t zone = ((blk_t *)buf->bf_data)[innum];
                 if(zone == INVALID_ZONE)
                     return 0;

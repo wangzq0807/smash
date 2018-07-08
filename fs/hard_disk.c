@@ -19,8 +19,7 @@ struct DistReqHead {
 struct DistReqHead disk_queue;
 struct DiskRequest *disk_queue_tail = NULL;
 #define QUEUE_COUNT (PAGE_SIZE / sizeof(struct DiskRequest))
-#define BYTE_PER_BLK            (1 << BLOCK_LOG_SIZE)
-#define PER_BLOCK_SECTORS       (BYTE_PER_BLK / SECTOR_SIZE)
+#define PER_BLOCK_SECTORS       (BLOCK_SIZE / SECTOR_SIZE)
 
 // ATA 寄存器(Primary Bus, Master Drives)
 #define ATA_REG_DATA        0x1F0   // 数据端口
@@ -163,7 +162,7 @@ do_request()
     if (cmd == ATA_CMD_WRITE) {
         ata_wait_ready();
         // begin write
-        outsw(buffer->bf_data, BYTE_PER_BLK/2, ATA_REG_DATA);
+        outsw(buffer->bf_data, BLOCK_SIZE/2, ATA_REG_DATA);
     }
     unlock(&disk_queue.dr_lock);
     return 0;
@@ -176,7 +175,7 @@ on_disk_handler(struct IrqFrame *irq)
     struct BlockBuffer *buffer = req->dr_buf;
 
     if (req->dr_cmd == ATA_CMD_READ)
-        insw(BYTE_PER_BLK/2, ATA_REG_DATA, buffer->bf_data);
+        insw(BLOCK_SIZE/2, ATA_REG_DATA, buffer->bf_data);
     // 释放/解锁缓冲区
     if (buffer->bf_status & BUF_BUSY) {
         // 不需要加锁，因为BUSY时，我们只有在这里才修改bf_status的值
