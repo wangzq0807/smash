@@ -46,9 +46,10 @@ init_filesystem(uint16_t dev)
     // ino_t ino_1m = inode_1m->in_inum;
     // release_inode(inode_1m);
     // file_tail(dev, ino_1m);
-    file_create("/2M", 1);
+    file_create("/2M", 0);
+    sync_inodes(dev);
 
-    struct IndexNode *inode = get_inode(dev, 1);
+    struct IndexNode *inode = get_inode(dev, ROOT_INODE);
     uint32_t blk = 0;
     blk = get_zone(inode, 0);
 
@@ -64,7 +65,7 @@ init_filesystem(uint16_t dev)
         print(dir.dr_name);
         print(" ");
 
-        file_tail(dev, dir.dr_inode);
+        // file_tail(dev, dir.dr_inode);
 
         print("\n");
         file_seek += sizeof(struct Direction);

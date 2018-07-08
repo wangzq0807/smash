@@ -106,6 +106,8 @@ _get_block(dev_t dev, blk_t blk)
                 // TODO: sleep for buf
                 // NOTE: 醒来后无须再次搜索，
                 // 引用计数可以保证在进程醒来后，buf没有被释放
+                wait_for(buf);
+                buf->bf_status = BUF_FREE;
             }
             else {
                 // 1. 在Hash表中找到了指定block，并且这个block是空闲的
@@ -116,6 +118,8 @@ _get_block(dev_t dev, blk_t blk)
         if (new_buffer == NULL) {
             // 4. free list已经为空
             // TODO: sleep for empty
+            print(" empty ");
+            while (1);
             continue;
         }
         else if (new_buffer->bf_status & BUF_DELAYWRITE) {

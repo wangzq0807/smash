@@ -8,7 +8,7 @@
 #include "buffer.h"
 #include "log.h"
 
- int
+static int
 _file_append(struct IndexNode *inode, void *data, int len)
 {
     if (len > BLOCK_SIZE )
@@ -21,12 +21,14 @@ _file_append(struct IndexNode *inode, void *data, int len)
 
     struct BlockBuffer *buf = get_block(inode->in_dev, blk);
     memcpy(buf->bf_data + offset, data, MIN(len, less));
+    buf->bf_status |= BUF_DIRTY;
     release_block(buf);
 
     if (more > 0) {
         blk_t new_blk = alloc_zone(inode);
         struct BlockBuffer *new_buf = get_block(inode->in_dev, new_blk);
         memcpy(new_buf->bf_data, data+less, more);
+        buf->bf_status |= BUF_DIRTY;
         release_block(new_buf);
     }
     inode->in_inode.in_file_size += len;
@@ -54,13 +56,15 @@ file_create(const char *pathname, int mode)
     struct Direction dir;
     memcpy(dir.dr_name, fname, strlen(fname)+1);
 
-    struct IndexNode *inode = alloc_inode(1);
+    struct IndexNode *inode = alloc_inode(ROOT_DEVICE);
     inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
     inode->in_inode.in_num_links = 1;
-
     dir.dr_inode = inode->in_inum;
+    release_inode(inode);
+
     _file_append(drinode, &dir, sizeof(struct Direction));
+    drinode->in_status |= INODE_DIRTY;
     release_inode(drinode);
-    
+
     return 0;
 }

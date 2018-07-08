@@ -4,7 +4,9 @@
 #include "fsdefs.h"
 #include "list.h"
 
-#define INODE_LOCK        1
+#define INODE_FREE          0
+#define INODE_LOCK          1
+#define INODE_DIRTY         2
 
 struct PyIndexNode {
     uint16_t    in_file_mode;      // 文件类型, 权限等,
@@ -43,6 +45,9 @@ get_inode(dev_t dev, uint16_t idx);
 
 void
 release_inode(struct IndexNode *inode);
+
+void
+sync_inodes(dev_t dev);
 
 static inline void
 _set_bit(int *byte, int num)

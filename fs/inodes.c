@@ -149,7 +149,7 @@ alloc_inode(dev_t dev)
     const ino_t inode_index = _alloc_bitmap(inode_map, icnt);
     // 初始化
     inode->in_dev = dev;
-    inode->in_status = INODE_LOCK;
+    inode->in_status = INODE_DIRTY;
     inode->in_inum = inode_index;
     inode->in_refs = 1;
     _put_hash_entity(inode);
@@ -199,7 +199,7 @@ get_inode(dev_t dev, ino_t inode_index)
             release_block(buffer);
             // 初始化
             inode->in_dev = dev;
-            inode->in_status = INODE_LOCK;
+            inode->in_status = INODE_FREE;
             inode->in_inum = inode_index;
             inode->in_refs = 1;
             _put_hash_entity(inode);
@@ -213,19 +213,38 @@ release_inode(struct IndexNode *inode)
 {
     inode->in_refs -= 1;
     if (inode->in_refs == 0) {
+        if (inode->in_status & INODE_DIRTY) {
+            // 读磁盘上的inode缓冲区
+            const blk_t inode_begin = _get_inode_begin(inode->in_dev);
+            const blk_t block_num = (inode->in_inum - 1) / PER_BLOCK_INODES + inode_begin;
+            const ino_t offset = (inode->in_inum - 1) % PER_BLOCK_INODES;
+
+            struct BlockBuffer *buffer = get_block(inode->in_dev, block_num);
+            // 将IndexNode的内容拷贝到inode缓冲区
+            uint8_t *ptr = buffer->bf_data + offset * sizeof(struct PyIndexNode);
+            memcpy(ptr, &inode->in_inode, sizeof(struct PyIndexNode));
+            buffer->bf_status = BUF_DIRTY;
+            release_block(buffer);
+        }
+        inode->in_status = INODE_FREE;
         // 将inode放入空闲列表
         push_back(&free_inodes, &inode->in_link);
-        // 读磁盘上的inode缓冲区
-        const blk_t inode_begin = _get_inode_begin(inode->in_dev);
-        const blk_t block_num = (inode->in_inum - 1) / PER_BLOCK_INODES + inode_begin;
-        const ino_t offset = (inode->in_inum - 1) % PER_BLOCK_INODES;
-
-        struct BlockBuffer *buffer = get_block(inode->in_dev, block_num);
-        // 将IndexNode的内容拷贝到inode缓冲区
-        uint8_t *ptr = buffer->bf_data + offset * sizeof(struct PyIndexNode);
-        memcpy(ptr, &inode->in_inode, sizeof(struct PyIndexNode));
-        release_block(buffer);
     }
     inode->in_status = 0;
 }
 
+void
+sync_inodes(dev_t dev)
+{
+    const struct SuperBlock *super_block = get_super_block(dev);
+    const int icnt = super_block->sb_imap_blocks;
+
+    for (int i = 0; i < MIN(icnt, MAX_IMAP_NUM); ++i) {
+        if (inode_map[i]->bf_status & BUF_DIRTY) {
+            dev = inode_map[i]->bf_dev;
+            blk_t blk = inode_map[i]->bf_blk;
+            release_block(inode_map[i]);
+            inode_map[i] = get_block(dev, blk);
+        }
+    }
+}

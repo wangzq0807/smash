@@ -181,7 +181,7 @@ on_disk_handler(struct IrqFrame *irq)
         // 不需要加锁，因为BUSY时，我们只有在这里才修改bf_status的值
         buffer->bf_status = BUF_FREE;
         // TODO:必须加锁来保证freelist不会被破坏，似乎没有更好的办法
-        release_block(buffer);
+        // release_block(buffer);
     }
 
     disk_queue.dr_req = req->dr_next;
