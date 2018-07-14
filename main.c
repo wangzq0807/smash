@@ -47,6 +47,8 @@ init_filesystem(uint16_t dev)
     // release_inode(inode_1m);
     // file_tail(dev, ino_1m);
     file_create("/2M", 0);
+    file_create("/home/3M", 0);
+    file_create("/home/3M/4M", 0);
     sync_inodes(dev);
 
     struct IndexNode *inode = get_inode(dev, ROOT_INODE);

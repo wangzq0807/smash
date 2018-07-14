@@ -39,8 +39,9 @@ _file_append(struct IndexNode *inode, void *data, int len)
 int
 file_open(const char *pathname, int flags)
 {
-    struct IndexNode *drinode = dirname_to_inode(pathname);
-    if (drinode == NULL) 
+    const char *remain = NULL;
+    struct IndexNode *inode = name_to_inode(pathname, &remain);
+    if (*remain != 0 || inode == NULL) 
         return -1;
 
     return 0;
@@ -49,22 +50,28 @@ file_open(const char *pathname, int flags)
 int
 file_create(const char *pathname, int mode)
 {
-    struct IndexNode *drinode = dirname_to_inode(pathname);
-    if (drinode == NULL) 
-        return -1;
-    const char *fname = file_name(pathname);
-    struct Direction dir;
-    memcpy(dir.dr_name, fname, strlen(fname)+1);
+    const char *remain = NULL;
+    struct IndexNode *inode = name_to_inode(pathname, &remain);
+    if (*remain != 0) {
+        const char *subdir = strstr(remain, "/");
+        if (*subdir == 0) {
+            struct Direction dir;
+            memcpy(dir.dr_name, remain, strlen(remain)+1);
 
-    struct IndexNode *inode = alloc_inode(ROOT_DEVICE);
-    inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
-    inode->in_inode.in_num_links = 1;
-    dir.dr_inode = inode->in_inum;
+            struct IndexNode *new_inode = alloc_inode(ROOT_DEVICE);
+            new_inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
+            new_inode->in_inode.in_num_links = 1;
+            dir.dr_inode = new_inode->in_inum;
+            release_inode(new_inode);
+
+            _file_append(inode, &dir, sizeof(struct Direction));
+            inode->in_status |= INODE_DIRTY;
+        }
+    }
+    else {
+
+    }
     release_inode(inode);
-
-    _file_append(drinode, &dir, sizeof(struct Direction));
-    drinode->in_status |= INODE_DIRTY;
-    release_inode(drinode);
 
     return 0;
 }

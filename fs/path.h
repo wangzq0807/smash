@@ -9,10 +9,7 @@ struct Direction {
 };
 
 struct IndexNode *
-dirname_to_inode(const char *name);
-
-struct IndexNode *
-name_to_inode(const char *name);
+name_to_inode(const char *name, const char **remain);
 
 static inline const char *file_name(const char *name) {
     const char *ret = name;

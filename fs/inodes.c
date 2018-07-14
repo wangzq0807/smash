@@ -170,6 +170,8 @@ get_inode(dev_t dev, ino_t inode_index)
     while (inode == NULL) {
         inode = _get_hash_entity(dev, inode_index);
         if (inode != NULL) {
+            if (inode->in_refs == 0)
+                remove_entity(&free_inodes, &inode->in_link);
             inode->in_refs += 1;
             if (inode->in_status == INODE_LOCK) {
                 inode = NULL;
