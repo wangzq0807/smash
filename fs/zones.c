@@ -13,13 +13,13 @@
 #define TINDIRECT_ZONES     (INDIRECT_ZONES * INDIRECT_ZONES * INDIRECT_ZONES)
 
 // TODO: znode_map数组的大小是不够用的
-struct BlockBuffer *znode_map[MAX_ZMAP_NUM] = {0};
+BlockBuffer *znode_map[MAX_ZMAP_NUM] = {0};
 
 error_t
 init_zones(dev_t dev)
 {
     const blk_t superblk_begin = get_super_block_begin(dev);
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const blk_t icnt = super_block->sb_imap_blocks;
     const blk_t zcnt = super_block->sb_zmap_blocks;
 
@@ -32,10 +32,10 @@ init_zones(dev_t dev)
 }
 
 static zone_t
-_alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+_alloc_bitmap(BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
-        struct BlockBuffer *buffer = node_map[blk];
+        BlockBuffer *buffer = node_map[blk];
         for (int num = 0; num < BLOCK_SIZE/sizeof(int); ++num) {
             int bits = sizeof(int) * 8;
             for (int bit = 0; bit < bits; ++bit) {
@@ -51,23 +51,23 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 }
 
 static error_t
-_clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+_clear_bitmap(BlockBuffer **node_map, blk_t cnt)
 {
     int blkbits = BLOCK_SIZE << 3;
     blk_t num = cnt / blkbits;
     blk_t bits = cnt % blkbits;
     blk_t index = bits / sizeof(int);
     int bit = bits % sizeof(int);
-    struct BlockBuffer *buffer = node_map[num];
+    BlockBuffer *buffer = node_map[num];
     _clear_bit(&((int *)buffer->bf_data)[index], bit);
     return 0;
 }
 
 zone_t
-alloc_zone(struct IndexNode *inode)
+alloc_zone(IndexNode *inode)
 {
     dev_t dev = inode->in_dev;
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const blk_t zcnt = super_block->sb_zmap_blocks;
     zone_t znode = _alloc_bitmap(znode_map, zcnt);
     return znode;
@@ -81,9 +81,9 @@ delete_zone(dev_t dev, zone_t num)
 }
 
 zone_t
-get_zone(struct IndexNode *inode, seek_t bytes_offset)
+get_zone(IndexNode *inode, seek_t bytes_offset)
 {
-    struct PartionEntity *entity = get_partion_entity(inode->in_dev);
+    PartionEntity *entity = get_partion_entity(inode->in_dev);
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
     // TODO : 这里暂时假设zone和block大小相同
     blk_t block_num = 0;
@@ -96,7 +96,7 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
     else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES)) {
         const uint32_t in_blk = inode->in_inode.in_zones[DIRECT_ZONE];
         const zone_t in_total_num = zone_num - DIRECT_ZONE;
-        struct BlockBuffer *buf = get_block(inode->in_dev, nstart+in_blk);
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+in_blk);
         block_num = ((uint32_t *)buf->bf_data)[in_total_num];
         release_block(buf);
     }
@@ -108,7 +108,7 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
         zone_t db_offset = db_total_num / INDIRECT_ZONES;
         zone_t db_inoffset = db_total_num % INDIRECT_ZONES;
 
-        struct BlockBuffer *buf = get_block(inode->in_dev, nstart+db_blk);
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+db_blk);
         uint32_t inblock_num = ((uint32_t *)buf->bf_data)[db_offset];
         release_block(buf);
 
@@ -125,7 +125,7 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
         zone_t tr_inoffset = (tr_total_num % DINDIRECT_ZONES)/INDIRECT_ZONES;
         zone_t tr_dboffset = tr_total_num % INDIRECT_ZONES;
 
-        struct BlockBuffer *buf = get_block(inode->in_dev, nstart+tr_blk);
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+tr_blk);
         uint32_t inblock_num = ((uint32_t *)buf->bf_data)[tr_offset];
         release_block(buf);
 
@@ -144,7 +144,7 @@ get_zone(struct IndexNode *inode, seek_t bytes_offset)
 }
 
 static error_t
-_truncate_direct_zones(struct IndexNode *inode, blk_t nstart)
+_truncate_direct_zones(IndexNode *inode, blk_t nstart)
 {
     for (blk_t num = 0; num < DIRECT_ZONE; ++num) {
         blk_t zone = inode->in_inode.in_zones[num];
@@ -157,12 +157,12 @@ _truncate_direct_zones(struct IndexNode *inode, blk_t nstart)
 }
 
 static error_t
-_truncate_indirect_zones(struct IndexNode *inode, blk_t nstart)
+_truncate_indirect_zones(IndexNode *inode, blk_t nstart)
 {
     blk_t inblk = inode->in_inode.in_zones[DIRECT_ZONE];
     if (inblk == INVALID_ZONE)
         return 0;
-    struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+    BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
     for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
         blk_t zone = ((blk_t *)buf->bf_data)[innum];
         if(zone == INVALID_ZONE)
@@ -176,17 +176,17 @@ _truncate_indirect_zones(struct IndexNode *inode, blk_t nstart)
 }
 
 static error_t
-_truncate_dbdirect_zones(struct IndexNode *inode, blk_t nstart)
+_truncate_dbdirect_zones(IndexNode *inode, blk_t nstart)
 {
     blk_t dbblk = inode->in_inode.in_zones[DIRECT_ZONE+1];
     if (dbblk == INVALID_ZONE)
         return 0;
-    struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
+    BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
     for (blk_t dbnum = 0; dbnum < BLOCK_SIZE / sizeof(blk_t); ++dbnum) {
         blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
         if (inblk == INVALID_ZONE)
             return 0;
-        struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
         for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
             blk_t zone = ((blk_t *)buf->bf_data)[innum];
             if(zone == INVALID_ZONE)
@@ -203,22 +203,22 @@ _truncate_dbdirect_zones(struct IndexNode *inode, blk_t nstart)
 }
 
 static error_t
-_truncate_trdirect_zones(struct IndexNode *inode, blk_t nstart)
+_truncate_trdirect_zones(IndexNode *inode, blk_t nstart)
 {
     blk_t trblk = inode->in_inode.in_zones[DIRECT_ZONE+2];
     if (trblk == INVALID_ZONE)
         return 0;
-    struct BlockBuffer *trbuf = get_block(inode->in_dev, nstart+trblk);
+    BlockBuffer *trbuf = get_block(inode->in_dev, nstart+trblk);
     for (blk_t trnum = 0; trnum < BLOCK_SIZE / sizeof(blk_t); ++trnum) {
         blk_t dbblk = ((blk_t *)trbuf->bf_data)[trnum];
         if (dbblk == INVALID_ZONE)
             return 0;
-        struct BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
+        BlockBuffer *dbbuf = get_block(inode->in_dev, nstart+dbblk);
         for (blk_t dbnum = 0; dbnum < BLOCK_SIZE / sizeof(blk_t); ++dbnum) {
             blk_t inblk = ((blk_t *)dbbuf->bf_data)[dbnum];
             if (inblk == INVALID_ZONE)
                 return 0;
-            struct BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
+            BlockBuffer *buf = get_block(inode->in_dev, nstart+inblk);
             for (blk_t innum = 0; innum < BLOCK_SIZE / sizeof(blk_t); ++innum) {
                 blk_t zone = ((blk_t *)buf->bf_data)[innum];
                 if(zone == INVALID_ZONE)
@@ -238,9 +238,9 @@ _truncate_trdirect_zones(struct IndexNode *inode, blk_t nstart)
 }
 
 error_t
-truncate_zones(struct IndexNode *inode)
+truncate_zones(IndexNode *inode)
 {
-    struct PartionEntity *entity = get_partion_entity(inode->in_dev);
+    PartionEntity *entity = get_partion_entity(inode->in_dev);
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
     // 直接索引
     _truncate_direct_zones(inode, nstart);
@@ -258,8 +258,8 @@ truncate_zones(struct IndexNode *inode)
 static inline uint32_t
 _get_znone_begin(dev_t dev)
 {
-    struct PartionEntity *entity = get_partion_entity(dev);
+    PartionEntity *entity = get_partion_entity(dev);
     const uint32_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     return nstart + super_block->sb_first_datazone;
 }

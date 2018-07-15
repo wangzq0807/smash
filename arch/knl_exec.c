@@ -9,13 +9,13 @@
 #define ELF_FILE        (0x7c00 + 20*1024)
 
 int
-knl_exec(struct IrqFrame *irqframe)
+knl_exec(IrqFrame *irqframe)
 {
-    struct ElfHeader *elfheader = (struct ElfHeader *)(ELF_FILE);
+    ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     printx(elfheader->eh_entry);
-    // struct ProgHeader *progheader = (struct ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
+    // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
 
-    struct Task *cur_task = current_task();
+    Task *cur_task = current_task();
     pde_t *pdt = (pde_t *)cur_task->ts_tss.t_CR3;
     uint32_t npdt = elfheader->eh_entry >> 22;
     uint32_t npte = (elfheader->eh_entry >> 12) & 0x3FF;

@@ -20,13 +20,13 @@ void
 file_tail(uint16_t dev, uint16_t inode_num)
 {
     uint32_t blk = 0;
-    struct IndexNode *one_inode = get_inode(dev, inode_num);
+    IndexNode *one_inode = get_inode(dev, inode_num);
     if (S_ISREG(one_inode->in_inode.in_file_mode)) {
         uint32_t bytes = one_inode->in_inode.in_file_size - 3;
         uint32_t offset = bytes & (BLOCK_SIZE - 1);
         blk = get_zone(one_inode, bytes);
         printx(blk);
-        struct BlockBuffer *one_buf = get_block(one_inode->in_dev, blk);
+        BlockBuffer *one_buf = get_block(one_inode->in_dev, blk);
         char *content = (char *)one_buf->bf_data + offset;
         print(content);
         release_block(one_buf);
@@ -42,7 +42,7 @@ init_filesystem(uint16_t dev)
     dump_super_block(dev);
     init_inodes(dev);
     init_zones(dev);
-    // struct IndexNode* inode_1m = name_to_inode("/1M");
+    // IndexNode* inode_1m = name_to_inode("/1M");
     // ino_t ino_1m = inode_1m->in_inum;
     // release_inode(inode_1m);
     // file_tail(dev, ino_1m);
@@ -51,26 +51,26 @@ init_filesystem(uint16_t dev)
     file_create("/home/3M/4M", 0);
     sync_inodes(dev);
 
-    struct IndexNode *inode = get_inode(dev, ROOT_INODE);
+    IndexNode *inode = get_inode(dev, ROOT_INODE);
     uint32_t blk = 0;
     blk = get_zone(inode, 0);
 
-    struct BlockBuffer *buf = get_block(inode->in_dev, blk);
+    BlockBuffer *buf = get_block(inode->in_dev, blk);
     uint8_t *data = buf->bf_data;
     uint32_t file_size = inode->in_inode.in_file_size;
     release_inode(inode);
 
-    struct Direction dir;
+    Direction dir;
     uint32_t file_seek = 0;
     while (file_seek < file_size) {
-        memcpy(&dir, data+file_seek, sizeof(struct Direction));
+        memcpy(&dir, data+file_seek, sizeof(Direction));
         print(dir.dr_name);
         print(" ");
 
         // file_tail(dev, dir.dr_inode);
 
         print("\n");
-        file_seek += sizeof(struct Direction);
+        file_seek += sizeof(Direction);
     }
     release_block(buf);
 }

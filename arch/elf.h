@@ -6,7 +6,8 @@
 #define ISA_x86     3
 #define ISA_x86_64  0x3E
 
-struct ElfHeader {
+typedef struct _ElfHeader ElfHeader;
+struct _ElfHeader {
     uint32_t    eh_magic;           // 0x7f,"ELF"
     uint8_t     eh_bits;            // 1: 32; 2:64
     uint8_t     eh_endian;          // 1: little; 2: big
@@ -31,7 +32,8 @@ struct ElfHeader {
     uint16_t    eh_index;
 };
 
-struct ProgHeader {
+typedef struct _ProgHeader ProgHeader;
+struct _ProgHeader {
     uint32_t    ph_type;
     uint32_t    ph_offset;
     uint32_t    ph_vaddr;
@@ -42,7 +44,8 @@ struct ProgHeader {
     uint32_t    ph_aligh;
 };
 
-struct SectHeader {
+typedef struct _SectHeader SectHeader;
+struct _SectHeader {
     uint32_t    sh_name;
     uint32_t    sh_type;
     uint32_t    sh_flags;

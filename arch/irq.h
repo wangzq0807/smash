@@ -21,10 +21,11 @@
 #define IRQ_IGNORE      0xff
 
 #ifndef __INTR_S__
-struct X86Desc;
-extern struct X86Desc idt_table[256];
+typedef struct _X86Desc X86Desc;
+extern X86Desc idt_table[256];
 
-struct IrqFrame {
+typedef struct _IrqFrame IrqFrame;
+struct _IrqFrame {
     int     if_DS;
     /* 下面是pushal保存的寄存器 */
     int     if_EDI;
@@ -48,7 +49,7 @@ struct IrqFrame {
     int     if_SS;
 };
 
-typedef int (*trap_func)(struct IrqFrame *);
+typedef int (*trap_func)(IrqFrame *);
 
 void
 setup_idt();

@@ -5,20 +5,22 @@
 #include "log.h"
 #include "fsdefs.h"
 
-struct DiskRequest {
-    struct BlockBuffer  *dr_buf;
-    uint32_t            dr_cmd;
-    struct DiskRequest  *dr_next;
+typedef struct _DiskRequest DiskRequest;
+struct _DiskRequest {
+    BlockBuffer     *dr_buf;
+    uint32_t        dr_cmd;
+    DiskRequest     *dr_next;
 };
 
-struct DistReqHead {
-    uint32_t            dr_lock;
-    struct DiskRequest  *dr_req;
+typedef struct _DistReqHead DistReqHead;
+struct _DistReqHead {
+    uint32_t        dr_lock;
+    DiskRequest     *dr_req;
 };
 
-struct DistReqHead disk_queue;
-struct DiskRequest *disk_queue_tail = NULL;
-#define QUEUE_COUNT (PAGE_SIZE / sizeof(struct DiskRequest))
+DistReqHead disk_queue;
+DiskRequest *disk_queue_tail = NULL;
+#define QUEUE_COUNT (PAGE_SIZE / sizeof(DiskRequest))
 #define PER_BLOCK_SECTORS       (BLOCK_SIZE / SECTOR_SIZE)
 
 // ATA 寄存器(Primary Bus, Master Drives)
@@ -44,7 +46,7 @@ struct DiskRequest *disk_queue_tail = NULL;
 #define ATA_STATUS_READY    0x40    // 能处理接收到的命令，没有发生错误
 #define ATA_STATUS_BUSY     0x80    // 正在准备发送/接口数据
 
-int on_disk_handler(struct IrqFrame *irq);
+int on_disk_handler(IrqFrame *irq);
 static int do_request();
 
 int
@@ -53,7 +55,7 @@ init_disk()
     // 设置中磁盘中断
     set_trap_handler(IRQ_DISK, on_disk_handler);
     // 初始化磁盘请求队列
-    struct DiskRequest *req = alloc_page();
+    DiskRequest *req = alloc_page();
     for (int i = 0; i < QUEUE_COUNT; ++i) {
         req[i].dr_next = &req[i+1];
         req[i].dr_cmd = 0;
@@ -114,9 +116,9 @@ ata_wait_ready()
 }
 
 int
-ata_read(struct BlockBuffer *buffer)
+ata_read(BlockBuffer *buffer)
 {
-    struct DiskRequest *req = disk_queue_tail;
+    DiskRequest *req = disk_queue_tail;
     req->dr_buf = buffer;
     req->dr_cmd = ATA_CMD_READ;
     disk_queue_tail = disk_queue_tail->dr_next;
@@ -128,9 +130,9 @@ ata_read(struct BlockBuffer *buffer)
 }
 
 int
-ata_write(struct BlockBuffer *buffer)
+ata_write(BlockBuffer *buffer)
 {
-    struct DiskRequest *req = disk_queue_tail;
+    DiskRequest *req = disk_queue_tail;
     req->dr_buf = buffer;
     req->dr_cmd = ATA_CMD_WRITE;
     disk_queue_tail = disk_queue_tail->dr_next;
@@ -147,13 +149,13 @@ do_request()
     // 请求队列头加锁
     if (lock(&disk_queue.dr_lock) != 0)
         return 0;
-    struct DiskRequest *req = disk_queue.dr_req;
+    DiskRequest *req = disk_queue.dr_req;
     // TODO : 电梯算法以后再实现
     if (req == disk_queue_tail || req->dr_buf == NULL) {
         unlock(&disk_queue.dr_lock);
         return -1;
     }
-    struct BlockBuffer *buffer = req->dr_buf;
+    BlockBuffer *buffer = req->dr_buf;
     const uint32_t lba_addr = buffer->bf_blk * PER_BLOCK_SECTORS;
     const uint8_t cnt = PER_BLOCK_SECTORS;
     const uint8_t cmd = req->dr_cmd;
@@ -169,10 +171,10 @@ do_request()
 }
 
 int
-on_disk_handler(struct IrqFrame *irq)
+on_disk_handler(IrqFrame *irq)
 {
-    struct DiskRequest *req = disk_queue.dr_req;
-    struct BlockBuffer *buffer = req->dr_buf;
+    DiskRequest *req = disk_queue.dr_req;
+    BlockBuffer *buffer = req->dr_buf;
 
     if (req->dr_cmd == ATA_CMD_READ)
         insw(BLOCK_SIZE/2, ATA_REG_DATA, buffer->bf_data);

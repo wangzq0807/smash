@@ -30,8 +30,8 @@
 
 int init_disk(void);
 // 读磁盘
-int ata_read(struct BlockBuffer *buffer);
+int ata_read(BlockBuffer *buffer);
 // 写磁盘
-int ata_write(struct BlockBuffer *buffer);
+int ata_write(BlockBuffer *buffer);
 
 #endif

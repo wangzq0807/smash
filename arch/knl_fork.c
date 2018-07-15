@@ -11,7 +11,7 @@
 pid_t nextpid = 1;
 
 static void
-setup_new_tss(struct IrqFrame *irq, struct Task *new_task)
+setup_new_tss(IrqFrame *irq, Task *new_task)
 {
     uint8_t *knl_stack = (uint8_t *)alloc_page();
     ((uint32_t *)knl_stack)[0] = (uint32_t)new_task;
@@ -20,7 +20,7 @@ setup_new_tss(struct IrqFrame *irq, struct Task *new_task)
      * NOTE: 这里复制的并不是父任务的及时上下文，而是父任务fork返回后的上下文(eax除外)
      * 这样可以保证不会弄脏堆栈
      ******************************/
-    struct X86TSS *new_tss = &new_task->ts_tss;
+    X86TSS *new_tss = &new_task->ts_tss;
     new_tss->t_ESP_0 = (uint32_t)(knl_stack + PAGE_SIZE);
     new_tss->t_SS_0 = KNL_DS;
 
@@ -48,7 +48,7 @@ setup_new_tss(struct IrqFrame *irq, struct Task *new_task)
 }
 
 static void
-setup_page_tables(struct Task *cur_task, struct Task *new_task)
+setup_page_tables(Task *cur_task, Task *new_task)
 {
     /******************************
      * 复制父任务的页表
@@ -78,7 +78,7 @@ setup_page_tables(struct Task *cur_task, struct Task *new_task)
 }
 
 static void
-setup_links(struct Task *cur_task, struct Task *new_task)
+setup_links(Task *cur_task, Task *new_task)
 {
     new_task->ts_parent = cur_task;
     new_task->ts_child_head = NULL;
@@ -97,10 +97,10 @@ setup_links(struct Task *cur_task, struct Task *new_task)
 }
 
 pid_t
-knl_fork(struct IrqFrame *irq)
+knl_fork(IrqFrame *irq)
 {
-    struct Task *cur_task = current_task();
-    struct Task *new_task = (struct Task *)alloc_page();
+    Task *cur_task = current_task();
+    Task *new_task = (Task *)alloc_page();
     new_task->ts_pid = nextpid++;
     setup_new_tss(irq, new_task);
     setup_page_tables(cur_task, new_task);

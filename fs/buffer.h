@@ -14,21 +14,22 @@
 #define BUF_DELAYWRITE      4       // 缓冲区已经被进程释放，但内容还没有写入磁盘
 #define BUF_DONE            8      //
 
-struct BlockBuffer {
+typedef struct _BlockBuffer BlockBuffer;
+struct _BlockBuffer {
     uint8_t     *bf_data;
     uint16_t    bf_refs;           // 引用计数
     dev_t       bf_dev;            // dev num
     blk_t       bf_blk;            // block num
     uint32_t    bf_status;
-    struct BlockBuffer  *bf_hash_prev;
-    struct BlockBuffer  *bf_hash_next;
-    struct ListEntity   bf_link;
+    BlockBuffer     *bf_hash_prev;
+    BlockBuffer     *bf_hash_next;
+    ListEntity      bf_link;
 };
 
 error_t init_block_buffer(void);
 
-struct BlockBuffer *get_block(dev_t dev, blk_t blk);
+BlockBuffer *get_block(dev_t dev, blk_t blk);
 
-error_t release_block(struct BlockBuffer *buf);
+error_t release_block(BlockBuffer *buf);
 
 #endif // __BUFFER_H__

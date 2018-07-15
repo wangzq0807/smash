@@ -17,9 +17,9 @@ page_copy(void *dist, const void *src, size_t num)
 }
 
 void
-on_page_fault(struct IrqFrame *irq)
+on_page_fault(IrqFrame *irq)
 {
-    struct Task *cur_task = current_task();
+    Task *cur_task = current_task();
     if (cur_task == NULL) {
         return;
     }

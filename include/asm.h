@@ -77,6 +77,7 @@ static inline void lldt(uint32_t ldt) {
 
 static inline void ljmp(uint32_t seg) {
     struct { uint32_t o; uint32_t s; } laddr;
+    laddr.o = 0;
     laddr.s = seg;
     __asm__ volatile (
         "ljmp *%0 \n"
@@ -145,8 +146,9 @@ static inline void switch_to_user(
     );
 }
 
-static inline struct Task *current_task(void) {
-    struct Task *cur = NULL;
+typedef struct _Task Task;
+static inline Task *current_task(void) {
+    Task *cur = NULL;
     __asm__ volatile (
         "movl %%esp, %%eax \n"
         "sub $1, %%eax \n"

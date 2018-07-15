@@ -5,26 +5,26 @@
 #include "asm.h"
 
 // configurable
-#define BUFFER_LIST_LEN (PAGE_SIZE / sizeof(struct BlockBuffer))
+#define BUFFER_LIST_LEN (PAGE_SIZE / sizeof(BlockBuffer))
 #define BUFFER_HASH_LEN 100
 
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
 // 空闲双向循环链表
-static struct ListHead free_buffers;
-static struct BlockBuffer *hash_map[BUFFER_HASH_LEN];
+static ListHead free_buffers;
+static BlockBuffer *hash_map[BUFFER_HASH_LEN];
 
-static struct BlockBuffer *buffer_new();
-static void wait_for(struct BlockBuffer *buffer);
+static BlockBuffer *buffer_new();
+static void wait_for(BlockBuffer *buffer);
 
 error_t
 init_block_buffer()
 {
-    struct BlockBuffer *buf = (struct BlockBuffer*)alloc_page();
-    // hash_map = (struct BlockBuffer*)alloc_page();
+    BlockBuffer *buf = (BlockBuffer*)alloc_page();
+    // hash_map = (BlockBuffer*)alloc_page();
 
-    struct BlockBuffer *iter;
+    BlockBuffer *iter;
 
     for (int i = 0; i < BUFFER_LIST_LEN; ++i) {
         iter = &buf[i];
@@ -41,15 +41,15 @@ init_block_buffer()
 }
 
 static error_t
-_remove_hash_entity(struct BlockBuffer *buf)
+_remove_hash_entity(BlockBuffer *buf)
 {
     uint32_t hash_val = HASH(buf->bf_blk);
-    struct BlockBuffer *head = hash_map[hash_val];
+    BlockBuffer *head = hash_map[hash_val];
     if (head == buf)
         hash_map[hash_val] = buf->bf_hash_next;
 
-    struct BlockBuffer *hash_prev = buf->bf_hash_prev;
-    struct BlockBuffer *hash_next = buf->bf_hash_next;
+    BlockBuffer *hash_prev = buf->bf_hash_prev;
+    BlockBuffer *hash_next = buf->bf_hash_next;
     if (hash_prev != NULL)
         hash_prev->bf_hash_next = hash_next;
     if (hash_next != NULL)
@@ -60,11 +60,11 @@ _remove_hash_entity(struct BlockBuffer *buf)
     return 0;
 }
 
-static struct BlockBuffer *
+static BlockBuffer *
 _get_hash_entity(dev_t dev, blk_t blk)
 {
     uint32_t hash_val = HASH(blk);
-    struct BlockBuffer *buf = hash_map[hash_val];
+    BlockBuffer *buf = hash_map[hash_val];
     while (buf != NULL) {
         if (buf->bf_dev == dev &&
             buf->bf_blk == blk)
@@ -75,14 +75,14 @@ _get_hash_entity(dev_t dev, blk_t blk)
 }
 
 static error_t
-_put_hash_entity(struct BlockBuffer *buf)
+_put_hash_entity(BlockBuffer *buf)
 {
-    struct BlockBuffer *org = _get_hash_entity(buf->bf_dev, buf->bf_blk);
+    BlockBuffer *org = _get_hash_entity(buf->bf_dev, buf->bf_blk);
     if (org != NULL)
         _remove_hash_entity(org);
 
     uint32_t hash_val = HASH(buf->bf_blk);
-    struct BlockBuffer *head = hash_map[hash_val];
+    BlockBuffer *head = hash_map[hash_val];
     buf->bf_hash_next = head;
     buf->bf_hash_prev = NULL;
     if (head != NULL)
@@ -92,12 +92,12 @@ _put_hash_entity(struct BlockBuffer *buf)
     return 0;
 }
 
-static struct BlockBuffer *
+static BlockBuffer *
 _get_block(dev_t dev, blk_t blk)
 {
     // 参考《unix操作系统设计》的五种场景。
     while (1) {
-        struct BlockBuffer *buf = _get_hash_entity(dev, blk);
+        BlockBuffer *buf = _get_hash_entity(dev, blk);
         if (buf != NULL) {
             if (buf->bf_refs++ == 0)
                 remove_entity(&free_buffers, &buf->bf_link);
@@ -114,7 +114,7 @@ _get_block(dev_t dev, blk_t blk)
             }
             return buf;
         }
-        struct BlockBuffer *new_buffer = buffer_new();
+        BlockBuffer *new_buffer = buffer_new();
         if (new_buffer == NULL) {
             // 4. free list已经为空
             // TODO: sleep for empty
@@ -142,30 +142,30 @@ _get_block(dev_t dev, blk_t blk)
     return NULL;
 }
 
-struct BlockBuffer *
+BlockBuffer *
 get_block(dev_t dev, blk_t blk) 
 {
-    struct BlockBuffer *buf = _get_block(dev, blk);
+    BlockBuffer *buf = _get_block(dev, blk);
     if (buf->bf_status == BUF_BUSY) {
         ata_read(buf);
         wait_for(buf);
     }
     return buf;
 }
-// error_t put_block(const struct Buffer *buf)
+// error_t put_block(const Buffer *buf)
 // {
 //     lock buffer;
 //     block_write(buf->dev, buf->block_num, buf->buffer);
 // }
 
-static struct BlockBuffer *
+static BlockBuffer *
 buffer_new( )
 {
     if (free_buffers.lh_list == NULL)
         return NULL;
 
-    struct ListEntity *p = pop_front(&free_buffers);
-    struct BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
+    ListEntity *p = pop_front(&free_buffers);
+    BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
     ret->bf_refs = 1;
     _remove_hash_entity(ret);
 
@@ -174,7 +174,7 @@ buffer_new( )
 // 1. 一个进程不再需要这个缓冲区
 // 2. 读写完成时
 error_t
-release_block(struct BlockBuffer *buf)
+release_block(BlockBuffer *buf)
 {
     if ((buf->bf_refs) && (--buf->bf_refs != 0)) return 0;
     // TODO: 唤醒等待当前缓冲区的进程
@@ -201,7 +201,7 @@ release_block(struct BlockBuffer *buf)
 }
 
 static void
-wait_for(struct BlockBuffer *buffer)
+wait_for(BlockBuffer *buffer)
 {
     while (buffer->bf_status != BUF_FREE) {
         // NOTE : 告诉gcc，内存被修改，必须重新从内存中读取bf_status的值

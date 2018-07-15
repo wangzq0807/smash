@@ -6,8 +6,8 @@
 #include "page.h"
 
 /* 中断描述符表 */
-struct X86Desc idt_table[256] = { 0 };
-struct X86DTR idt_ptr = { 0 };
+X86Desc idt_table[256] = { 0 };
+X86DTR idt_ptr = { 0 };
 
 #define DECL_TRAP_FUNC(num) extern void trap##num();
 DECL_TRAP_FUNC(IRQ_PAGE)
@@ -18,10 +18,10 @@ DECL_TRAP_FUNC(IRQ_IGNORE)
 
 #define TRAP_FUNC(num) trap##num
 
-struct TrapsCall trapcall[48] = { 0 };
+TrapsCall trapcall[48] = { 0 };
 
-void on_timer_handler(struct IrqFrame *irqframe);
-void on_ignore_handler(struct IrqFrame *irqframe);
+void on_timer_handler(IrqFrame *irqframe);
+void on_ignore_handler(IrqFrame *irqframe);
 
 /* 中断门: 中断正在处理时,IF清0,从而屏蔽其他中断 */
 static void
@@ -62,7 +62,7 @@ setup_idt()
 }
 
 void
-on_all_irq(struct IrqFrame irqframe)
+on_all_irq(IrqFrame irqframe)
 {
     /* 设置8259A的OCW2,发送结束中断命令 */
     outb(0x20, 0x20);
@@ -97,20 +97,20 @@ on_all_irq(struct IrqFrame irqframe)
 }
 
 void
-on_timer_handler(struct IrqFrame *irqframe)
+on_timer_handler(IrqFrame *irqframe)
 {
     switch_task();
 }
 
 void
-on_ignore_handler(struct IrqFrame *irqframe)
+on_ignore_handler(IrqFrame *irqframe)
 {
     print(" ignore ");
     printx(irqframe->if_EIP);
 }
 
 int
-knl_print(struct IrqFrame *irqframe)
+knl_print(IrqFrame *irqframe)
 {
     print("C");
     return 0;

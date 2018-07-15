@@ -3,18 +3,18 @@
 #include "log.h"
 
 /* 全局描述符表 */
-struct X86Desc gdt_table[7] = { 0 };
-struct X86DTR gdt_ptr = { 0 };
+X86Desc gdt_table[7] = { 0 };
+X86DTR gdt_ptr = { 0 };
 
 /* 当前tss */
 uint32_t current_tss = 1;
-struct X86Desc  ldt[3];
+X86Desc  ldt[3];
 // 限长
 #define LDT_LIMIT   (3*8)
 #define TSS_LIMIT   103
 
 void
-setup_segment_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int type, int dpl, int prop)
+setup_segment_desc(X86Desc* desc, uint32_t base, uint32_t limit, int type, int dpl, int prop)
 {
     const uint32_t SEG_LIMIT_16 = limit & 0xFFFF;        // 取limit的0-15位
     const uint32_t SEG_LIMIT_20 = limit & 0xF0000;       // 取limit的19-16位
@@ -46,7 +46,7 @@ setup_gdt()
 }
 
 void
-switch_tss(struct X86TSS *tss)
+switch_tss(X86TSS *tss)
 {
     if (current_tss == 1) {
         setup_tss_desc(&gdt_table[KNL_TSS2>>3], (uint32_t)tss, TSS_LIMIT);
@@ -62,7 +62,7 @@ switch_tss(struct X86TSS *tss)
 }
 
 void
-start_first_task(struct X86TSS *tss, void *func)
+start_first_task(X86TSS *tss, void *func)
 {
     setup_code_desc(&ldt[1], 0, 0xFFFFF, USR_DPL);
     setup_data_desc(&ldt[2], 0, 0xFFFFF, USR_DPL);
@@ -75,7 +75,7 @@ start_first_task(struct X86TSS *tss, void *func)
 }
 
 void
-dump_tss(struct X86TSS *tss)
+dump_tss(X86TSS *tss)
 {
     print("tssB ");
     printx(tss->t_CS);

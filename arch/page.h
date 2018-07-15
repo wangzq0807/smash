@@ -7,9 +7,9 @@
 #define PAGE_ACCESSED       1 << 5
 #define PAGE_DIRTY          1 << 6
 
-struct IrqFrame;
+typedef struct _IrqFrame IrqFrame;
 
 void
-on_page_fault(struct IrqFrame *);
+on_page_fault(IrqFrame *);
 
 #endif // __PAGE_H__

@@ -25,17 +25,20 @@
 
 #include "defs.h"
 
-struct X86Desc {
+typedef struct _X86Desc X86Desc;
+struct _X86Desc {
     uint32_t d_low;
     uint32_t d_high;
 };
 
-struct X86DTR {
+typedef struct _X86DTR X86DTR;
+struct _X86DTR {
     uint16_t r_limit;
     uint32_t r_addr;
 } __attribute__((packed));  // 取消对齐优化
 
-struct X86TSS {
+typedef struct _X86TSS X86TSS;
+struct _X86TSS {
     uint16_t    t_pre_TSS;
 
     uint32_t    t_ESP_0;
@@ -72,11 +75,11 @@ struct X86TSS {
  * 描述符
  ************/
 void
-setup_segment_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int type, int dpl, int prop);
+setup_segment_desc(X86Desc* desc, uint32_t base, uint32_t limit, int type, int dpl, int prop);
 
 /* 代码段描述符：非一致性 */
 static inline void
-setup_code_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
+setup_code_desc(X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
     const int CS_TYPE = 0xA;        // 非一致，可读
     const int CS_PROP = 0xC;        // 粒度4KB，32位操作数
     const int CS_DPL = dpl << 1 | 0x9;  // 存在，数据段/代码段
@@ -85,7 +88,7 @@ setup_code_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
 
 /* 数据段描述符 */
 static inline void
-setup_data_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
+setup_data_desc(X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
     const int DS_TYPE = 0x2;       // 非一致，可写
     const int DS_PROP = 0xC;       // 粒度4KB，32位操作数
     const int DS_DPL = dpl << 1 | 0x9;  // 存在，数据段/代码段
@@ -94,7 +97,7 @@ setup_data_desc(struct X86Desc* desc, uint32_t base, uint32_t limit, int dpl) {
 
 /* 任务状态段描述符 */
 static inline void
-setup_tss_desc(struct X86Desc* desc, uint32_t base, uint32_t limit) {
+setup_tss_desc(X86Desc* desc, uint32_t base, uint32_t limit) {
     const int TSS_TYPE = 0x9;      // 非忙
     const int TSS_PROP = 0x0;      // 大于等于104字节
     const int TSS_DPL = 0x8;       // 任务状态段DPL : 存在，特权级0，系统段
@@ -103,7 +106,7 @@ setup_tss_desc(struct X86Desc* desc, uint32_t base, uint32_t limit) {
 
 /* 局部描述符 */
 static inline void
-setup_ldt_desc(struct X86Desc* desc, uint32_t base, uint32_t limit) {
+setup_ldt_desc(X86Desc* desc, uint32_t base, uint32_t limit) {
     const int LDT_TYPE = 0x2;      // LDT
     const int LDT_PROP = 0x0;      //
     const int LDT_DPL = 0x8;       // LDT段DPL : 存在，特权级0，系统段
@@ -114,12 +117,12 @@ void
 setup_gdt();
 
 void
-switch_tss(struct X86TSS *tss);
+switch_tss(X86TSS *tss);
 
 void
-start_first_task(struct X86TSS *tss, void *func);
+start_first_task(X86TSS *tss, void *func);
 
-void dump_tss(struct X86TSS *tss);
+void dump_tss(X86TSS *tss);
 #endif // __INTR_S__
 
 #endif // __X86_H__

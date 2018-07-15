@@ -2,13 +2,15 @@
 #define __PATH_H__
 #include "defs.h"
 #include "fsdefs.h"
+typedef struct _IndexNode IndexNode;
 
-struct Direction {
+typedef struct _Direction Direction;
+struct _Direction {
     ino_t       dr_inode;
     char        dr_name[FILENAME_LEN];
 };
 
-struct IndexNode *
+IndexNode *
 name_to_inode(const char *name, const char **remain);
 
 static inline const char *file_name(const char *name) {

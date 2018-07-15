@@ -3,7 +3,8 @@
 #include "defs.h"
 
 // minix v2 文件系统
-struct SuperBlock {
+typedef struct _SuperBlock SuperBlock;
+struct _SuperBlock {
     uint16_t    sb_inodes;              // i节点总数
     uint16_t    sb_nzones;              // （已废弃）
     int16_t     sb_imap_blocks;         // i节点位图所占的块数
@@ -20,7 +21,7 @@ error_t init_super_block(dev_t dev);
 
 uint32_t get_super_block_begin(dev_t dev);
 
-const struct SuperBlock * get_super_block(dev_t dev);
+const SuperBlock * get_super_block(dev_t dev);
 
 void dump_super_block(dev_t dev);
 

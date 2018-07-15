@@ -8,7 +8,7 @@
 #include "fsdefs.h"
 #include "partion.h"
 
-static struct SuperBlock super_blk[4];
+static SuperBlock super_blk[4];
 
 #define SECTORS_PER_BLOCK (BLOCK_SIZE / SECTOR_SIZE)
 #define PH 255
@@ -18,7 +18,7 @@ uint32_t
 get_super_block_begin(dev_t dev)
 {
     uint32_t superblk_pos = 0;
-    struct PartionEntity *entity = get_partion_entity(dev);
+    PartionEntity *entity = get_partion_entity(dev);
     if (entity->pe_lba_start > 0) {
         const uint32_t nstart = entity->pe_lba_start / SECTORS_PER_BLOCK;
         superblk_pos = nstart + SUPER_BLOCK_BEGAIN;
@@ -38,7 +38,7 @@ init_super_block(dev_t dev)
 {
     error_t ret = 0;
     uint32_t pos = get_super_block_begin(dev);
-    struct BlockBuffer *buffer = get_block(dev, pos);
+    BlockBuffer *buffer = get_block(dev, pos);
     memcpy(&super_blk[0], buffer->bf_data, sizeof(super_blk));
     if (super_blk[0].sb_magic != MINIX_V2 ) {
         print("only minifs v2 is supported\n");
@@ -49,7 +49,7 @@ init_super_block(dev_t dev)
 }
 
 // NOTE : dev unused
-const struct SuperBlock *
+const SuperBlock *
 get_super_block(dev_t dev)
 {
     return &super_blk[0];
@@ -58,7 +58,7 @@ get_super_block(dev_t dev)
 void
 dump_super_block(dev_t dev)
 {
-    const struct SuperBlock *sb = get_super_block(dev);
+    const SuperBlock *sb = get_super_block(dev);
     print("sb_magic"); printx(sb->sb_magic); print("\n");
     print("sb_inodes"); printx(sb->sb_inodes); print("\n");
     print("sb_zones"); printx(sb->sb_zones); print("\n");

@@ -7,13 +7,13 @@
 #include "irq.h"
 
 /* 任务一 */
-struct Task task1;
+Task task1;
 
 static void task_1();
 static void task_2();
 
 // 竞争资源
-struct Mutex one_mutex;
+Mutex one_mutex;
 uint32_t conf_res1 = 1;
 uint32_t conf_res2 = 1;
 
@@ -52,7 +52,7 @@ switch_task()
     // NOTE：task1经过跳转到task2，task2再跳转回task1时，会从ljmp的下一条指令开始执行。
     // NOTE：下面这种切换方式是抢占式的，单核情况下，当两个线程需要同步时，加锁必须是原子操作
     // NOTE：对于非抢占式的内核，加锁无需原子操作
-    struct Task *cur = current_task();
+    Task *cur = current_task();
     if (cur->ts_pid == 0 && cur->ts_child_head ) {
         switch_tss(&cur->ts_child_head->ts_tss);
     }

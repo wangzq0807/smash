@@ -3,7 +3,8 @@
 #include "defs.h"
 #include "x86.h"
 
-struct Task {
+typedef struct _Task Task;
+struct _Task{
     pid_t           ts_pid;
     gid_t           ts_gid;
     uid_t           ts_uid;
@@ -12,15 +13,15 @@ struct Task {
     time_t          ts_time;
     error_t         ts_exit;
 
-    struct Task     *ts_parent;
-    struct Task     *ts_child_head;
-    struct Task     *ts_child_tail;
-    struct Task     *ts_next;
-    struct Task     *ts_prev;
-    struct Task     *ts_hash_prev;
-    struct Task     *ts_hash_next;
+    Task    *ts_parent;
+    Task    *ts_child_head;
+    Task    *ts_child_tail;
+    Task    *ts_next;
+    Task    *ts_prev;
+    Task    *ts_hash_prev;
+    Task    *ts_hash_next;
 
-    struct X86TSS   ts_tss;
+    X86TSS  ts_tss;
 };
 
 void

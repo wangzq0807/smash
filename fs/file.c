@@ -9,7 +9,7 @@
 #include "log.h"
 
 static int
-_file_append(struct IndexNode *inode, void *data, int len)
+_file_append(IndexNode *inode, void *data, int len)
 {
     if (len > BLOCK_SIZE )
         return -1;
@@ -19,14 +19,14 @@ _file_append(struct IndexNode *inode, void *data, int len)
     int less = BLOCK_SIZE - offset;
     int more = len - less;
 
-    struct BlockBuffer *buf = get_block(inode->in_dev, blk);
+    BlockBuffer *buf = get_block(inode->in_dev, blk);
     memcpy(buf->bf_data + offset, data, MIN(len, less));
     buf->bf_status |= BUF_DIRTY;
     release_block(buf);
 
     if (more > 0) {
         blk_t new_blk = alloc_zone(inode);
-        struct BlockBuffer *new_buf = get_block(inode->in_dev, new_blk);
+        BlockBuffer *new_buf = get_block(inode->in_dev, new_blk);
         memcpy(new_buf->bf_data, data+less, more);
         buf->bf_status |= BUF_DIRTY;
         release_block(new_buf);
@@ -40,7 +40,7 @@ int
 file_open(const char *pathname, int flags)
 {
     const char *remain = NULL;
-    struct IndexNode *inode = name_to_inode(pathname, &remain);
+    IndexNode *inode = name_to_inode(pathname, &remain);
     if (*remain != 0 || inode == NULL) 
         return -1;
 
@@ -51,20 +51,20 @@ int
 file_create(const char *pathname, int mode)
 {
     const char *remain = NULL;
-    struct IndexNode *inode = name_to_inode(pathname, &remain);
+    IndexNode *inode = name_to_inode(pathname, &remain);
     if (*remain != 0) {
         const char *subdir = strstr(remain, "/");
         if (*subdir == 0) {
-            struct Direction dir;
+            Direction dir;
             memcpy(dir.dr_name, remain, strlen(remain)+1);
 
-            struct IndexNode *new_inode = alloc_inode(ROOT_DEVICE);
+            IndexNode *new_inode = alloc_inode(ROOT_DEVICE);
             new_inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
             new_inode->in_inode.in_num_links = 1;
             dir.dr_inode = new_inode->in_inum;
             release_inode(new_inode);
 
-            _file_append(inode, &dir, sizeof(struct Direction));
+            _file_append(inode, &dir, sizeof(Direction));
             inode->in_status |= INODE_DIRTY;
         }
     }

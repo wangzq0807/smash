@@ -11,25 +11,25 @@ uint16_t cur_inode = ROOT_INODE;
 uint16_t cur_dev = ROOT_DEVICE;
 
 uint32_t
-_next_file(struct IndexNode *inode, uint32_t next, struct Direction *dir)
+_next_file(IndexNode *inode, uint32_t next, Direction *dir)
 {
     uint32_t offset = next & (BLOCK_SIZE - 1);
     uint32_t zone = get_zone(inode, next);
     // TODO: zone和block
-    struct BlockBuffer *blk = get_block(inode->in_dev, zone);
-    memcpy(dir, blk->bf_data + offset, sizeof(struct Direction));
+    BlockBuffer *blk = get_block(inode->in_dev, zone);
+    memcpy(dir, blk->bf_data + offset, sizeof(Direction));
     release_block(blk);
 
-    return next + sizeof(struct Direction);
+    return next + sizeof(Direction);
 }
 
 static ino_t
-_search_file(struct IndexNode *inode, const char *name, int len)
+_search_file(IndexNode *inode, const char *name, int len)
 {
     if (S_ISDIR(inode->in_inode.in_file_mode)) {
         seek_t seek = 0;
         while (seek < inode->in_inode.in_file_size) {
-            struct Direction dir;
+            Direction dir;
             seek = _next_file(inode, seek, &dir);
             if (strncmp(name, dir.dr_name, len) == 0) {
                 return dir.dr_inode;
@@ -39,7 +39,7 @@ _search_file(struct IndexNode *inode, const char *name, int len)
     return INVALID_INODE;
 }
 
-struct IndexNode *
+IndexNode *
 name_to_inode(const char *name, const char **remain)
 {
     ino_t work_inode = ROOT_INODE;
@@ -57,7 +57,7 @@ name_to_inode(const char *name, const char **remain)
     while (*name) {
         const char *next = strstr(name, "/");
         const int len = next - name;
-        struct IndexNode *inode = get_inode(work_dev, work_inode);
+        IndexNode *inode = get_inode(work_dev, work_inode);
         ino_t next_inode = _search_file(inode, name, len);
         // TODO: 不确定
         work_dev = inode->in_dev;

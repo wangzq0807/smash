@@ -2,21 +2,21 @@
 #define __ZONES_H__
 #include "defs.h"
 
-struct IndexNode;
+typedef struct _IndexNode IndexNode;
 
 error_t
 init_zones(dev_t dev);
 
 zone_t
-alloc_zone(struct IndexNode *inode);
+alloc_zone(IndexNode *inode);
 
 error_t
 delete_zone(dev_t dev, zone_t num);
 
 zone_t
-get_zone(struct IndexNode *inode, seek_t bytes_offset);
+get_zone(IndexNode *inode, seek_t bytes_offset);
 
 error_t
-truncate_zones(struct IndexNode *inode);
+truncate_zones(IndexNode *inode);
 
 #endif // __ZONES_H

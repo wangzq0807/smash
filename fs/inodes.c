@@ -8,7 +8,7 @@
 #include "partion.h"
 
 // NOTE : 这里要能整除
-#define PER_BLOCK_INODES    (BLOCK_SIZE/sizeof(struct PyIndexNode))
+#define PER_BLOCK_INODES    (BLOCK_SIZE/sizeof(PyIndexNode))
 // 内存中inode最大数量
 #define MAX_INODE_NUM   1024
 // IndexNode的hash表
@@ -16,16 +16,16 @@
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
-static struct ListHead free_inodes;
-static struct IndexNode *ihash_map[BUFFER_HASH_LEN];
+static ListHead free_inodes;
+static IndexNode *ihash_map[BUFFER_HASH_LEN];
 
-struct BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
+BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
 
 error_t
 init_inodes(dev_t dev)
 {
     const blk_t superblk_begin = get_super_block_begin(dev);
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const int icnt = super_block->sb_imap_blocks;
 
     const blk_t inode_begin = superblk_begin + SUPER_BLOCK_SIZE;
@@ -39,10 +39,10 @@ init_inodes(dev_t dev)
 }
 
 static ino_t
-_alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+_alloc_bitmap(BlockBuffer **node_map, blk_t cnt)
 {
     for (blk_t blk = 0; blk < cnt; ++blk) {
-        struct BlockBuffer *buffer = node_map[blk];
+        BlockBuffer *buffer = node_map[blk];
         for (int num = 0; num < BLOCK_SIZE/sizeof(int); ++num) {
             const int bits = sizeof(int) * 8;
             for (int bit = 0; bit < bits; ++bit) {
@@ -58,14 +58,14 @@ _alloc_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 }
 
 static error_t
-_clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
+_clear_bitmap(BlockBuffer **node_map, blk_t cnt)
 {
     int blkbits = BLOCK_SIZE << 3;
     blk_t num = cnt / blkbits;
     blk_t bits = cnt % blkbits;
     blk_t index = bits / sizeof(int);
     int bit = bits % sizeof(int);
-    struct BlockBuffer *buffer = node_map[num];
+    BlockBuffer *buffer = node_map[num];
     _clear_bit(&((int *)buffer->bf_data)[index], bit);
     return 0;
 }
@@ -73,22 +73,22 @@ _clear_bitmap(struct BlockBuffer **node_map, blk_t cnt)
 static inline blk_t
 _get_inode_begin(dev_t dev)
 {
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const blk_t superblk_begin = get_super_block_begin(dev);
     const blk_t superblk_end = superblk_begin + SUPER_BLOCK_SIZE;
     return superblk_end + super_block->sb_imap_blocks + super_block->sb_zmap_blocks;
 }
 
 static error_t
-_remove_hash_entity(struct IndexNode *inode)
+_remove_hash_entity(IndexNode *inode)
 {
     int hash_val = HASH(inode->in_inum);
-    struct IndexNode *head = ihash_map[hash_val];
+    IndexNode *head = ihash_map[hash_val];
     if (head == inode)
         ihash_map[hash_val] = inode->in_hash_next;
 
-    struct IndexNode *hash_prev = inode->in_hash_prev;
-    struct IndexNode *hash_next = inode->in_hash_next;
+    IndexNode *hash_prev = inode->in_hash_prev;
+    IndexNode *hash_next = inode->in_hash_next;
     if (hash_prev != NULL)
         hash_prev->in_hash_next = hash_next;
     if (hash_next != NULL)
@@ -99,11 +99,11 @@ _remove_hash_entity(struct IndexNode *inode)
     return 0;
 }
 
-static struct IndexNode *
+static IndexNode *
 _get_hash_entity(dev_t dev, ino_t idx)
 {
     int hash_val = HASH(idx);
-    struct IndexNode *inode = ihash_map[hash_val];
+    IndexNode *inode = ihash_map[hash_val];
     while (inode != NULL) {
         if (inode->in_dev == dev &&
             inode->in_inum == idx)
@@ -114,14 +114,14 @@ _get_hash_entity(dev_t dev, ino_t idx)
 }
 
 static error_t
-_put_hash_entity(struct IndexNode *inode)
+_put_hash_entity(IndexNode *inode)
 {
-    struct IndexNode *org = _get_hash_entity(inode->in_dev, inode->in_inum);
+    IndexNode *org = _get_hash_entity(inode->in_dev, inode->in_inum);
     if (org != NULL)
         _remove_hash_entity(org);
 
     int hash_val = HASH(inode->in_inum);
-    struct IndexNode *head = ihash_map[hash_val];
+    IndexNode *head = ihash_map[hash_val];
     inode->in_hash_next = head;
     inode->in_hash_prev = NULL;
     if (head != NULL)
@@ -131,20 +131,20 @@ _put_hash_entity(struct IndexNode *inode)
     return 0;
 }
 
-struct IndexNode *
+IndexNode *
 alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
-    struct IndexNode *inode = NULL;
+    IndexNode *inode = NULL;
     if (free_inodes.lh_list == NULL)
-        inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
+        inode = (IndexNode *)alloc_object(EIndexNode, sizeof(IndexNode));
     else {
-        struct ListEntity *p = pop_front(&free_inodes);
+        ListEntity *p = pop_front(&free_inodes);
         inode = TO_INSTANCE(p, IndexNode, in_link);
         _remove_hash_entity(inode);
     }
     // 为新inode分配一个bit位
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const blk_t icnt = super_block->sb_imap_blocks;
     const ino_t inode_index = _alloc_bitmap(inode_map, icnt);
     // 初始化
@@ -157,16 +157,16 @@ alloc_inode(dev_t dev)
 }
 
 error_t
-delete_inode(struct IndexNode *inode)
+delete_inode(IndexNode *inode)
 {
     _clear_bitmap(inode_map, inode->in_inum);
     return 0;
 }
 
-struct IndexNode *
+IndexNode *
 get_inode(dev_t dev, ino_t inode_index)
 {
-    struct IndexNode *inode = NULL;
+    IndexNode *inode = NULL;
     while (inode == NULL) {
         inode = _get_hash_entity(dev, inode_index);
         if (inode != NULL) {
@@ -183,9 +183,9 @@ get_inode(dev_t dev, ino_t inode_index)
         else {
             // 申请一个新的IndexNode
             if (free_inodes.lh_list == NULL)
-                inode = (struct IndexNode *)alloc_object(EIndexNode, sizeof(struct IndexNode));
+                inode = (IndexNode *)alloc_object(EIndexNode, sizeof(IndexNode));
             else {
-                struct ListEntity *p = pop_front(&free_inodes);
+                ListEntity *p = pop_front(&free_inodes);
                 inode = TO_INSTANCE(p, IndexNode, in_link);
                 _remove_hash_entity(inode);
             }
@@ -194,10 +194,10 @@ get_inode(dev_t dev, ino_t inode_index)
             const blk_t block_num = (inode_index - 1) / PER_BLOCK_INODES + inode_begin;
             const ino_t offset = (inode_index - 1) % PER_BLOCK_INODES;
 
-            struct BlockBuffer *buffer = get_block(dev, block_num);
+            BlockBuffer *buffer = get_block(dev, block_num);
             // 将inode的内容拷贝到IndexNode
-            uint8_t *ptr = buffer->bf_data + offset * sizeof(struct PyIndexNode);
-            memcpy(&inode->in_inode, ptr, sizeof(struct PyIndexNode));
+            uint8_t *ptr = buffer->bf_data + offset * sizeof(PyIndexNode);
+            memcpy(&inode->in_inode, ptr, sizeof(PyIndexNode));
             release_block(buffer);
             // 初始化
             inode->in_dev = dev;
@@ -207,11 +207,11 @@ get_inode(dev_t dev, ino_t inode_index)
             _put_hash_entity(inode);
         }
     }
-    return (struct IndexNode *)inode;
+    return (IndexNode *)inode;
 }
 
 void
-release_inode(struct IndexNode *inode)
+release_inode(IndexNode *inode)
 {
     inode->in_refs -= 1;
     if (inode->in_refs == 0) {
@@ -221,10 +221,10 @@ release_inode(struct IndexNode *inode)
             const blk_t block_num = (inode->in_inum - 1) / PER_BLOCK_INODES + inode_begin;
             const ino_t offset = (inode->in_inum - 1) % PER_BLOCK_INODES;
 
-            struct BlockBuffer *buffer = get_block(inode->in_dev, block_num);
+            BlockBuffer *buffer = get_block(inode->in_dev, block_num);
             // 将IndexNode的内容拷贝到inode缓冲区
-            uint8_t *ptr = buffer->bf_data + offset * sizeof(struct PyIndexNode);
-            memcpy(ptr, &inode->in_inode, sizeof(struct PyIndexNode));
+            uint8_t *ptr = buffer->bf_data + offset * sizeof(PyIndexNode);
+            memcpy(ptr, &inode->in_inode, sizeof(PyIndexNode));
             buffer->bf_status = BUF_DIRTY;
             release_block(buffer);
         }
@@ -238,7 +238,7 @@ release_inode(struct IndexNode *inode)
 void
 sync_inodes(dev_t dev)
 {
-    const struct SuperBlock *super_block = get_super_block(dev);
+    const SuperBlock *super_block = get_super_block(dev);
     const int icnt = super_block->sb_imap_blocks;
 
     for (int i = 0; i < MIN(icnt, MAX_IMAP_NUM); ++i) {

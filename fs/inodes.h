@@ -8,7 +8,8 @@
 #define INODE_LOCK          1
 #define INODE_DIRTY         2
 
-struct PyIndexNode {
+typedef struct _PyIndexNode PyIndexNode;
+struct _PyIndexNode {
     uint16_t    in_file_mode;      // 文件类型, 权限等,
     int16_t     in_num_links;      // 链接到这个文件的数量
     int16_t     in_owner_id;       // 拥有者的id
@@ -20,31 +21,32 @@ struct PyIndexNode {
     uint32_t    in_zones[NUMBER_ZONE];      // 区块
 };
 
-struct IndexNode {
-    struct PyIndexNode  in_inode;       // 磁盘上inode内容
+typedef struct _IndexNode IndexNode;
+struct _IndexNode {
+    PyIndexNode         in_inode;       // 磁盘上inode内容
     dev_t               in_dev;         // 设备号
     uint32_t            in_status;      // 状态
     ino_t               in_inum;        // inode编号
     uint16_t            in_refs;        // 引用计数
-    struct ListEntity   in_link;
-    struct IndexNode    *in_hash_prev;  // hash表
-    struct IndexNode    *in_hash_next;
+    ListEntity   in_link;
+    IndexNode    *in_hash_prev;  // hash表
+    IndexNode    *in_hash_next;
 };
 
 error_t
 init_inodes(dev_t dev);
 
-struct IndexNode *
+IndexNode *
 alloc_inode(dev_t dev);
 
 error_t
-delete_inode(struct IndexNode *inode);
+delete_inode(IndexNode *inode);
 
-struct IndexNode *
+IndexNode *
 get_inode(dev_t dev, uint16_t idx);
 
 void
-release_inode(struct IndexNode *inode);
+release_inode(IndexNode *inode);
 
 void
 sync_inodes(dev_t dev);
