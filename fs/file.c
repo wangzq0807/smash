@@ -7,13 +7,14 @@
 #include "string.h"
 #include "buffer.h"
 #include "log.h"
+#include "file.h"
 
 static int
 _file_append(IndexNode *inode, void *data, int len)
 {
     if (len > BLOCK_SIZE )
         return -1;
-    file_offset_t tail = inode->in_inode.in_file_size;
+    off_t tail = inode->in_inode.in_file_size;
     blk_t blk = get_zone(inode, tail);
     int offset = tail % BLOCK_SIZE;
     int less = BLOCK_SIZE - offset;
@@ -36,18 +37,18 @@ _file_append(IndexNode *inode, void *data, int len)
     return 0;
 }
 
-int
+File *
 file_open(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
     IndexNode *inode = name_to_inode(pathname, &remain);
     if (*remain != 0 || inode == NULL) 
-        return -1;
+        return NULL;
 
-    return 0;
+    return NULL;
 };
 
-int
+File *
 file_create(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
@@ -73,7 +74,7 @@ file_create(const char *pathname, int flags, int mode)
     }
     release_inode(inode);
 
-    return 0;
+    return NULL;
 }
 
 ssize_t
@@ -84,6 +85,12 @@ file_read(const char *pathname, void *buf, size_t count)
 
 ssize_t
 file_write(const char *pathname, const void *buf, size_t count)
+{
+    return 0;
+}
+
+int
+file_close(File *fd)
 {
     return 0;
 }

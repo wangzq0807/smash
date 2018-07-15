@@ -10,7 +10,6 @@ typedef long            int32_t;
 typedef unsigned long long uint64_t;
 typedef long long       int64_t;
 
-typedef int32_t         time_t;
 typedef int32_t         error_t;
 
 // mem
@@ -20,8 +19,6 @@ typedef uint32_t        pte_t;
 typedef uint32_t        lba_t;
 typedef uint32_t        blk_t;
 typedef uint32_t        zone_t;
-typedef uint32_t        seek_t;
-typedef uint32_t        file_offset_t;
 
 #define NO_ERROR    (0)
 

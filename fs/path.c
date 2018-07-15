@@ -27,7 +27,7 @@ static ino_t
 _search_file(IndexNode *inode, const char *name, int len)
 {
     if (S_ISDIR(inode->in_inode.in_file_mode)) {
-        seek_t seek = 0;
+        off_t seek = 0;
         while (seek < inode->in_inode.in_file_size) {
             Direction dir;
             seek = _next_file(inode, seek, &dir);

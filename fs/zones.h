@@ -14,7 +14,7 @@ error_t
 delete_zone(dev_t dev, zone_t num);
 
 zone_t
-get_zone(IndexNode *inode, seek_t bytes_offset);
+get_zone(IndexNode *inode, off_t bytes_offset);
 
 error_t
 truncate_zones(IndexNode *inode);
