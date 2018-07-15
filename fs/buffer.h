@@ -1,6 +1,6 @@
 #ifndef __BUFFER_H__
 #define __BUFFER_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "list.h"
 
 #define BLK_BUFFER          0x100000      // buffer begin: 1M

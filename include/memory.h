@@ -1,6 +1,6 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
-#include "defs.h"
+#include "sys/types.h"
 
 #define PAGE_SIZE     (4096)
 #define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))

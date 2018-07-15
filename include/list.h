@@ -1,6 +1,6 @@
 #ifndef __LIST_H__
 #define __LIST_H__
-#include "defs.h"
+#include "sys/types.h"
 
 typedef struct _ListEntity ListEntity;
 struct _ListEntity {

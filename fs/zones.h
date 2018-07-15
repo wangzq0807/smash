@@ -1,6 +1,6 @@
 #ifndef __ZONES_H__
 #define __ZONES_H__
-#include "defs.h"
+#include "sys/types.h"
 
 typedef struct _IndexNode IndexNode;
 

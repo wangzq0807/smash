@@ -23,7 +23,7 @@
 
 #ifndef __INTR_S__
 
-#include "defs.h"
+#include "sys/types.h"
 
 typedef struct _X86Desc X86Desc;
 struct _X86Desc {

@@ -1,6 +1,6 @@
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "irq.h"
 
 extern int knl_fork(IrqFrame *irq);

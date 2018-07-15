@@ -1,6 +1,6 @@
 #ifndef __LOCK__
 #define __LOCK__
-#include "defs.h"
+#include "sys/types.h"
 
 typedef struct _Mutex Mutex;
 struct _Mutex {

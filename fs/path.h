@@ -1,6 +1,6 @@
 #ifndef __PATH_H__
 #define __PATH_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "fsdefs.h"
 typedef struct _IndexNode IndexNode;
 

@@ -1,6 +1,6 @@
 #ifndef __HARD_DISK__
 #define __HARD_DISK__
-#include "defs.h"
+#include "sys/types.h"
 #include "buffer.h"
 // ATA registers(Primary Bus)
 #define ATA_REG_DATA        0x1F0

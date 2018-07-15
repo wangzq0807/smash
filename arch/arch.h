@@ -1,6 +1,6 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "irq.h"
 
 void init_isa();

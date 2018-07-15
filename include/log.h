@@ -1,6 +1,6 @@
 #ifndef __LOG_H__
 #define __LOG_H__
-#include "defs.h"
+#include "sys/types.h"
 
 void print(const char *buffer);
 

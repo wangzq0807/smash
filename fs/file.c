@@ -1,4 +1,4 @@
-#include "defs.h"
+#include "sys/types.h"
 #include "path.h"
 #include "fsdefs.h"
 #include "inodes.h"
@@ -37,7 +37,7 @@ _file_append(IndexNode *inode, void *data, int len)
 }
 
 int
-file_open(const char *pathname, int flags)
+file_open(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
     IndexNode *inode = name_to_inode(pathname, &remain);
@@ -48,7 +48,7 @@ file_open(const char *pathname, int flags)
 };
 
 int
-file_create(const char *pathname, int mode)
+file_create(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
     IndexNode *inode = name_to_inode(pathname, &remain);
@@ -73,5 +73,17 @@ file_create(const char *pathname, int mode)
     }
     release_inode(inode);
 
+    return 0;
+}
+
+ssize_t
+file_read(const char *pathname, void *buf, size_t count)
+{
+    return 0;
+}
+
+ssize_t
+file_write(const char *pathname, const void *buf, size_t count)
+{
     return 0;
 }

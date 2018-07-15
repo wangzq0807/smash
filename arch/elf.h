@@ -1,6 +1,6 @@
 #ifndef __ELF_H__
 #define __ELF_H__
-#include "defs.h"
+#include "sys/types.h"
 
 #define ELF_MAGIC   0x464C457F
 #define ISA_x86     3

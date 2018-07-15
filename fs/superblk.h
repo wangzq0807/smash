@@ -1,6 +1,6 @@
 #ifndef __SUPERBLK_H__
 #define __SUPERBLK_H__
-#include "defs.h"
+#include "sys/types.h"
 
 // minix v2 文件系统
 typedef struct _SuperBlock SuperBlock;

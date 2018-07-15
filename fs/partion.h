@@ -1,6 +1,6 @@
 #ifndef __PARTION__
 #define __PARTION__
-#include "defs.h"
+#include "sys/types.h"
 
 typedef struct _PartionEntity PartionEntity;
 struct _PartionEntity {

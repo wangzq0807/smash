@@ -1,6 +1,6 @@
 #ifndef __NODES_H__
 #define __NODES_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "fsdefs.h"
 #include "list.h"
 

@@ -1,6 +1,6 @@
 #ifndef __TASK_H__
 #define __TASK_H__
-#include "defs.h"
+#include "sys/types.h"
 #include "x86.h"
 
 typedef struct _Task Task;

@@ -10,22 +10,15 @@ typedef long            int32_t;
 typedef unsigned long long uint64_t;
 typedef long long       int64_t;
 
-typedef uint32_t        size_t;
-
 typedef int32_t         time_t;
 typedef int32_t         error_t;
-// proc
-typedef int32_t         pid_t;
-typedef int32_t         gid_t;
-typedef int32_t         uid_t;
+
 // mem
 typedef uint32_t        pde_t;
 typedef uint32_t        pte_t;
 // fs
-typedef uint16_t        dev_t;
 typedef uint32_t        lba_t;
 typedef uint32_t        blk_t;
-typedef uint16_t        ino_t;
 typedef uint32_t        zone_t;
 typedef uint32_t        seek_t;
 typedef uint32_t        file_offset_t;

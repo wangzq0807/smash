@@ -1,6 +1,6 @@
 #ifndef __STRING_H__
 #define __STRING_H__
-#include "defs.h"
+#include "sys/types.h"
 
 static inline void memcpy(void *dest, const void *src, size_t size) {
     size--;

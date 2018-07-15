@@ -1,4 +1,4 @@
-#include "defs.h"
+#include "sys/types.h"
 #include "arch/arch.h"
 #include "log.h"
 #include "string.h"
