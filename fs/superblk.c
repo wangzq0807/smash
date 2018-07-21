@@ -14,13 +14,13 @@ static SuperBlock super_blk[4];
 #define PH 255
 #define PS 63
 // NOTE : dev unused
-uint32_t
+zone_t
 get_super_block_begin(dev_t dev)
 {
-    uint32_t superblk_pos = 0;
+    zone_t superblk_pos = 0;
     PartionEntity *entity = get_partion_entity(dev);
     if (entity->pe_lba_start > 0) {
-        const uint32_t nstart = entity->pe_lba_start / SECTORS_PER_BLOCK;
+        const zone_t nstart = entity->pe_lba_start / SECTORS_PER_BLOCK;
         superblk_pos = nstart + SUPER_BLOCK_BEGAIN;
     }
     else {
@@ -37,7 +37,7 @@ error_t
 init_super_block(dev_t dev)
 {
     error_t ret = 0;
-    uint32_t pos = get_super_block_begin(dev);
+    zone_t pos = get_super_block_begin(dev);
     BlockBuffer *buffer = get_block(dev, pos);
     memcpy(&super_blk[0], buffer->bf_data, sizeof(super_blk));
     if (super_blk[0].sb_magic != MINIX_V2 ) {
