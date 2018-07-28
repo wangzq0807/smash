@@ -3,6 +3,8 @@
 
 typedef struct _PageNode PageNode;
 struct _PageNode {
+    uint32_t    pn_page : 20,
+                pn_refs : 12;
     PageNode    *pn_next;
 };
 
@@ -12,7 +14,28 @@ struct _PageListHead {
     PageNode    *pl_free;
 };
 
-PageListHead free_memory;
+static PageListHead free_memory;
+static int cur_start;
+static int max_end;
+
+static void
+_new_freelist(uint32_t addr)
+{
+    // 一个页面用来建立空闲页的链表(大约会新增2M的可用内存)
+    PageNode *node_list = (PageNode*)addr;
+    int node_num = PAGE_SIZE / sizeof(PageNode);
+    node_num = MIN(node_num, (max_end - addr) >> PAGE_LOG_SIZE);
+    for (int i = 0; i < node_num; i++ ) {
+        node_list[i].pn_page = (addr >> PAGE_LOG_SIZE) + i;
+        node_list[i].pn_refs = 0;
+        node_list[i].pn_next = &node_list[i+1];
+    }
+    node_list[node_num - 1].pn_next = NULL;
+
+    node_list[0].pn_refs = 1;
+    free_memory.pl_free = node_list[0].pn_next;
+    cur_start = addr + (node_num << PAGE_LOG_SIZE);
+}
 
 void
 init_memory(uint32_t start, uint32_t end)
@@ -24,13 +47,8 @@ init_memory(uint32_t start, uint32_t end)
         return;
     }
 
-    uint32_t next = start;
-    free_memory.pl_free = NULL;
-    /* 建立空闲页表链表 */
-    while ((next + PAGE_SIZE) <= end) {
-        free_page((void*)next);
-        next += PAGE_SIZE;
-    }
+    max_end = end;
+    cur_start = start;
 }
 
 void *
@@ -38,9 +56,23 @@ alloc_page()
 {
     /* 返回链表中第一个空闲内存页，同时把头指针指向下一个空闲内存页 */
     PageNode *ret = free_memory.pl_free;
-    if (ret != NULL)
+    if (ret != NULL) {
         free_memory.pl_free = ret->pn_next;
-    return ret;
+    }
+    else if (cur_start < max_end) {
+        _new_freelist(cur_start);
+        ret = free_memory.pl_free;
+        free_memory.pl_free = ret->pn_next;
+    }
+    printx((uint32_t)ret);
+
+    if (ret != NULL) {
+        ret->pn_refs = 1;
+        return (void *)(ret->pn_page << PAGE_LOG_SIZE);
+    }
+    else {
+        return NULL;
+    }
 }
 
 int

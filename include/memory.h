@@ -2,7 +2,8 @@
 #define __MEMORY_H__
 #include "sys/types.h"
 
-#define PAGE_SIZE     (4096)
+#define PAGE_LOG_SIZE   12
+#define PAGE_SIZE     ( 1 << PAGE_LOG_SIZE)
 #define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
 #define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
 
