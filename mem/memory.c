@@ -18,6 +18,20 @@ static PageListHead free_memory;
 static int cur_start;
 static int max_end;
 
+void
+init_memory(uint32_t start, uint32_t end)
+{
+    if ( (start > end)
+        || (size_t)(start) & (PAGE_SIZE - 1)
+        || (size_t)(end) & (PAGE_SIZE - 1) ) {
+        print("wrong memory range\n");
+        return;
+    }
+
+    max_end = end;
+    cur_start = start;
+}
+
 static void
 _new_freelist(uint32_t addr)
 {
@@ -37,20 +51,6 @@ _new_freelist(uint32_t addr)
     cur_start = addr + (node_num << PAGE_LOG_SIZE);
 }
 
-void
-init_memory(uint32_t start, uint32_t end)
-{
-    if ( (start > end)
-        || (size_t)(start) & (PAGE_SIZE - 1)
-        || (size_t)(end) & (PAGE_SIZE - 1) ) {
-        print("wrong memory range\n");
-        return;
-    }
-
-    max_end = end;
-    cur_start = start;
-}
-
 void *
 alloc_page()
 {
@@ -64,7 +64,6 @@ alloc_page()
         ret = free_memory.pl_free;
         free_memory.pl_free = ret->pn_next;
     }
-    printx((uint32_t)ret);
 
     if (ret != NULL) {
         ret->pn_refs = 1;
