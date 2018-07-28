@@ -1,7 +1,7 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 #include "sys/types.h"
-#include "vfs.h"
+#include "vfile.h"
 
 File *
 file_create(const char *pathname, int flags, int mode);

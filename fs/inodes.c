@@ -10,13 +10,14 @@
 // NOTE : 这里要能整除
 #define PER_BLOCK_INODES    (BLOCK_SIZE/sizeof(PyIndexNode))
 // 内存中inode最大数量
-#define MAX_INODE_NUM   1024
+#define MAX_INODE_NUM   256
 // IndexNode的hash表
 #define BUFFER_HASH_LEN 100
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
 static ListHead free_inodes;
+static IndexNode inode_list[MAX_INODE_NUM];
 static IndexNode *ihash_map[BUFFER_HASH_LEN];
 
 BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
@@ -35,6 +36,14 @@ init_inodes(dev_t dev)
 
     free_inodes.lh_list = NULL;
     free_inodes.lh_lock = 0;
+    for (int i = 0; i < MAX_INODE_NUM; ++i) {
+        IndexNode *inode = &inode_list[i];
+        inode->in_status = INODE_FREE;
+        inode->in_refs = 0;
+        inode->in_inum = 0;
+        push_back(&free_inodes, &inode->in_link);
+    }
+
     return 0;
 }
 
@@ -136,8 +145,9 @@ alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
     IndexNode *inode = NULL;
-    if (free_inodes.lh_list == NULL)
-        inode = (IndexNode *)alloc_object(EIndexNode, sizeof(IndexNode));
+    if (free_inodes.lh_list == NULL) {
+        // TODO : error
+    }
     else {
         ListEntity *p = pop_front(&free_inodes);
         inode = TO_INSTANCE(p, IndexNode, in_link);
@@ -182,8 +192,9 @@ get_inode(dev_t dev, ino_t inode_index)
         }
         else {
             // 申请一个新的IndexNode
-            if (free_inodes.lh_list == NULL)
-                inode = (IndexNode *)alloc_object(EIndexNode, sizeof(IndexNode));
+            if (free_inodes.lh_list == NULL) {
+                // TODO : error
+            }
             else {
                 ListEntity *p = pop_front(&free_inodes);
                 inode = TO_INSTANCE(p, IndexNode, in_link);
