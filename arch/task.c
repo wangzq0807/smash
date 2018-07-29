@@ -107,23 +107,25 @@ task_1()
 
     if (pid == 0)
         task_2();
-
-    while( 1 ) {
-        if (acquire_mutex(&one_mutex) == 0) {
-            // 下面是受保护的代码
-            print("P");
-            release_mutex(&one_mutex);
-        }
-        else {
-            // __asm__ volatile("int $0x80");
-        }
-        // 延时
-        // NOTE : 如果从释放锁到重新申请锁的时间过短，
-        // 那么其他线程获得锁的几率就会非常小。
-        int cnt = 100000;
-        while(cnt--)
-            pause();
+    else {
+        while (1) pause();
     }
+    // while( 1 ) {
+    //     if (acquire_mutex(&one_mutex) == 0) {
+    //         // 下面是受保护的代码
+    //         print("P");
+    //         release_mutex(&one_mutex);
+    //     }
+    //     else {
+    //         // __asm__ volatile("int $0x80");
+    //     }
+    //     // 延时
+    //     // NOTE : 如果从释放锁到重新申请锁的时间过短，
+    //     // 那么其他线程获得锁的几率就会非常小。
+    //     int cnt = 100000;
+    //     while(cnt--)
+    //         pause();
+    // }
 }
 
 static void
@@ -151,8 +153,8 @@ static void
 setup_first_task()
 {
     task1.ts_pid = 0;
-    uint8_t *ks_page = alloc_page();
-    uint8_t *us_page = alloc_page();
+    uint8_t *ks_page = (uint8_t *)alloc_page();
+    uint8_t *us_page = (uint8_t *)alloc_page();
     ((uint32_t *)ks_page)[0] = (uint32_t)&task1;
 
     task1.ts_tss.t_SS_0 = KNL_DS;

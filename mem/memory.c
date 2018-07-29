@@ -1,11 +1,13 @@
 #include "memory.h"
 #include "log.h"
+#include "list.h"
 
 typedef struct _PageNode PageNode;
 struct _PageNode {
     uint32_t    pn_page : 20,
                 pn_refs : 12;
     PageNode    *pn_next;
+    ListEntity  pn_hash_link;
 };
 
 typedef struct _PageListHead PageListHead;
@@ -17,6 +19,53 @@ struct _PageListHead {
 static PageListHead free_memory;
 static int cur_start;
 static int max_end;
+
+#define BUFFER_HASH_LEN 1024
+#define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
+#define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
+
+ListHead    hash_map[BUFFER_HASH_LEN];
+
+static error_t
+_remove_hash_entity(PageNode *node)
+{
+    uint32_t hash_val = HASH(node->pn_page);
+    ListHead *head = &hash_map[hash_val];
+    remove_entity(head, &node->pn_hash_link);
+
+    return 0;
+}
+
+static PageNode *
+_get_hash_entity(uint32_t page)
+{
+    uint32_t hash_val = HASH(page);
+    ListHead head = hash_map[hash_val];
+    ListEntity *iter = head.lh_list;
+    while (iter != NULL) {
+        PageNode *node = TO_INSTANCE(iter, PageNode, pn_hash_link);
+        if (node != NULL && node->pn_page == page)
+            return node;
+        iter = iter->le_next;
+        if (iter == head.lh_list)
+            break;
+    }
+    return NULL;
+}
+
+static error_t
+_put_hash_entity(PageNode *node)
+{
+    PageNode *org = _get_hash_entity(node->pn_page);
+    if (org != NULL)
+        _remove_hash_entity(org);
+
+    uint32_t hash_val = HASH(node->pn_page);
+    ListHead *head = &hash_map[hash_val];
+    push_front(head, &node->pn_hash_link);
+
+    return 0;
+}
 
 void
 init_memory(uint32_t start, uint32_t end)
@@ -35,7 +84,7 @@ init_memory(uint32_t start, uint32_t end)
 static void
 _new_freelist(uint32_t addr)
 {
-    // 一个页面用来建立空闲页的链表(大约会新增2M的可用内存)
+    // 一个页面用来建立空闲页的链表(大约会新增1M的可用内存)
     PageNode *node_list = (PageNode*)addr;
     int node_num = PAGE_SIZE / sizeof(PageNode);
     node_num = MIN(node_num, (max_end - addr) >> PAGE_LOG_SIZE);
@@ -45,13 +94,14 @@ _new_freelist(uint32_t addr)
         node_list[i].pn_next = &node_list[i+1];
     }
     node_list[node_num - 1].pn_next = NULL;
-
     node_list[0].pn_refs = 1;
+    _put_hash_entity(&node_list[0]);
+
     free_memory.pl_free = node_list[0].pn_next;
     cur_start = addr + (node_num << PAGE_LOG_SIZE);
 }
 
-void *
+uint32_t
 alloc_page()
 {
     /* 返回链表中第一个空闲内存页，同时把头指针指向下一个空闲内存页 */
@@ -67,7 +117,8 @@ alloc_page()
 
     if (ret != NULL) {
         ret->pn_refs = 1;
-        return (void *)(ret->pn_page << PAGE_LOG_SIZE);
+        _put_hash_entity(ret);
+        return (ret->pn_page << PAGE_LOG_SIZE);
     }
     else {
         return NULL;
@@ -75,18 +126,55 @@ alloc_page()
 }
 
 int
-free_page(void *page)
+get_page_refs(uint32_t page)
 {
-    if (page == NULL)   return -1;
+    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    if (node != NULL)
+        return node->pn_refs;
+    else
+        return 0;
+}
+
+int
+add_page_refs(uint32_t page)
+{
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
         print("wrong page address\n");
         return -1;
     }
-    /* 将新释放的内存页链接到链表头部 */
-    PageNode *node = (PageNode *)page;
-    node->pn_next = free_memory.pl_free;
-    free_memory.pl_free = node;
-    return 0;
+
+    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    if (node != NULL) {
+        node->pn_refs++;
+        return node->pn_refs;
+    }
+    else {
+        return -1;
+    }
+}
+
+int
+release_page(uint32_t page)
+{
+    if ((size_t)(page) & (PAGE_SIZE - 1)) {
+        print("wrong page address\n");
+        return -1;
+    }
+
+    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    if (node != NULL)   return -1;
+
+    if (node->pn_refs == 1) {
+        node->pn_refs = 0;
+        _remove_hash_entity(node);
+        /* 将新释放的内存页链接到链表头部 */
+        node->pn_next = free_memory.pl_free;
+        free_memory.pl_free = node;
+    }
+    else {
+        node->pn_refs--;
+    }
+    return node->pn_refs;
 }
 
 int

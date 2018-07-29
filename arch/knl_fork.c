@@ -69,6 +69,7 @@ setup_page_tables(Task *cur_task, Task *new_task)
                     if (npde != 0 || npte > 255)
                         cur_pte[npte] &= ~PAGE_WRITE;
                     new_pte[npte] = cur_pte[npte];
+                    add_page_refs(cur_pte[npte] & 0xFFFFF000);
                 }
             }
         }

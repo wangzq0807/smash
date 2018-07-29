@@ -31,10 +31,17 @@ on_page_fault(IrqFrame *irq)
     uint32_t npte = (linear >> 12) & 0x3FF;
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
 
-    void *new_page = alloc_page();
-    page_copy(new_page, (void *)linear, 1);
+    int refs = get_page_refs(pte[npdt] & 0xFFFFF000);
+    if (refs > 1) {
+        void *new_page = (void *)alloc_page();
+        page_copy(new_page, (void *)linear, 1);
+        release_page(pte[npdt] & 0xFFFFF000);
 
-    pte[npte] = PAGE_FLOOR((uint32_t)new_page) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+        pte[npte] = PAGE_FLOOR((uint32_t)new_page) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+    }
+    else {
+        pte[npte] = pte[npte] | PAGE_WRITE;
+    }
 
     load_cr3(pdt);
 }

@@ -22,11 +22,17 @@ init_memory(uint32_t start, uint32_t end);
 
 //============
 // 页面管理
-void *
+uint32_t
 alloc_page(void);
 
 int
-free_page(void *page);
+get_page_refs(uint32_t page);
+
+int
+add_page_refs(uint32_t page);
+
+int
+release_page(uint32_t page);
 
 int
 get_free_space(void);
