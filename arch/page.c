@@ -26,7 +26,7 @@ on_page_fault(IrqFrame *irq)
 
     pde_t *pdt = (pde_t *)cur_task->ts_tss.t_CR3;
     uint32_t linear = PAGE_FLOOR(get_cr2());
-    printx(linear);
+
     uint32_t npdt = linear >> 22;
     uint32_t npte = (linear >> 12) & 0x3FF;
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
