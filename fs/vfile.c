@@ -5,19 +5,19 @@ ListEntity  files[MAX_FILES];
 ListHead    free_files;
 
 void
-init_files()
+init_vfiles()
 {
     for (int i = 0; i < MAX_FILES; ++i) {
         push_back(&free_files, &files[i]);
     }
 }
 
-File *
-get_empty_file()
+static VFile *
+_get_empty_vfile()
 {
     ListEntity *entity = pop_front(&free_files);
     if (entity != NULL) {
-        File *file = TO_INSTANCE(entity, File, f_link);
+        VFile *file = TO_INSTANCE(entity, VFile, f_link);
         file->f_refs = 0;
         file->f_mode = 0;
         file->f_seek = 0;
@@ -26,18 +26,24 @@ get_empty_file()
     return NULL;
 }
 
-File *
-add_file_refs(File *file)
+VFile *
+add_vfile_refs(VFile *file)
 {
     file->f_refs += 1;
     return file;
 }
 
 void
-release_file(File *file)
+release_vfile(VFile *file)
 {
     file->f_refs -= 1;
     if (file->f_refs == 0) {
         push_back(&free_files, &file->f_link);
     }
+}
+
+VFile *
+vfile_open(const char *pathname, int flags, int mode)
+{
+    return _get_empty_vfile();
 }

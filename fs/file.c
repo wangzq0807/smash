@@ -37,7 +37,7 @@ _file_append(IndexNode *inode, void *data, int len)
     return 0;
 }
 
-File *
+IndexNode *
 file_open(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
@@ -48,18 +48,19 @@ file_open(const char *pathname, int flags, int mode)
     return NULL;
 };
 
-File *
+IndexNode *
 file_create(const char *pathname, int flags, int mode)
 {
     const char *remain = NULL;
     IndexNode *inode = name_to_inode(pathname, &remain);
     if (*remain != 0) {
+        // create new file
         const char *subdir = strstr(remain, "/");
         if (*subdir == 0) {
             Direction dir;
             memcpy(dir.dr_name, remain, strlen(remain)+1);
 
-            IndexNode *new_inode = alloc_inode(ROOT_DEVICE);
+            IndexNode *new_inode = alloc_inode(inode->in_dev);
             new_inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
             new_inode->in_inode.in_num_links = 1;
             dir.dr_inode = new_inode->in_inum;
@@ -70,7 +71,7 @@ file_create(const char *pathname, int flags, int mode)
         }
     }
     else {
-
+        // open org file
     }
     release_inode(inode);
 
@@ -90,7 +91,7 @@ file_write(const char *pathname, const void *buf, size_t count)
 }
 
 int
-file_close(File *fd)
+file_close(IndexNode *inode)
 {
     return 0;
 }
