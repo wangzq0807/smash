@@ -1,11 +1,10 @@
 #include "sys/types.h"
-#include "task.h"
-#include "page.h"
+#include "arch/task.h"
+#include "arch/irq.h"
+#include "arch/page.h"
 #include "memory.h"
-#include "irq.h"
 #include "asm.h"
 #include "string.h"
-#include "irq.h"
 #include "log.h"
 
 pid_t nextpid = 1;

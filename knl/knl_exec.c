@@ -1,9 +1,9 @@
-#include "irq.h"
+#include "arch/irq.h"
+#include "arch/task.h"
+#include "arch/page.h"
 #include "asm.h"
-#include "task.h"
 #include "elf.h"
 #include "log.h"
-#include "page.h"
 #include "memory.h"
 
 #define ELF_FILE        (0x7c00 + 20*1024)
