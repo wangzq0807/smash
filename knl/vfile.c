@@ -43,6 +43,12 @@ release_vfile(VFile *file)
 }
 
 VFile *
+vfile_create(const char *pathname, int flags, int mode)
+{
+    return _get_empty_vfile();
+}
+
+VFile *
 vfile_open(const char *pathname, int flags, int mode)
 {
     return _get_empty_vfile();
