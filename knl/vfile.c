@@ -53,3 +53,15 @@ vfile_open(const char *pathname, int flags, int mode)
 {
     return _get_empty_vfile();
 }
+
+ssize_t
+vfile_read(const VFile *vfile, void *buf, size_t count)
+{
+    return 0;
+}
+
+ssize_t
+vfile_write(const VFile *vfile, const void *buf, size_t count)
+{
+    return 0;
+}

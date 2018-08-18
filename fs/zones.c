@@ -81,7 +81,7 @@ delete_zone(dev_t dev, zone_t num)
 }
 
 zone_t
-get_zone(IndexNode *inode, off_t bytes_offset)
+get_zone(const IndexNode *inode, off_t bytes_offset)
 {
     PartionEntity *entity = get_partion_entity(inode->in_dev);
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;

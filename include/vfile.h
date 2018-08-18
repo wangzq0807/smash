@@ -29,10 +29,10 @@ VFile *
 vfile_open(const char *pathname, int flags, int mode);
 
 ssize_t
-vfile_read(const char *pathname, void *buf, size_t count);
+vfile_read(const VFile *vfile, void *buf, size_t count);
 
 ssize_t
-vfile_write(const char *pathname, const void *buf, size_t count);
+vfile_write(const VFile *vfile, const void *buf, size_t count);
 
 int
 vfile_close(VFile *file);
