@@ -12,9 +12,7 @@
 #include "fs/inodes.h"
 #include "fs/zones.h"
 #include "fs/path.h"
-
-int
-file_create(const char *pathname, int mode);
+#include "fs/file.h"
 
 void
 file_tail(uint16_t dev, uint16_t inode_num)
@@ -46,10 +44,18 @@ init_filesystem(uint16_t dev)
     // ino_t ino_1m = inode_1m->in_inum;
     // release_inode(inode_1m);
     // file_tail(dev, ino_1m);
-    file_create("/2M", 0);
-    file_create("/home/3M", 0);
-    file_create("/home/3M/4M", 0);
+    IndexNode *node_2m = file_create("/2M", 0, 0);
+    // file_create("/2M", 0, 0);
+    file_create("/home/3M", 0, 0);
+    file_create("/home/3M/4M", 0, 0);
     sync_inodes(dev);
+
+    char bufdata[1025];
+    for (int i = 0; i < 1024; ++i)
+        bufdata[i] = 'a';
+    bufdata[1023] = 'b';
+    file_write(node_2m, 0, bufdata, 1024);
+    release_inode(node_2m);
 
     IndexNode *inode = get_inode(dev, ROOT_INODE);
     uint32_t blk = 0;

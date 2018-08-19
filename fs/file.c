@@ -63,18 +63,19 @@ file_create(const char *pathname, int flags, int mode)
             IndexNode *new_inode = alloc_inode(inode->in_dev);
             new_inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
             new_inode->in_inode.in_num_links = 1;
+            new_inode->in_inode.in_file_size = 0;
             dir.dr_inode = new_inode->in_inum;
-            release_inode(new_inode);
 
             _file_append(inode, &dir, sizeof(Direction));
             inode->in_status |= INODE_DIRTY;
+            release_inode(inode);
+            return new_inode;
         }
     }
     else {
         // open org file
+        return inode;
     }
-    release_inode(inode);
-
     return NULL;
 }
 
@@ -108,26 +109,32 @@ ssize_t
 file_write(IndexNode *inode, off_t seek, const void *buf, size_t count)
 {
     ssize_t ret = 0;
+    const blk_t new_blknum = (seek + count) >> BLOCK_LOG_SIZE;
+    const blk_t cur_blknum = inode->in_inode.in_file_size >> BLOCK_LOG_SIZE;
+    if (new_blknum > cur_blknum) {
+        alloc_zone(inode);
+    }
     blk_t blk = get_zone(inode, seek);
     BlockBuffer *blkbuf = get_block(inode->in_dev, blk);
     uint32_t offset = seek & (BLOCK_SIZE - 1);
     uint32_t remain = MIN(BLOCK_SIZE - offset, count);
-    uint32_t more = count - remain;
     memcpy(blkbuf->bf_data + offset, buf, remain);
     blkbuf->bf_status |= BUF_DIRTY;
     release_block(blkbuf);
     ret += remain;
 
+    uint32_t more = count - remain;
     if (more > 0) {
-        blk_t new_blk = alloc_zone(inode);
-        BlockBuffer *new_buf = get_block(inode->in_dev, new_blk);
+        blk_t next_blk = get_zone(inode, seek + ret);
+        BlockBuffer *new_buf = get_block(inode->in_dev, next_blk);
         memcpy(new_buf->bf_data, buf + ret, more);
         new_buf->bf_status |= BUF_DIRTY;
         release_block(new_buf);
         ret += more;
     }
     inode->in_inode.in_file_size = MAX(inode->in_inode.in_file_size, seek + ret);
-    return 0;
+    inode->in_status |= INODE_DIRTY;
+    return ret;
 }
 
 int

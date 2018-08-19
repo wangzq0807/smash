@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include "superblk.h"
 #include "partion.h"
+#include "log.h"
 
 #define PER_BLOCK_SECTORS   (BLOCK_SIZE/SECTOR_SIZE)
 // 间接索引块数
@@ -69,8 +70,113 @@ alloc_zone(IndexNode *inode)
     dev_t dev = inode->in_dev;
     const SuperBlock *super_block = get_super_block(dev);
     const blk_t zcnt = super_block->sb_zmap_blocks;
-    zone_t znode = _alloc_bitmap(znode_map, zcnt);
-    return znode;
+    blk_t block_num = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
+
+    PartionEntity *entity = get_partion_entity(inode->in_dev);
+    const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
+    const zone_t zone_num = (inode->in_inode.in_file_size +  BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
+    // 直接索引
+    if (zone_num < DIRECT_ZONE) {
+        inode->in_inode.in_zones[zone_num] = block_num;
+        inode->in_status |= INODE_DIRTY;
+    }
+    // 间接索引
+    else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES)) {
+        blk_t in_blk = 0;
+        if (zone_num == DIRECT_ZONE) {
+            in_blk = _alloc_bitmap(znode_map, zcnt);
+            inode->in_inode.in_zones[DIRECT_ZONE] = in_blk;
+        }
+        else {
+            in_blk = inode->in_inode.in_zones[DIRECT_ZONE];
+        }
+        const zone_t in_total_num = zone_num - DIRECT_ZONE;
+        BlockBuffer *buf = get_block(inode->in_dev, nstart + in_blk);
+        ((uint32_t *)buf->bf_data)[in_total_num] = block_num;
+        buf->bf_status |= BUF_DIRTY;
+        release_block(buf);
+    }
+    // 双间接索引
+    else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES)) {
+        blk_t db_blk = 0;
+        blk_t inblock_num = 0;
+        if (zone_num == (DIRECT_ZONE + INDIRECT_ZONES)) {
+            db_blk = _alloc_bitmap(znode_map, zcnt);
+            inode->in_inode.in_zones[DIRECT_ZONE + 1] = db_blk;
+            inode->in_status |= INODE_DIRTY;
+        }
+        else {
+            db_blk = inode->in_inode.in_zones[DIRECT_ZONE + 1];
+        }
+        zone_t db_total_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES;
+
+        zone_t db_offset = db_total_num / INDIRECT_ZONES;
+        zone_t db_inoffset = db_total_num % INDIRECT_ZONES;
+
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+db_blk);
+        if (db_inoffset == 0) {
+            inblock_num = _alloc_bitmap(znode_map, zcnt);
+            ((uint32_t *)buf->bf_data)[db_offset] = inblock_num;
+            buf->bf_status |= BUF_DIRTY;
+        }
+        else {
+            inblock_num = ((uint32_t *)buf->bf_data)[db_offset];
+        }
+        release_block(buf);
+
+        buf = get_block(inode->in_dev, nstart+inblock_num);
+        ((uint32_t *)buf->bf_data)[db_inoffset] = block_num;
+        buf->bf_status |= BUF_DIRTY;
+        release_block(buf);
+    }
+    // 三间接索引
+    else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES + TINDIRECT_ZONES)) {
+        blk_t tr_blk = 0;
+        blk_t inblock_num = 0;
+        blk_t dbblock_num = 0;
+        if (zone_num == (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES)) {
+            tr_blk = _alloc_bitmap(znode_map, zcnt);
+            inode->in_inode.in_zones[DIRECT_ZONE + 2] = tr_blk;
+            inode->in_status |= INODE_DIRTY;
+        }
+        else {
+            tr_blk = inode->in_inode.in_zones[DIRECT_ZONE + 2];
+        }
+        zone_t tr_total_num = zone_num - DIRECT_ZONE - INDIRECT_ZONES - DINDIRECT_ZONES;
+
+        zone_t tr_offset = tr_total_num / DINDIRECT_ZONES;
+        zone_t tr_inoffset = (tr_total_num % DINDIRECT_ZONES)/INDIRECT_ZONES;
+        zone_t tr_dboffset = tr_total_num % INDIRECT_ZONES;
+
+        BlockBuffer *buf = get_block(inode->in_dev, nstart+tr_blk);
+        if (tr_inoffset == 0 && tr_dboffset == 0) {
+            inblock_num = _alloc_bitmap(znode_map, zcnt);
+            ((uint32_t *)buf->bf_data)[tr_offset] = inblock_num;
+            buf->bf_status |= BUF_DIRTY;
+        }
+        else {
+            inblock_num = ((uint32_t *)buf->bf_data)[tr_offset];
+        }
+        release_block(buf);
+
+        buf = get_block(inode->in_dev, nstart+inblock_num);
+        if (tr_dboffset == 0) {
+            dbblock_num = _alloc_bitmap(znode_map, zcnt);
+            ((uint32_t *)buf->bf_data)[tr_inoffset] = dbblock_num;
+            buf->bf_status |= BUF_DIRTY;
+        }
+        else {
+            dbblock_num = ((uint32_t *)buf->bf_data)[tr_inoffset];
+        }
+        release_block(buf);
+
+        buf = get_block(inode->in_dev, nstart+dbblock_num);
+        ((uint32_t *)buf->bf_data)[tr_dboffset] = block_num;
+        buf->bf_status |= BUF_DIRTY;
+        release_block(buf);
+    }
+
+    return block_num;
 }
 
 error_t
