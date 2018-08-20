@@ -50,11 +50,13 @@ init_filesystem(uint16_t dev)
     file_create("/home/3M/4M", 0, 0);
     sync_inodes(dev);
 
-    char bufdata[1025];
-    for (int i = 0; i < 1024; ++i)
+    char bufdata[1024];
+    for (int i = 0; i < 1023; ++i)
         bufdata[i] = 'a';
-    bufdata[1023] = 'b';
-    file_write(node_2m, 0, bufdata, 1024);
+    bufdata[1022] = 'b';
+    for (int i = 0; i < 1025; ++i) {
+        file_write(node_2m, i*1023, bufdata, 1023);
+    }
     release_inode(node_2m);
 
     IndexNode *inode = get_inode(dev, ROOT_INODE);

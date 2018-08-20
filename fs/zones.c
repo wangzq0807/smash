@@ -84,7 +84,7 @@ alloc_zone(IndexNode *inode)
     else if (zone_num < (DIRECT_ZONE + INDIRECT_ZONES)) {
         blk_t in_blk = 0;
         if (zone_num == DIRECT_ZONE) {
-            in_blk = _alloc_bitmap(znode_map, zcnt);
+            in_blk = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             inode->in_inode.in_zones[DIRECT_ZONE] = in_blk;
         }
         else {
@@ -101,7 +101,7 @@ alloc_zone(IndexNode *inode)
         blk_t db_blk = 0;
         blk_t inblock_num = 0;
         if (zone_num == (DIRECT_ZONE + INDIRECT_ZONES)) {
-            db_blk = _alloc_bitmap(znode_map, zcnt);
+            db_blk = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             inode->in_inode.in_zones[DIRECT_ZONE + 1] = db_blk;
             inode->in_status |= INODE_DIRTY;
         }
@@ -115,7 +115,7 @@ alloc_zone(IndexNode *inode)
 
         BlockBuffer *buf = get_block(inode->in_dev, nstart+db_blk);
         if (db_inoffset == 0) {
-            inblock_num = _alloc_bitmap(znode_map, zcnt);
+            inblock_num = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             ((uint32_t *)buf->bf_data)[db_offset] = inblock_num;
             buf->bf_status |= BUF_DIRTY;
         }
@@ -135,7 +135,7 @@ alloc_zone(IndexNode *inode)
         blk_t inblock_num = 0;
         blk_t dbblock_num = 0;
         if (zone_num == (DIRECT_ZONE + INDIRECT_ZONES + DINDIRECT_ZONES)) {
-            tr_blk = _alloc_bitmap(znode_map, zcnt);
+            tr_blk = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             inode->in_inode.in_zones[DIRECT_ZONE + 2] = tr_blk;
             inode->in_status |= INODE_DIRTY;
         }
@@ -150,7 +150,7 @@ alloc_zone(IndexNode *inode)
 
         BlockBuffer *buf = get_block(inode->in_dev, nstart+tr_blk);
         if (tr_inoffset == 0 && tr_dboffset == 0) {
-            inblock_num = _alloc_bitmap(znode_map, zcnt);
+            inblock_num = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             ((uint32_t *)buf->bf_data)[tr_offset] = inblock_num;
             buf->bf_status |= BUF_DIRTY;
         }
@@ -161,7 +161,7 @@ alloc_zone(IndexNode *inode)
 
         buf = get_block(inode->in_dev, nstart+inblock_num);
         if (tr_dboffset == 0) {
-            dbblock_num = _alloc_bitmap(znode_map, zcnt);
+            dbblock_num = _alloc_bitmap(znode_map, zcnt) + super_block->sb_first_datazone;
             ((uint32_t *)buf->bf_data)[tr_inoffset] = dbblock_num;
             buf->bf_status |= BUF_DIRTY;
         }
