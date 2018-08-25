@@ -54,8 +54,10 @@ init_filesystem(uint16_t dev)
     for (int i = 0; i < 1023; ++i)
         bufdata[i] = 'a';
     bufdata[1022] = 'b';
-    for (int i = 0; i < 1025; ++i) {
-        file_write(node_2m, i*1023, bufdata, 1023);
+    for (int ii = 0; ii < 70; ++ii) {
+        for (int i = 0; i < 1024; ++i) {
+            file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
+        }
     }
     release_inode(node_2m);
 
