@@ -200,6 +200,22 @@ release_block(BlockBuffer *buf)
     return 0;
 }
 
+void sync_dev(dev_t dev)
+{
+    for (int i = 0; i < BUFFER_HASH_LEN; ++i) {
+        BlockBuffer *buf = hash_map[i];
+        while (buf != NULL) {
+            if (buf->bf_status & BUF_DIRTY) {
+                buf->bf_status = BUF_BUSY;
+                ata_write(buf);
+                // TODO: 以异步方式写磁盘
+                wait_for(buf);
+            }
+            buf = buf->bf_hash_next;
+        }
+    }
+}
+
 static void
 wait_for(BlockBuffer *buffer)
 {

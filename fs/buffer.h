@@ -32,4 +32,6 @@ BlockBuffer *get_block(dev_t dev, blk_t blk);
 
 error_t release_block(BlockBuffer *buf);
 
+void sync_dev(dev_t dev);
+
 #endif // __BUFFER_H__

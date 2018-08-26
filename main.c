@@ -48,7 +48,6 @@ init_filesystem(uint16_t dev)
     // file_create("/2M", 0, 0);
     file_create("/home/3M", 0, 0);
     file_create("/home/3M/4M", 0, 0);
-    sync_inodes(dev);
 
     char bufdata[1024];
     for (int i = 0; i < 1023; ++i)
@@ -58,8 +57,10 @@ init_filesystem(uint16_t dev)
         for (int i = 0; i < 1024; ++i) {
             file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
         }
+        printxw((uint16_t)ii);
     }
     release_inode(node_2m);
+    sync_dev(dev);
 
     IndexNode *inode = get_inode(dev, ROOT_INODE);
     uint32_t blk = 0;
