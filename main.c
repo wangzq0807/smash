@@ -1,5 +1,6 @@
 #include "sys/types.h"
 #include "arch/arch.h"
+#include "arch/keyboard.h"
 #include "log.h"
 #include "string.h"
 #include "memory.h"
@@ -53,7 +54,7 @@ init_filesystem(uint16_t dev)
     for (int i = 0; i < 1023; ++i)
         bufdata[i] = 'a';
     bufdata[1022] = 'b';
-    for (int ii = 0; ii < 70; ++ii) {
+    for (int ii = 0; ii < 1; ++ii) {
         for (int i = 0; i < 1024; ++i) {
             file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
         }
@@ -91,6 +92,7 @@ start_main()
 {
     init_memory(5*1024*1024, 8*1024*1024);
     init_isa();
+    init_keyboard();
     init_disk();
     init_block_buffer();
     init_filesystem(ROOT_DEVICE);

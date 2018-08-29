@@ -12,13 +12,14 @@ X86DTR idt_ptr = { 0 };
 #define DECL_TRAP_FUNC(num) extern void trap##num();
 DECL_TRAP_FUNC(IRQ_PAGE)
 DECL_TRAP_FUNC(IRQ_TIME)
+DECL_TRAP_FUNC(IRQ_KEYBOARD)
 DECL_TRAP_FUNC(IRQ_DISK)
 DECL_TRAP_FUNC(IRQ_SYSCALL)
 DECL_TRAP_FUNC(IRQ_IGNORE)
 
 #define TRAP_FUNC(num) trap##num
 
-TrapsCall trapcall[48] = { 0 };
+TrapCall trapcall[48] = { 0 };
 
 void on_timer_handler(IrqFrame *irqframe);
 void on_ignore_handler(IrqFrame *irqframe);
@@ -51,6 +52,9 @@ setup_idt()
     set_trap_gate(IRQ_PAGE, &TRAP_FUNC(IRQ_PAGE), USR_DPL);
     /* 设置时钟中断 */
     set_intr_gate(IRQ_TIME, &TRAP_FUNC(IRQ_TIME), KNL_DPL);
+    /* 键盘中断 */
+    set_trap_gate(IRQ_KEYBOARD, &TRAP_FUNC(IRQ_KEYBOARD), KNL_DPL);
+    /* 硬盘中断 */
     set_trap_gate(IRQ_DISK, &TRAP_FUNC(IRQ_DISK), KNL_DPL);
     /* 系统调用 */
     set_trap_gate(IRQ_SYSCALL, &TRAP_FUNC(IRQ_SYSCALL), USR_DPL);
@@ -82,8 +86,11 @@ on_all_irq(IrqFrame irqframe)
             irqframe.if_EAX = syscall[irqframe.if_EAX].sc_func(&irqframe);
             break;
         }
+        case IRQ_KEYBOARD:
         case IRQ_DISK: {
-            trapcall[IRQ_DISK].sc_func(&irqframe);
+            TrapCall tcall = trapcall[irqframe.if_irqno];
+            if (tcall.sc_func != NULL)
+                tcall.sc_func(&irqframe);
             break;
         }
         default: on_ignore_handler(&irqframe); break;
