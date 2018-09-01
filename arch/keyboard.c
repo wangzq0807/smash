@@ -1,6 +1,7 @@
 #include "irq.h"
 #include "asm.h"
 #include "log.h"
+#include "keyboard.h"
 
 int on_keyboard_handler(IrqFrame *irq);
 
@@ -16,6 +17,12 @@ on_keyboard_handler(IrqFrame *irq)
 {
     uint16_t code;
     code = inb(0x60);
+    if (code == 0xE0) {
+        inb(0x60);
+    }
+    else {
+
+    }
 
     printxw(code);
 
