@@ -86,6 +86,7 @@
 #define KSC_K3          0x51
 #define KSC_K0          0x52
 #define KSC_KFULLSTOP   0x53
+#define KSC_SCAN_CODE_END   0x54
 
 int
 init_keyboard();
