@@ -4,7 +4,7 @@
 #define ONE_LINE    160        /* 一行的空间大小 */
 #define ONE_PAGE    0x1000     /* 一页的空间大小 */
 #define CHAR_PROP   0x0F       /* 字符属性(白色) */
-uint32_t cursor_pos = 0;
+static uint32_t cursor_pos = 0;
 void
 print(const char *buffer)
 {

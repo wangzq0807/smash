@@ -1,4 +1,4 @@
-#include "irq.h"
+#include "arch/irq.h"
 #include "asm.h"
 #include "log.h"
 #include "keyboard.h"

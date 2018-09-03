@@ -1,6 +1,6 @@
 #include "sys/types.h"
 #include "arch/arch.h"
-#include "arch/keyboard.h"
+#include "dev/char/keyboard.h"
 #include "log.h"
 #include "string.h"
 #include "memory.h"
