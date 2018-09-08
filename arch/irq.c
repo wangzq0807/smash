@@ -74,7 +74,7 @@ on_all_irq(IrqFrame irqframe)
 
     switch (irqframe.if_irqno) {
         case IRQ_PAGE: {
-            print(" irq_page ");
+            printk(" irq_page ");
             on_page_fault(&irqframe);
             break;
         }
@@ -112,14 +112,13 @@ on_timer_handler(IrqFrame *irqframe)
 void
 on_ignore_handler(IrqFrame *irqframe)
 {
-    print(" ignore ");
-    printx(irqframe->if_EIP);
+    printk(" ignore %x\n", irqframe->if_EIP);
 }
 
 int
 knl_print(IrqFrame *irqframe)
 {
-    print("C");
+    printk("C");
     return 0;
 }
 

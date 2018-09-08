@@ -77,12 +77,6 @@ start_first_task(X86TSS *tss, void *func)
 void
 dump_tss(X86TSS *tss)
 {
-    print("tssB ");
-    printx(tss->t_CS);
-    printx(tss->t_EIP);
-    printx(tss->t_SS);
-    printx(tss->t_ESP);
-    printx(tss->t_SS_0);
-    printx(tss->t_ESP_0);
-    print("tssE ");
+    printk("dumptss cs:%x, eip:%x, ss:%x, esp:%x, ss0:%x, esp0:%x \n",
+        tss->t_CS, tss->t_EIP, tss->t_SS, tss->t_ESP, tss->t_SS_0, tss->t_ESP_0);
 }

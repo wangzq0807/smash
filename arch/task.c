@@ -113,7 +113,7 @@ task_1()
     // while( 1 ) {
     //     if (acquire_mutex(&one_mutex) == 0) {
     //         // 下面是受保护的代码
-    //         print("P");
+    //         printk("P");
     //         release_mutex(&one_mutex);
     //     }
     //     else {

@@ -12,15 +12,13 @@ int
 knl_exec(IrqFrame *irqframe)
 {
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
-    printx(elfheader->eh_entry);
     // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
 
     Task *cur_task = current_task();
     pde_t *pdt = (pde_t *)cur_task->ts_tss.t_CR3;
     uint32_t npdt = elfheader->eh_entry >> 22;
     uint32_t npte = (elfheader->eh_entry >> 12) & 0x3FF;
-    printx(npdt);
-    printx(npte);
+
     if ( (pdt[npdt] & PAGE_PRESENT) == 0) {
         uint32_t new_page = (uint32_t)alloc_page();
         pdt[npdt] = PAGE_FLOOR(new_page) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;

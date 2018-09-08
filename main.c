@@ -24,10 +24,10 @@ file_tail(uint16_t dev, uint16_t inode_num)
         uint32_t bytes = one_inode->in_inode.in_file_size - 3;
         uint32_t offset = bytes & (BLOCK_SIZE - 1);
         blk = get_zone(one_inode, bytes);
-        printx(blk);
+        printk(" %x ", blk);
         BlockBuffer *one_buf = get_block(one_inode->in_dev, blk);
         char *content = (char *)one_buf->bf_data + offset;
-        print(content);
+        printk(content);
         release_block(one_buf);
     }
     release_inode(one_inode);
@@ -58,7 +58,7 @@ init_filesystem(uint16_t dev)
         for (int i = 0; i < 1024; ++i) {
             file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
         }
-        printxw((uint16_t)ii);
+        printk(" %x ", (uint16_t)ii);
     }
     release_inode(node_2m);
     sync_dev(dev);
@@ -76,12 +76,12 @@ init_filesystem(uint16_t dev)
     uint32_t file_seek = 0;
     while (file_seek < file_size) {
         memcpy(&dir, data+file_seek, sizeof(Direction));
-        print(dir.dr_name);
-        print(" ");
+        printk(dir.dr_name);
+        printk(" ");
 
         // file_tail(dev, dir.dr_inode);
 
-        print("\n");
+        printk("\n");
         file_seek += sizeof(Direction);
     }
     release_block(buf);

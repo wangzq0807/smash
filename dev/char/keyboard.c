@@ -158,13 +158,13 @@ _ascii_press(const ScanCode *sc)
     char str[2];
     str[0] = sc->sc_noshift_char;
     str[1] = 0;
-    print(str);
+    printk(str);
 }
 
 static void
 _control_press(const ScanCode *sc)
 {
-    printx((uint32_t)sc);
+    // printx((uint32_t)sc);
 }
 
 // static void

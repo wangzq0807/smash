@@ -1,57 +1,84 @@
 #include "log.h"
+#include "dev/char/console.h"
 
-#define SCREEN_ADR  0xB8000    /* 显存地址 */
-#define ONE_LINE    160        /* 一行的空间大小 */
-#define ONE_PAGE    0x1000     /* 一页的空间大小 */
-#define CHAR_PROP   0x0F       /* 字符属性(白色) */
-static uint32_t cursor_pos = 0;
-void
-print(const char *buffer)
+#define COPY_MODE   0
+#define FMT_MODE    1
+
+#define HEX_FMT     1
+#define INT_FMT     2
+#define UINT_FMT    3
+
+char *
+num2str(char *buf, int num, int flags)
 {
-    for (uint32_t i = 0; i < 0xffff; ++i) {
-        char* next_addr = (char*)(SCREEN_ADR + (cursor_pos << 1));
-        if (buffer[i] == '\n') {
-            cursor_pos = (cursor_pos + 80) / 80 * 80;
-        }
-        else if (buffer[i] == '\0') {
-            return ;
-        }
-        else {
-            *next_addr = buffer[i];
-            *(next_addr+1) = CHAR_PROP;
-            ++cursor_pos;
-        }
-        if (cursor_pos >= 2000)
-            cursor_pos = 0;
+    if (flags == HEX_FMT) {
+        *buf++ = '0';
+        *buf++ = 'x';
     }
+    char tmpbuf[30];
+    char asciinum[] = "0123456789ABCDEF";
+    int i = 0;
+
+    if (flags == HEX_FMT) {
+        while (num > 0) {
+            int tmp = num & 0xF;
+            num = num >> 4;
+            tmpbuf[i++] = asciinum[tmp];
+        }
+    }
+    else if (flags == INT_FMT) {
+        while (num > 0) {
+            int tmp = num % 10;
+            num = num / 10;
+            tmpbuf[i++] = asciinum[tmp];
+        }
+    }
+
+    while(i > 0) {
+        *buf++ = tmpbuf[--i];
+    }
+
+    return buf;
+}
+
+char printbuf[256];
+void
+printk(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(printbuf, fmt, args);
+    console_print(printbuf);
+    va_end(args);
 }
 
 void
-printx(uint32_t val)
+vsprintf(char *buf, const char *fmt, va_list args)
 {
-    char buffer[] = { "0x00000000 " };
-    for (int32_t i = 0; i < 8; ++i) {
-        int32_t hex = val & 0xF;
-        if (hex > 9)
-            buffer[9-i] = (0x41 - 10) + hex;
-        else
-            buffer[9-i] = 0x30 + hex;
-        val = val >> 4;
+    int mode = COPY_MODE;
+    for(; *fmt; ++fmt) {
+        if (mode == COPY_MODE) {
+            if (*fmt == '%') {
+                mode = FMT_MODE;
+                continue;
+            }
+            *buf++ = *fmt;
+        }
+        else if (mode == FMT_MODE) {
+            switch (*fmt) {
+                case 'X':
+                case 'x':
+                    buf = num2str(buf, va_arg(args, int), HEX_FMT);
+                    break;
+                case 'd':
+                case 'i':
+                    buf = num2str(buf, va_arg(args, int), INT_FMT);
+                    break;
+                default:
+                    break;
+            }
+            mode = COPY_MODE;
+        }
     }
-    print(buffer);
-}
-
-void
-printxw(uint16_t val)
-{
-    char buffer[] = { "0x0000 " };
-    for (int32_t i = 0; i < 4; ++i) {
-        int32_t hex = val & 0xF;
-        if (hex > 9)
-            buffer[5-i] = (0x41 - 10) + hex;
-        else
-            buffer[5-i] = 0x30 + hex;
-        val = val >> 4;
-    }
-    print(buffer);
+    *buf = '\0';
 }

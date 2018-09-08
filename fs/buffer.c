@@ -118,7 +118,7 @@ _get_block(dev_t dev, blk_t blk)
         if (new_buffer == NULL) {
             // 4. free list已经为空
             // TODO: sleep for empty
-            print(" empty ");
+            printk(" empty ");
             while (1);
             continue;
         }

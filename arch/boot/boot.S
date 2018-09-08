@@ -27,6 +27,9 @@ _start2:
     movw %ax, %ds
     movw %ax, %es
     sti						/* 允许中断 */
+    /* 文字模式, 80*25, 16色 */
+    movw $0x03, %ax
+    int $0x10
 test_lba:
     /*********************
      * INT13h Extensions

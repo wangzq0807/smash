@@ -73,7 +73,7 @@ init_memory(uint32_t start, uint32_t end)
     if ( (start > end)
         || (size_t)(start) & (PAGE_SIZE - 1)
         || (size_t)(end) & (PAGE_SIZE - 1) ) {
-        print("wrong memory range\n");
+        printk("wrong memory range\n");
         return;
     }
 
@@ -139,7 +139,7 @@ int
 add_page_refs(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
-        print("wrong page address\n");
+        printk("wrong page address\n");
         return -1;
     }
 
@@ -157,7 +157,7 @@ int
 release_page(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
-        print("wrong page address\n");
+        printk("wrong page address\n");
         return -1;
     }
 
