@@ -3,116 +3,53 @@
 #include "log.h"
 #include "keyboard.h"
 
-int ext_code = 0;
-int shift_key = 0;
-int ctl_key = 0;
+#define SHIFT_MODE  1
+#define CTL_MODE    2
+#define ALT_MODE    4
+
+int kbd_mode = 0;
 int caps_key = 0;
 
-typedef struct _ScanCode   ScanCode;
-typedef void (*scan_func)(const ScanCode *sc);
-
 int on_keyboard_handler(IrqFrame *irq);
-static void _ascii_press(const ScanCode *sc);
-static void _control_press(const ScanCode *sc);
-static void _shift_press(const ScanCode *sc);
-static void _caps_press(const ScanCode *sc);
-static void _function_press(const ScanCode *sc);
-static void _numlock_press(const ScanCode *sc);
 
+#define LSHIFT      0x2A
+#define RSHIFT      0x36
+#define LCTL        0x1D
+#define RCTL        0x9D
+#define LALT        0x38
 
-struct _ScanCode {
-    uint16_t    sc_code;
-    char        sc_noshift_char;
-    char        sc_shift_char;
-    scan_func   sc_func;
+char unshift_set[126] = {
+    0, 0x1B, '1', '2', '3', '4', '5', '6',
+    '7', '8', '9', '0', '-', '=', '\b', '\t',   // 0xF
+    'q', 'w', 'e', 'r', 't', 'y', 'u', 'i',
+    'o', 'p', '[', ']', 0xD, 0, 'a', 's',       // 0x1F
+    'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',
+    '\'', '`', 0, '\\', 'z', 'x', 'c', 'v',     // 0x2F
+    'b', 'n', 'm', ',', '.', '/', 0, '*',
+    0, ' ', 0, 0, 0, 0, 0, 0,                   // 0x3F
+    0, 0, 0, 0, 0, 0, 0, '7',
+    '8', '9', '-', '4', '5', '6', '+', '1',     // 0x4F
+    '2', '3', '0', '.', 0, 0, 0, 0,
 };
 
-ScanCode    scan_code_set[] = {
-    { KSC_NONE, 0, 0, NULL },
-    { KSC_ESC, 0, 0x27, _ascii_press },
-    { KSC_1, '1', '!', _ascii_press },
-    { KSC_2, '2', '@', _ascii_press },
-    { KSC_3, '3', '#', _ascii_press },
-    { KSC_4, '4', '$', _ascii_press },
-    { KSC_5, '5', '%', _ascii_press },
-    { KSC_6, '6', '^', _ascii_press },
-    { KSC_7, '7', '&', _ascii_press },
-    { KSC_8, '8', '*', _ascii_press },
-    { KSC_9, '9', '(', _ascii_press },
-    { KSC_0, '0', ')', _ascii_press },
-    { KSC_SUB, '-', '_', _ascii_press },
-    { KSC_EQ, '=', '+', _ascii_press },
-    { KSC_BACK, 0x8, 0x8, _ascii_press },
-    { KSC_TAB, '\t', '\t', _ascii_press },
-    { KSC_Q, 'q', 'Q', _ascii_press },
-    { KSC_W, 'w', 'W', _ascii_press },
-    { KSC_E, 'e', 'E', _ascii_press },
-    { KSC_R, 'r', 'R', _ascii_press },
-    { KSC_T, 't', 'T', _ascii_press },
-    { KSC_Y, 'y', 'Y', _ascii_press },
-    { KSC_U, 'u', 'U', _ascii_press },
-    { KSC_I, 'i', 'I', _ascii_press },
-    { KSC_O, 'o', 'O', _ascii_press },
-    { KSC_P, 'p', 'P', _ascii_press },
-    { KSC_LBRACKET, '[', '{', _ascii_press },
-    { KSC_RBRACKET, ']', '}', _ascii_press },
-    { KSC_ENTER, 0xD, 0xD, _ascii_press },
-    { KSC_LCTL, 0, 0, _control_press },
-    { KSC_A, 'a', 'A', _ascii_press },
-    { KSC_S, 's', 'S', _ascii_press },
-    { KSC_D, 'd', 'D', _ascii_press },
-    { KSC_F, 'f', 'F', _ascii_press },
-    { KSC_G, 'g', 'G', _ascii_press },
-    { KSC_H, 'h', 'H', _ascii_press },
-    { KSC_J, 'j', 'J', _ascii_press },
-    { KSC_K, 'k', 'K', _ascii_press },
-    { KSC_L, 'l', 'L', _ascii_press },
-    { KSC_SEMICOLON, ';', ':', _ascii_press },
-    { KSC_QUOTE, '\'', '"', _ascii_press },
-    { KSC_TICK, '`', '~', _ascii_press },
-    { KSC_LSHIFT, 0, 0, _shift_press },
-    { KSC_BACKSLANT, '\\', '|', _ascii_press },
-    { KSC_Z, 'z', 'Z', _ascii_press },
-    { KSC_X, 'x', 'X', _ascii_press },
-    { KSC_C, 'c', 'C', _ascii_press },
-    { KSC_V, 'v', 'V', _ascii_press },
-    { KSC_B, 'b', 'B', _ascii_press },
-    { KSC_N, 'n', 'N', _ascii_press },
-    { KSC_M, 'm', 'M', _ascii_press },
-    { KSC_COMMA, ',', '<', _ascii_press },
-    { KSC_FULLSTOP, '.', '>', _ascii_press },
-    { KSC_SLANT, '/', '?', _ascii_press },
-    { KSC_RSHIFT, 0, 0, _shift_press },
-    { KSC_ASTERISK, 0x2A, 0x2A, _ascii_press },
-    { KSC_LALT, 0, 0, _control_press },
-    { KSC_SPACE, ' ', ' ', _ascii_press },
-    { KSC_CAP, 0, 0, _caps_press },
-    { KSC_F1, 0, 0, _function_press },
-    { KSC_F2, 0, 0, _function_press },
-    { KSC_F3, 0, 0, _function_press },
-    { KSC_F4, 0, 0, _function_press },
-    { KSC_F5, 0, 0, _function_press },
-    { KSC_F6, 0, 0, _function_press },
-    { KSC_F7, 0, 0, _function_press },
-    { KSC_F8, 0, 0, _function_press },
-    { KSC_F9, 0, 0, _function_press },
-    { KSC_F10, 0, 0, _function_press },
-    { KSC_NUMLOCK, 0, 0, _numlock_press },
-    { KSC_SCROLL, 0, 0, NULL },
-    { KSC_K7, '7', '7', _ascii_press },
-    { KSC_K8, '8', '8', _ascii_press },
-    { KSC_K9, '9', '9', _ascii_press },
-    { KSC_KSUB, '-', '-', _ascii_press },
-    { KSC_K4, '4', '4', _ascii_press },
-    { KSC_K5, '5', '5', _ascii_press },
-    { KSC_K6, '6', '6', _ascii_press },
-    { KSC_KPLUS, '+', '+', _ascii_press },
-    { KSC_K1, '1', '1', _ascii_press },
-    { KSC_K2, '2', '2', _ascii_press },
-    { KSC_K3, '3', '3', _ascii_press },
-    { KSC_K0, '4', '4', _ascii_press },
-    { KSC_KFULLSTOP, '.', '.', _ascii_press },
+char shift_set[126] = {
+    0, 0x1B, '!', '@', '#', '$', '%', '^',
+    '&', '*', '(', ')', '_', '+', '\b', '\t',   // 0xF
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I',
+    'O', 'P', '{', '}', 0xD, 0, 'A', 'S',       // 0x1F
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', ':',
+    '"', '~', 0, '|', 'Z', 'X', 'C', 'V',       // 0x2F
+    'B', 'N', 'M', '<', '>', '?', 0, '*',
+    0, ' ', 0, 0, 0, 0, 0, 0,                   // 0x3F
+    0, 0, 0, 0, 0, 0, 0, '7',
+    '8', '9', '-', '4', '5', '6', '+', '1',      // 0x4F
+    '2', '3', '0', '.', 0, 0, 0, 0,
 };
+
+char alt_set[126] = {
+
+};
+
 
 int
 init_keyboard()
@@ -122,10 +59,67 @@ init_keyboard()
     return 0;
 }
 
+static void
+_on_key_press(int code)
+{
+    char asciicode = 0;
+    if (kbd_mode & SHIFT_MODE) {
+        asciicode = shift_set[code];
+    }
+    else if (kbd_mode & ALT_MODE) {
+        asciicode = alt_set[code];
+    }
+    else {
+        asciicode = unshift_set[code];
+    }
+    // 普通ascii码
+    if (asciicode != 0) {
+        printk("%c", asciicode);
+        return;
+    }
+
+    switch (code) {
+        case LSHIFT:
+        case RSHIFT:
+            kbd_mode |= SHIFT_MODE;
+            break;
+        case LCTL:
+        case RCTL:
+            kbd_mode |= CTL_MODE;
+            break;
+        case LALT:
+            kbd_mode |= ALT_MODE;
+            break;
+        default:
+            break;
+    }
+}
+
+static void
+_on_key_release(int code)
+{
+    switch (code) {
+        case LSHIFT:
+        case RSHIFT:
+            kbd_mode &= ~SHIFT_MODE;
+            break;
+        case LCTL:
+        case RCTL:
+            kbd_mode &= ~CTL_MODE;
+            break;
+        case LALT:
+            kbd_mode &= ~ALT_MODE;
+            break;
+        default:
+            break;
+    }
+}
+
 int
 on_keyboard_handler(IrqFrame *irq)
 {
-    uint16_t code;
+    static int ext_code = 0;
+    int code;
     code = inb(0x60);
     // TODO : 0xE0和0xE1的按键暂不处理。
     if (ext_code > 0) {
@@ -141,65 +135,14 @@ on_keyboard_handler(IrqFrame *irq)
         return 0;
     }
 
-    const int scan_code_num = sizeof(scan_code_set) / sizeof(ScanCode);
-    if (code < scan_code_num) {
-        const ScanCode *sc = &scan_code_set[code];
-        if (sc->sc_func != NULL) {
-            sc->sc_func(sc);
-        }
+    if (code & 0x80) {
+        // 按键释放
+        _on_key_release(code & ~0x80);
+    }
+    else {
+        // 按键按下
+        _on_key_press(code);
     }
 
     return 0;
 }
-
-static void
-_ascii_press(const ScanCode *sc)
-{
-    char str[2];
-    str[0] = sc->sc_noshift_char;
-    str[1] = 0;
-    printk(str);
-}
-
-static void
-_control_press(const ScanCode *sc)
-{
-    // printx((uint32_t)sc);
-}
-
-// static void
-// _control_release(const ScanCode *sc)
-// {
-//     printx((uint32_t)sc);
-// }
-
-static void
-_shift_press(const ScanCode *sc)
-{
-
-}
-
-// static void
-// _shift_release(const ScanCode *sc)
-// {
-
-// }
-
-static void
-_caps_press(const ScanCode *sc)
-{
-
-}
-
-static void
-_function_press(const ScanCode *sc)
-{
-
-}
-
-static void
-_numlock_press(const ScanCode *sc)
-{
-
-}
-

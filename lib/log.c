@@ -74,6 +74,17 @@ vsprintf(char *buf, const char *fmt, va_list args)
                 case 'i':
                     buf = num2str(buf, va_arg(args, int), INT_FMT);
                     break;
+                case 'c':
+                    *buf++ = va_arg(args, char);
+                    break;
+                case 's':
+                {
+                    char *src = va_arg(args, char*);
+                    while (*src) {
+                        *buf++ = *src++;
+                    }
+                    break;
+                }
                 default:
                     break;
             }
