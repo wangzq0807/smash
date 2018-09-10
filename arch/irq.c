@@ -2,7 +2,7 @@
 #include "task.h"
 #include "asm.h"
 #include "log.h"
-#include "syscall.h"
+#include "sys/syscalls.h"
 #include "page.h"
 
 /* 中断描述符表 */
@@ -18,8 +18,6 @@ DECL_TRAP_FUNC(IRQ_SYSCALL)
 DECL_TRAP_FUNC(IRQ_IGNORE)
 
 #define TRAP_FUNC(num) trap##num
-
-TrapCall trapcall[48] = { 0 };
 
 void on_timer_handler(IrqFrame *irqframe);
 void on_ignore_handler(IrqFrame *irqframe);
@@ -83,12 +81,12 @@ on_all_irq(IrqFrame irqframe)
             break;
         }
         case IRQ_SYSCALL: {
-            irqframe.if_EAX = syscall[irqframe.if_EAX].sc_func(&irqframe);
+            irqframe.if_EAX = syscalls[irqframe.if_EAX].sc_func(&irqframe);
             break;
         }
         case IRQ_KEYBOARD:
         case IRQ_DISK: {
-            TrapCall tcall = trapcall[irqframe.if_irqno];
+            TrapCall tcall = syscalls[irqframe.if_irqno];
             if (tcall.sc_func != NULL)
                 tcall.sc_func(&irqframe);
             break;
@@ -115,14 +113,7 @@ on_ignore_handler(IrqFrame *irqframe)
     printk(" ignore %x\n", irqframe->if_EIP);
 }
 
-int
-knl_print(IrqFrame *irqframe)
-{
-    printk("C");
-    return 0;
-}
-
 void set_trap_handler(int num, trap_func f)
 {
-    trapcall[num].sc_func = f;
+    syscalls[num].sc_func = f;
 }

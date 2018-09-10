@@ -96,8 +96,8 @@ setup_links(Task *cur_task, Task *new_task)
     sti();
 }
 
-pid_t
-knl_fork(IrqFrame *irq)
+int
+sys_fork(IrqFrame *irq)
 {
     Task *cur_task = current_task();
     Task *new_task = (Task *)alloc_page();

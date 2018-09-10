@@ -9,7 +9,7 @@
 #define ELF_FILE        (0x7c00 + 20*1024)
 
 int
-knl_exec(IrqFrame *irqframe)
+sys_execve(IrqFrame *irqframe)
 {
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
@@ -30,3 +30,5 @@ knl_exec(IrqFrame *irqframe)
 
     return 0;
 }
+
+
