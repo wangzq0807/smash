@@ -102,7 +102,7 @@ _new_freelist(uint32_t addr)
 }
 
 uint32_t
-alloc_page()
+alloc_pypage()
 {
     /* 返回链表中第一个空闲内存页，同时把头指针指向下一个空闲内存页 */
     PageNode *ret = free_memory.pl_free;
@@ -126,7 +126,7 @@ alloc_page()
 }
 
 int
-get_page_refs(uint32_t page)
+get_pypage_refs(uint32_t page)
 {
     PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
     if (node != NULL)
@@ -136,7 +136,7 @@ get_page_refs(uint32_t page)
 }
 
 int
-add_page_refs(uint32_t page)
+add_pypage_refs(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
         printk("wrong page address\n");
@@ -154,7 +154,7 @@ add_page_refs(uint32_t page)
 }
 
 int
-release_page(uint32_t page)
+release_pypage(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
         printk("wrong page address\n");
@@ -221,7 +221,7 @@ get_free_space()
 //         return NULL;
 //     MemSliceHead *free_list = &slice_list[log_size - MIN_LOG_SIZE];
 //     if (free_list->ms_free == NULL) {
-//         void *page = alloc_page();
+//         void *page = alloc_pypage();
 //         if (page == NULL)
 //             return NULL;
 //         mfree_n(page, log_size, PAGE_SIZE >> log_size);
@@ -277,7 +277,7 @@ get_free_space()
 // {
 //     MemObjectHead *free_list = &object_list[eObj];
 //     if (free_list->mo_free == NULL) {
-//         void *page = alloc_page();
+//         void *page = alloc_pypage();
 //         if (page == NULL)
 //             return NULL;
 //         free_object_n(page, eObj, objsize, PAGE_SIZE / objsize);

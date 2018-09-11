@@ -55,7 +55,7 @@ init_disk()
     // 设置中磁盘中断
     set_trap_handler(IRQ_DISK, on_disk_handler);
     // 初始化磁盘请求队列
-    DiskRequest *req = (DiskRequest *)alloc_page();
+    DiskRequest *req = (DiskRequest *)alloc_pypage();
     for (int i = 0; i < QUEUE_COUNT; ++i) {
         req[i].dr_next = &req[i+1];
         req[i].dr_cmd = 0;

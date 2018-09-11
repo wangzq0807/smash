@@ -20,7 +20,7 @@ sys_execve(IrqFrame *irqframe)
     uint32_t npte = (elfheader->eh_entry >> 12) & 0x3FF;
 
     if ( (pdt[npdt] & PAGE_PRESENT) == 0) {
-        uint32_t new_page = (uint32_t)alloc_page();
+        uint32_t new_page = (uint32_t)alloc_pypage();
         pdt[npdt] = PAGE_FLOOR(new_page) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     }
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);

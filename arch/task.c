@@ -153,18 +153,18 @@ static void
 setup_first_task()
 {
     task1.ts_pid = 0;
-    uint8_t *ks_page = (uint8_t *)alloc_page();
-    uint8_t *us_page = (uint8_t *)alloc_page();
+    uint8_t *ks_page = (uint8_t *)alloc_pypage();
+    uint8_t *us_page = (uint8_t *)alloc_pypage();
     ((uint32_t *)ks_page)[0] = (uint32_t)&task1;
 
     task1.ts_tss.t_SS_0 = KNL_DS;
     task1.ts_tss.t_ESP_0 = (uint32_t)&ks_page[PAGE_SIZE];
     task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
 
-    uint32_t *pdt = (uint32_t*)alloc_page();
+    uint32_t *pdt = (uint32_t*)alloc_pypage();
     uint32_t addr = 0;
     for (int npde = 0; npde < 2; ++npde ){
-        uint32_t *pte = (uint32_t*)alloc_page();
+        uint32_t *pte = (uint32_t*)alloc_pypage();
         pdt[npde] = PAGE_FLOOR((uint32_t)pte) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
         for (int i = 0; i < 1024; ++i) {
             pte[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
