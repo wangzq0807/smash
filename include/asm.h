@@ -87,16 +87,25 @@ static inline void ljmp(uint32_t seg) {
 
 static inline void invlpg(void *ptr) {
     __asm__ volatile (
-        "invlpg ($0) \n"
+        "invlpg (%0) \n"
         : :"r"(ptr)
     );
 }
 
 static inline void load_cr3(void *pdt) {
-    __asm__ volatile (
-        "movl %%eax, %%cr3 \n"
-        : :"a"(pdt)
+    __asm__(
+        "movl %0, %%cr3 \n"
+        : :"r"(pdt)
     );
+}
+
+static inline int get_cr3() {
+    register int ret;
+    __asm__(
+        "movl %%cr3, %0 \n"
+        :"=r"(ret)
+    );
+    return ret;
 }
 
 static inline int get_cr2() {
