@@ -12,7 +12,8 @@ pid_t nextpid = 1;
 static void
 setup_new_tss(IrqFrame *irq, Task *new_task)
 {
-    uint8_t *knl_stack = (uint8_t *)alloc_pypage();
+    // 内核态堆栈不能实现写时复制。
+    uint8_t *knl_stack = (uint8_t *)alloc_vm_page();
     ((uint32_t *)knl_stack)[0] = (uint32_t)new_task;
     /******************************
      * 复制父任务的上下文
@@ -23,7 +24,7 @@ setup_new_tss(IrqFrame *irq, Task *new_task)
     new_tss->t_ESP_0 = (uint32_t)(knl_stack + PAGE_SIZE);
     new_tss->t_SS_0 = KNL_DS;
 
-    new_tss->t_CR3 = (uint32_t)alloc_pypage();
+    new_tss->t_CR3 = (uint32_t)alloc_vm_page();
     new_tss->t_EIP = irq->if_EIP;       // 将子任务的eip指向fork调用的下一条指令
     new_tss->t_EFLAGS = irq->if_EFLAGS;
     new_tss->t_EAX = 0;                         // 构造子任务的fork返回值
@@ -58,19 +59,30 @@ setup_page_tables(Task *cur_task, Task *new_task)
     pde_t *cur_pdt = (pde_t *)PAGE_FLOOR(cur_task->ts_tss.t_CR3);
     pde_t *new_pdt = (pde_t *)PAGE_FLOOR(new_task->ts_tss.t_CR3);
 
-    for (int npde = 0; npde < (PAGE_SIZE / sizeof(pde_t)); ++npde) {
+    // 复制4M - 4G的页表
+    // Note: alloc_vm_page 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
+    // 因此1-4M的页表要最后复制
+    for (int npde = 1; npde < (PAGE_SIZE / sizeof(pde_t)); ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[npde]);
-            pte_t *new_pte = (pte_t *)alloc_pypage();
+            pte_t *new_pte = (pte_t *)alloc_vm_page();
             new_pdt[npde] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
             for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
                 if (cur_pte[npte] & PAGE_PRESENT) {
-                    if (npde != 0 || npte > 255)
-                        cur_pte[npte] &= ~PAGE_WRITE;
+                    cur_pte[npte] &= ~PAGE_WRITE;
                     new_pte[npte] = cur_pte[npte];
                     add_pypage_refs(cur_pte[npte] & 0xFFFFF000);
                 }
             }
+        }
+    }
+    // 复制内核所在的0 - 4M页表
+    pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
+    pte_t *new_pte = (pte_t *)alloc_vm_page();
+    new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+        if (cur_pte[npte] & PAGE_PRESENT) {
+            new_pte[npte] = cur_pte[npte];  
         }
     }
     /* 刷新tlb */
@@ -100,7 +112,7 @@ int
 sys_fork(IrqFrame *irq)
 {
     Task *cur_task = current_task();
-    Task *new_task = (Task *)alloc_pypage();
+    Task *new_task = (Task *)alloc_vm_page();
     new_task->ts_pid = nextpid++;
     setup_new_tss(irq, new_task);
     setup_page_tables(cur_task, new_task);

@@ -65,7 +65,7 @@ switch_task()
 ({                          \
     pid_t pid = 0;          \
     __asm__ volatile (      \
-        "movl $0, %%eax \n" \
+        "movl $2, %%eax \n" \
         "int $0x80 \n"      \
         :"=a"(pid)          \
     );                      \
@@ -87,17 +87,23 @@ switch_task()
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
-        "movl $2, %%eax \n" \
+        "movl $11, %%eax \n" \
         "int $0x80 \n"      \
         :"=a"(ret)          \
     );                      \
     ret;                    \
 })
 
+#define delay()         \
+{                       \
+    int cnt = 100000;   \
+    while(cnt--)        \
+        pause();        \
+}
+
 static void
 task_1()
 {
-    return;
     __asm__ volatile (
         "mov $0x17, %%ax \n"
         "mov %%ax, %%ds \n"
@@ -105,10 +111,18 @@ task_1()
     );
     pid_t pid = fork();
 
-    if (pid == 0)
-        task_2();
+    if (pid == 0) {
+        while (1) {
+            printk("C");
+            delay();
+        }
+    }
     else {
-        while (1) pause();
+        while (1) {
+            // printk("P");
+            delay();
+        }
+        task_2();
     }
     // while( 1 ) {
     //     if (acquire_mutex(&one_mutex) == 0) {
@@ -131,51 +145,40 @@ task_1()
 static void
 task_2()
 {
-    // exec();
-    while( 1 ) {
-        if (acquire_mutex(&one_mutex) == 0) {
-            child_print();
-            release_mutex(&one_mutex);
-        }
-        else {
-            // __asm__ volatile("int $0x80");
-        }
-        // 延时
-        // NOTE : 如果从释放锁到重新申请锁的时间过短，
-        // 那么其他线程获得锁的几率就会非常小。
-        int cnt = 100000;
-        while(cnt--)
-            pause();
-    }
+    exec();
 }
 
+// 第一个进程的堆栈，页表，代码等都位于0-1M内
 static void
 setup_first_task()
 {
     task1.ts_pid = 0;
-    uint8_t *ks_page = (uint8_t *)alloc_pypage();
-    uint8_t *us_page = (uint8_t *)alloc_pypage();
+    // 内核态堆栈
+    uint8_t *ks_page = (uint8_t *)alloc_spage();
     ((uint32_t *)ks_page)[0] = (uint32_t)&task1;
-
     task1.ts_tss.t_SS_0 = KNL_DS;
     task1.ts_tss.t_ESP_0 = (uint32_t)&ks_page[PAGE_SIZE];
-    task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
 
-    uint32_t *pdt = (uint32_t*)alloc_pypage();
+    uint32_t *pdt = (uint32_t*)alloc_spage();
     uint32_t addr = 0;
-    for (int npde = 0; npde < 2; ++npde ){
-        uint32_t *pte = (uint32_t*)alloc_pypage();
-        pdt[npde] = PAGE_FLOOR((uint32_t)pte) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-        for (int i = 0; i < 1024; ++i) {
+    // 先将0-1M一一映射到物理内存, 1M - 4M 用于动态分配
+    uint32_t *pte = (uint32_t*)alloc_spage();
+    pdt[0] = PAGE_FLOOR((uint32_t)pte) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    for (int i = 0; i < 256; ++i) {
             pte[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
             addr += PAGE_SIZE;
         }
-    }
+    load_cr3(pdt);
+
     // Note: 任务切换时,CR3不会被自动保存
     task1.ts_tss.t_CR3 = (uint32_t)pdt;
     task1.ts_tss.t_LDT = KNL_LDT;
 
-    load_cr3(pdt);
+    // 用户态堆栈
+    int us_addr = alloc_pypage();
+    map_vm_page(0xFFFF0000, us_addr);
+    uint8_t *us_page = (uint8_t *)0xFFFF0000;
+    task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
 }
 
 void
@@ -194,6 +197,6 @@ start_task()
     enable_paging();
     sti();
     /* 开始第一个进程 */
-    task_1();
-    // start_first_task(&task1.ts_tss, task_1);
+    // task_1();
+    start_first_task(&task1.ts_tss, task_1);
 }

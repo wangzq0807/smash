@@ -109,10 +109,10 @@ static inline int get_cr3() {
 }
 
 static inline int get_cr2() {
-    unsigned int cr2;
-    __asm__ volatile (
-        "movl %%cr2, %%eax"
-        :"=a"(cr2)
+    register int cr2;
+    __asm__(
+        "movl %%cr2, %0"
+        :"=r"(cr2)
     );
     return cr2;
 }

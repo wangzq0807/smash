@@ -6,7 +6,7 @@
 #include "log.h"
 #include "memory.h"
 
-#define ELF_FILE        (0x7c00 + 20*1024)
+#define ELF_FILE        (0xf000)
 
 int
 sys_execve(IrqFrame *irqframe)
@@ -20,15 +20,23 @@ sys_execve(IrqFrame *irqframe)
     uint32_t npte = (elfheader->eh_entry >> 12) & 0x3FF;
 
     if ( (pdt[npdt] & PAGE_PRESENT) == 0) {
-        uint32_t new_page = (uint32_t)alloc_pypage();
+        uint32_t new_page = (uint32_t)alloc_vm_page();
         pdt[npdt] = PAGE_FLOOR(new_page) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     }
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
-    pte[npte] = PAGE_FLOOR(ELF_FILE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    pte[npte++] = PAGE_FLOOR(ELF_FILE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    pte[npte++] = PAGE_FLOOR(ELF_FILE+PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    pte[npte++] = PAGE_FLOOR(ELF_FILE+2*PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    pte[npte++] = PAGE_FLOOR(ELF_FILE+3*PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     irqframe->if_EIP = elfheader->eh_entry;
     load_cr3(pdt);
 
     return 0;
 }
 
-
+int
+sys_exit(IrqFrame *irq)
+{
+    printk("C");
+    return 0;
+}

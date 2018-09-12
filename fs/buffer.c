@@ -21,8 +21,8 @@ static void wait_for(BlockBuffer *buffer);
 error_t
 init_block_buffer()
 {
-    BlockBuffer *buf = (BlockBuffer*)alloc_pypage();
-    // hash_map = (BlockBuffer*)alloc_pypage();
+    BlockBuffer *buf = (BlockBuffer*)alloc_vm_page();
+    // hash_map = (BlockBuffer*)alloc_vm_page();
 
     BlockBuffer *iter;
 

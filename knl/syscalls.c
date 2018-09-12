@@ -14,7 +14,7 @@
 #endif  // __SYSCALLS_H__
 
 int sys_none(IrqFrame *irq) { return 0 ;}
-int sys_exit(IrqFrame *irq) { return 0 ;}
+// int sys_exit(IrqFrame *irq) { return 0 ;}
 // int sys_fork(IrqFrame *irq) { return 0 ;}
 int sys_read(IrqFrame *irq) { return 0 ;}
 int sys_write(IrqFrame *irq) { return 0 ;}

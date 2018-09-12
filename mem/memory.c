@@ -1,6 +1,8 @@
 #include "memory.h"
 #include "log.h"
 #include "list.h"
+#include "arch/page.h"
+#include "asm.h"
 
 typedef struct _PageNode PageNode;
 struct _PageNode {
@@ -85,7 +87,7 @@ static void
 _new_freelist(uint32_t addr)
 {
     // 一个页面用来建立空闲页的链表(大约会新增1M的可用内存)
-    PageNode *node_list = (PageNode*)addr;
+    PageNode *node_list = (PageNode*)alloc_spage();
     int node_num = PAGE_SIZE / sizeof(PageNode);
     node_num = MIN(node_num, (max_end - addr) >> PAGE_LOG_SIZE);
     for (int i = 0; i < node_num; i++ ) {
@@ -94,10 +96,8 @@ _new_freelist(uint32_t addr)
         node_list[i].pn_next = &node_list[i+1];
     }
     node_list[node_num - 1].pn_next = NULL;
-    node_list[0].pn_refs = 1;
-    _put_hash_entity(&node_list[0]);
 
-    free_memory.pl_free = node_list[0].pn_next;
+    free_memory.pl_free = &node_list[0];
     cur_start = addr + (node_num << PAGE_LOG_SIZE);
 }
 
@@ -177,11 +177,11 @@ release_pypage(uint32_t page)
     return node->pn_refs;
 }
 
-int
+uint32_t
 get_free_space()
 {
     PageNode *node = free_memory.pl_free;
-    int cnt = 0;
+    uint32_t cnt = 0;
     while (node != NULL) {
         cnt++;
         node = node->pn_next;
@@ -189,119 +189,68 @@ get_free_space()
     return cnt;
 }
 
+void
+pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
+{
+    map_vm_page(0xFFFFF000, pydst);
+    map_vm_page(0xFFFFE000, pysrc);
 
-// /*************************
-//  * 内存切片管理：
-//  * 按2的次幂为单位来分配内存
-//  *************************/
-// #define MIN_LOG_SIZE    5       // 对象最小为32字节
-// #define MAX_LOG_SIZE    10      // 对象最大为1024字节
-// #define OBJ_LIST_LEN    (MAX_LOG_SIZE - MIN_LOG_SIZE + 1)
+    int *dist_page = (int *)0xFFFFF000;
+    const int *src_page = (const int *)0xFFFFE000;
+    size_t len = num * PAGE_SIZE / sizeof(int);
+    while (--len) {
+        *dist_page++ = *src_page++;
+    }
+}
 
-// static int
-// mfree_n(void *obj, uint32_t log_size, uint32_t num);
+void *
+alloc_vm_page()
+{
+    pde_t *pdt = (pde_t *)get_cr3();
+    pte_t *cur_pte = (pte_t *)(pdt[0] & 0xFFFFF000);
+    for (int npte = 256; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+        if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
+            uint32_t pyaddr = (npte << 12);
+            cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+            void *ret = (void *)(pyaddr);
+            invlpg(ret);
+            return ret;
+        }
+    }
+    return NULL;
+}
 
-// typedef struct _MemSlice MemSlice;
-// struct _MemSlice {
-//     MemSlice    *ms_next;
-// };
+void
+release_vm_page(void *addr)
+{
+    uint32_t linear = (uint32_t)addr;
+    uint32_t npdt = linear >> 22;
+    uint32_t npte = (linear >> 12) & 0x3FF;
+    pde_t *pdt = (pde_t *)get_cr3();
+    pte_t *pet = (pte_t *)(pdt[npdt] & 0xFFFFF000);
+    pet[npte] = pet[npte] & ~PAGE_PRESENT;
+    invlpg(addr);
+}
 
-// typedef struct _MemSliceHead MemSliceHead;
-// struct _MemSliceHead {
-//     uint32_t          ms_dummyLock;
-//     MemSlice  *ms_free;
-// };
-// // 为每个2的次幂内存块建一个链表，记录空闲的内存块
-// MemSliceHead   slice_list[OBJ_LIST_LEN];
+void
+map_vm_page(uint32_t linaddr, uint32_t pyaddr)
+{
+    uint32_t npdt = linaddr >> 22;
+    uint32_t npte = (linaddr >> 12) & 0x3FF;
+    pde_t *pdt = (pde_t *)get_cr3();
+    if ((pdt[npdt] & PAGE_PRESENT) == 0) {
+        int peaddr = (int)alloc_vm_page();
+        pdt[npdt] = PAGE_FLOOR(peaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+        invlpg((void *)peaddr);
+    }
+    pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
+    pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+    invlpg((void *)linaddr);
+}
 
-// void *
-// malloc(uint32_t log_size)
-// {
-//     if (log_size < MIN_LOG_SIZE || log_size > MAX_LOG_SIZE)
-//         return NULL;
-//     MemSliceHead *free_list = &slice_list[log_size - MIN_LOG_SIZE];
-//     if (free_list->ms_free == NULL) {
-//         void *page = alloc_pypage();
-//         if (page == NULL)
-//             return NULL;
-//         mfree_n(page, log_size, PAGE_SIZE >> log_size);
-//     }
-//     MemSlice *ret = free_list->ms_free;
-//     free_list->ms_free = ret->ms_next;
-//     return ret;
-// }
-
-// static int
-// mfree_n(void *obj, uint32_t log_size, uint32_t num)
-// {
-//     if (log_size < MIN_LOG_SIZE || log_size > MAX_LOG_SIZE)
-//         return -1;
-//     const uint32_t slice_size = 1 << log_size;
-//     uint8_t *byte_ptr = (uint8_t*)obj;
-//     MemSliceHead *free_list = &slice_list[log_size - MIN_LOG_SIZE];
-//     for (int n = 0; n < num; ++n) {
-//         ((MemSlice *)byte_ptr)->ms_next = free_list->ms_free;
-//         free_list->ms_free = ((MemSlice *)byte_ptr);
-//         byte_ptr += slice_size;
-//     }
-//     return 0;
-// }
-
-// int
-// mfree(void *obj, uint32_t log_size)
-// {
-//     return mfree_n(obj, log_size, 1);
-// }
-
-// /*************************
-//  * 内存对象管理
-//  * 按对象来分配内存
-//  *************************/
-// static int
-// free_object_n(void *obj, enum EObjectType eObj, uint32_t objsize, uint32_t num);
-
-// typedef struct _MemObject MemObject;
-// struct _MemObject {
-//     MemObject    *mo_next;
-// };
-
-// typedef struct _MemObjectHead MemObjectHead;
-// struct _MemObjectHead {
-//     uint32_t            mo_dummyLock;
-//     MemObject    *mo_free;
-// };
-// MemObjectHead object_list[EObjectMax];
-
-// void *
-// alloc_object(enum EObjectType eObj, uint32_t objsize)
-// {
-//     MemObjectHead *free_list = &object_list[eObj];
-//     if (free_list->mo_free == NULL) {
-//         void *page = alloc_pypage();
-//         if (page == NULL)
-//             return NULL;
-//         free_object_n(page, eObj, objsize, PAGE_SIZE / objsize);
-//     }
-//     MemObject *ret = free_list->mo_free;
-//     free_list->mo_free = ret->mo_next;
-//     return ret; 
-// }
-
-// static int
-// free_object_n(void *obj, enum EObjectType eObj, uint32_t objsize, uint32_t num)
-// {
-//     uint8_t *byte_ptr = (uint8_t*)obj;
-//     MemObjectHead *free_list = &object_list[eObj];
-//     for (int n = 0; n < num; ++n) {
-//         ((MemObject *)byte_ptr)->mo_next = free_list->mo_free;
-//         free_list->mo_free = ((MemObject *)byte_ptr);
-//         byte_ptr += objsize;
-//     }
-//     return 0;
-// }
-
-// int
-// free_object(void *obj, enum EObjectType eObj, uint32_t objsize)
-// {
-//     return free_object_n(obj, eObj, objsize, 1);
-// }
+uint32_t
+alloc_spage() {
+    static uint32_t tail = 0xA0000;
+    tail -= PAGE_SIZE;
+    return tail;
+}

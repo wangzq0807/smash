@@ -9,7 +9,7 @@
 #define UINT_FMT    3
 
 char *
-num2str(char *buf, int num, int flags)
+num2str(char *buf, uint32_t num, int flags)
 {
     if (flags == HEX_FMT) {
         *buf++ = '0';
@@ -68,7 +68,7 @@ vsprintf(char *buf, const char *fmt, va_list args)
             switch (*fmt) {
                 case 'X':
                 case 'x':
-                    buf = num2str(buf, va_arg(args, int), HEX_FMT);
+                    buf = num2str(buf, va_arg(args, uint32_t), HEX_FMT);
                     break;
                 case 'd':
                 case 'i':

@@ -21,7 +21,8 @@ void
 init_memory(uint32_t start, uint32_t end);
 
 //============
-// 页面管理
+// 物理页面管理
+//============
 uint32_t
 alloc_pypage(void);
 
@@ -34,8 +35,33 @@ add_pypage_refs(uint32_t page);
 int
 release_pypage(uint32_t page);
 
-int
+uint32_t
 get_free_space(void);
+
+void
+pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num);
+
+//=================
+// 虚拟内存管理
+// 1 - 4M的一一映射
+//=================
+void *
+alloc_vm_page();
+
+void
+release_vm_page(void *addr);
+
+void
+map_vm_page(uint32_t linaddr, uint32_t pyaddr);
+
+//====================================
+// 静态内存分配
+// 初始化时,0 - 1M已完成跟物理地址的一一映射，
+// 我们要在这块内存中存放内存管理的数据结构
+// 实际可供使用的空间是end_kernel - 640K
+//====================================
+uint32_t
+alloc_spage();
 
 
 #endif

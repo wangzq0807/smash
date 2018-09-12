@@ -90,7 +90,7 @@ init_filesystem(uint16_t dev)
 void
 start_main()
 {
-    init_memory(5*1024*1024, 8*1024*1024);
+    init_memory(4*1024*1024, 8*1024*1024);
     init_isa();
     init_keyboard();
     init_disk();
