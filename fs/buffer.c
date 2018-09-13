@@ -22,13 +22,12 @@ error_t
 init_block_buffer()
 {
     BlockBuffer *buf = (BlockBuffer*)alloc_vm_page();
-    // hash_map = (BlockBuffer*)alloc_vm_page();
 
     BlockBuffer *iter;
 
     for (int i = 0; i < BUFFER_LIST_LEN; ++i) {
         iter = &buf[i];
-        iter->bf_data = (uint8_t*)(BLK_BUFFER + i*BLK_BUFFER_SIZE);
+        iter->bf_data = (uint8_t*)alloc_vm_page();
         iter->bf_refs = 0;
         iter->bf_dev = 0;
         iter->bf_blk = 0;

@@ -14,6 +14,7 @@
 #include "fs/zones.h"
 #include "fs/path.h"
 #include "fs/file.h"
+#include "arch/task.h"
 
 void
 file_tail(uint16_t dev, uint16_t inode_num)
@@ -96,6 +97,7 @@ start_main()
     init_disk();
     init_block_buffer();
     init_filesystem(ROOT_DEVICE);
+    start_task();
     // init_filesystem();
     // inode_ls(2);
 }

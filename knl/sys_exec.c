@@ -13,6 +13,7 @@ sys_execve(IrqFrame *irqframe)
 {
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
+    printk(" %x ", elfheader->eh_entry);
 
     Task *cur_task = current_task();
     pde_t *pdt = (pde_t *)cur_task->ts_tss.t_CR3;

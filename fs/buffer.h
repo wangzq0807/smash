@@ -3,8 +3,6 @@
 #include "sys/types.h"
 #include "list.h"
 
-#define BLK_BUFFER          0x100000      // buffer begin: 1M
-#define BLK_BUFFER_END      0x500000      // buffer end: 5M
 #define BLK_BUFFER_SIZE     1024          // bytes cnt of per cache
 
 // 缓冲区状态

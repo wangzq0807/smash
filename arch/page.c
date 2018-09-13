@@ -9,6 +9,7 @@ void
 on_page_fault(IrqFrame *irq)
 {
     uint32_t linear = PAGE_FLOOR(get_cr2());
+    printk(" %x ", linear);
     uint32_t npdt = linear >> 22;
     uint32_t npte = (linear >> 12) & 0x3FF;
 

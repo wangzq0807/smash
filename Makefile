@@ -30,6 +30,7 @@ hd.img : boot kernel
 	@dd if=boot.img of=hd.img bs=432 count=1 conv=notrunc
 	@dd if=/dev/zero of=hd.img bs=512 count=120 seek=1 conv=notrunc
 	@dd if=kernel.img of=hd.img bs=512 count=120 seek=1 conv=notrunc
+	@dd if=one_task	of=hd.img bs=512 count=10 seek=121 conv=notrunc
 
 # 引导程序的链接规则
 boot : $(BUILD_PATH)/arch/boot/boot.o

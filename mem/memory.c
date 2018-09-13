@@ -250,7 +250,8 @@ map_vm_page(uint32_t linaddr, uint32_t pyaddr)
 
 uint32_t
 alloc_spage() {
-    static uint32_t tail = 0xA0000;
+    // 640K的最后一个页面0x9F000不能用?
+    static uint32_t tail = 0x9F000;
     tail -= PAGE_SIZE;
     return tail;
 }
