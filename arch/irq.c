@@ -81,7 +81,9 @@ on_all_irq(IrqFrame irqframe)
             break;
         }
         case IRQ_SYSCALL: {
-            irqframe.if_EAX = syscalls[irqframe.if_EAX].sc_func(&irqframe);
+            TrapCall *tc = &syscalls[irqframe.if_EAX];
+            irqframe.if_EAX = call_syscall(&irqframe, tc->sc_params, irqframe.if_ESP, tc->sc_func);
+            // irqframe.if_EAX = syscalls[irqframe.if_EAX].sc_func(&irqframe);
             break;
         }
         case IRQ_KEYBOARD:

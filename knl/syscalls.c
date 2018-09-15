@@ -14,12 +14,12 @@
 #endif  // __SYSCALLS_H__
 
 int sys_none(IrqFrame *irq) { return 0 ;}
-// int sys_exit(IrqFrame *irq) { return 0 ;}
+// int sys_exit(IrqFrame *irq, int code) { return 0 ;}
 // int sys_fork(IrqFrame *irq) { return 0 ;}
-int sys_read(IrqFrame *irq) { return 0 ;}
-int sys_write(IrqFrame *irq) { return 0 ;}
-int sys_open(IrqFrame *irq) { return 0 ;}
-int sys_close(IrqFrame *irq) { return 0 ;}
+// int sys_read(IrqFrame *irq, const char *, ) { return 0 ;}
+// int sys_write(IrqFrame *irq) { return 0 ;}
+// int sys_open(IrqFrame *irq) { return 0 ;}
+// int sys_close(IrqFrame *irq) { return 0 ;}
 int sys_waitpid(IrqFrame *irq) { return 0 ;}
 int sys_creat(IrqFrame *irq) { return 0 ;}
 int sys_link(IrqFrame *irq) { return 0 ;}

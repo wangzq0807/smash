@@ -47,8 +47,10 @@ switch_task()
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
+        "pushl $1 \n"       \
         "movl $1, %%eax \n" \
         "int $0x80 \n"      \
+        "popl %%eax \n"     \
         :"=a"(ret)          \
     );                      \
     ret;                    \
@@ -58,8 +60,12 @@ switch_task()
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
+        "pushl $3 \n"       \
+        "pushl $2 \n"       \
+        "pushl $1 \n"       \
         "movl $11, %%eax \n" \
-        "int $0x80 \n"      \
+        "int $0x80 \n"       \
+        "addl $12, %%esp \n" \
         :"=a"(ret)          \
     );                      \
     ret;                    \
@@ -91,6 +97,7 @@ task_1()
             delay();
         }
     }
+    task_2();
     // while( 1 ) {
     //     if (acquire_mutex(&one_mutex) == 0) {
     //         // 下面是受保护的代码

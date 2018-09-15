@@ -18,7 +18,7 @@ typedef struct _TrapCall TrapCall;
     extern TrapCall syscalls[];
     #define SYSCALLS_BEGIN()
     #define SYSCALLS_END()
-    #define SYSCALL(name, params)   extern int sys_##name(IrqFrame *irq);
+    #define SYSCALL(name, params)   extern int sys_##name();
 #endif // SYSCALLS_SOURCE
 
 SYSCALLS_BEGIN()

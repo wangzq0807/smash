@@ -9,7 +9,7 @@
 #define ELF_FILE        (0xf000)
 
 int
-sys_execve(IrqFrame *irqframe)
+sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
 {
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
@@ -36,8 +36,9 @@ sys_execve(IrqFrame *irqframe)
 }
 
 int
-sys_exit(IrqFrame *irq)
+sys_exit(IrqFrame *irq, int code)
 {
-    printk("C");
+    printk("exit %x ", code);
+    // smash_memory();
     return 0;
 }

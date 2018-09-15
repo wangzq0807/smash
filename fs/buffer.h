@@ -3,8 +3,6 @@
 #include "sys/types.h"
 #include "list.h"
 
-#define BLK_BUFFER_SIZE     1024          // bytes cnt of per cache
-
 // 缓冲区状态
 #define BUF_FREE            0       // 空缓冲区，可以被使用
 #define BUF_BUSY            1       // 正在读/写磁盘，不允许被任何进程读或写

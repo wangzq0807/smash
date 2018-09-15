@@ -188,4 +188,35 @@ static inline void smash_memory() {
     __asm__ volatile("nop":::"memory");
 }
 
+static inline int call_syscall(void *irq, uint32_t cnt, uint32_t addr, void *func) {
+    register int ret = 0;
+    __asm__ volatile (
+        // 参数个数为0的情况
+        "cmpl $0, %1 \n"
+        "jne 0f \n"
+        "pushl %4 \n"
+        "call *%3 \n"
+        "popl %4 \n"
+        "jmp 4f \n"
+        // 有多个参数的情况
+        "0: movl %1, %%ecx \n"      // ecx用来统计已复制的参数个数
+        "1: subl $1, %%ecx \n"
+        "pushl (%2, %%ecx, 4) \n"   // 复制用户空间的一个参数到内核栈
+        "cmpl $0, %%ecx \n"
+        "jne 1b \n"
+
+        "2:pushl %4 \n"
+        "call *%3 \n"
+        "popl %4 \n"
+
+        "lea (,%1, 4), %2\n"        // 假定int的宽度为4字节
+        "addl %2, %%esp \n"         // 所有参数出栈
+        "4: \n"
+        :"=a"(ret)
+        :"ebx"(cnt), "r"(addr), "r"(func), "r"(irq) // NOTE: eax, ecx, edx的值要由调用者负责保存
+        :"ecx"
+    );
+    return ret;
+}
+
 #endif // __IO_H__
