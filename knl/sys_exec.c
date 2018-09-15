@@ -5,31 +5,50 @@
 #include "elf.h"
 #include "log.h"
 #include "memory.h"
+#include "fs/file.h"
+#include "sys/fcntl.h"
 
-#define ELF_FILE        (0xf000)
+#define ELF_FILE       0x40000000
 
 int
 sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
 {
-    ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
-    // ProgHeader *progheader = (ProgHeader *)(ELF_FILE + elfheader->eh_prog_header);
-    printk(" %x ", elfheader->eh_entry);
-
-    Task *cur_task = current_task();
-    pde_t *pdt = (pde_t *)cur_task->ts_tss.t_CR3;
-    uint32_t npdt = elfheader->eh_entry >> 22;
-    uint32_t npte = (elfheader->eh_entry >> 12) & 0x3FF;
-
-    if ( (pdt[npdt] & PAGE_PRESENT) == 0) {
-        uint32_t new_page = (uint32_t)alloc_vm_page();
-        pdt[npdt] = PAGE_FLOOR(new_page) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    IndexNode *fnode = file_open(execfile, O_RDONLY, 0);
+    const uint32_t filesize = fnode->in_inode.in_file_size;
+    uint32_t sizecnt = 0;
+    // 读取elfheader
+    uint32_t pyheader = alloc_pypage();
+    void *headbuf = (void *)(ELF_FILE);
+    map_vm_page(ELF_FILE, pyheader);
+    for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
+        file_read(fnode, n * BLOCK_SIZE , headbuf + n * BLOCK_SIZE, BLOCK_SIZE);
     }
-    pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
-    pte[npte++] = PAGE_FLOOR(ELF_FILE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    pte[npte++] = PAGE_FLOOR(ELF_FILE+PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    pte[npte++] = PAGE_FLOOR(ELF_FILE+2*PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    pte[npte++] = PAGE_FLOOR(ELF_FILE+3*PAGE_SIZE) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     irqframe->if_EIP = elfheader->eh_entry;
+    uint32_t linear = PAGE_FLOOR(elfheader->eh_entry);
+    map_vm_page(linear, pyheader);  // TODO:假设entry和elfheader在同一个页面
+    if (linear != ELF_FILE) {
+        release_vm_page(headbuf);
+        // NOTE: 此时elfheader的指针将失效
+        elfheader = NULL;
+    }
+    sizecnt = PAGE_SIZE;
+    // 读取剩余文件内容
+    pde_t *pdt = (pde_t *)get_cr3();
+    while (sizecnt < filesize) {
+        uint32_t pyaddr = alloc_pypage();
+        void *buf = (void *)(linear + sizecnt);
+        map_vm_page(linear + sizecnt, pyaddr);
+        for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
+            int rd = file_read( fnode,
+                                sizecnt + n * BLOCK_SIZE,
+                                buf + n * BLOCK_SIZE,
+                                BLOCK_SIZE);
+            printk(" rd %x ", rd);
+        }
+        sizecnt += PAGE_SIZE;
+    }
+
     load_cr3(pdt);
 
     return 0;

@@ -56,17 +56,18 @@ switch_task()
     ret;                    \
 })
 
-#define exec()              \
+#define exec(path)          \
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
         "pushl $3 \n"       \
         "pushl $2 \n"       \
-        "pushl $1 \n"       \
+        "pushl %1 \n"       \
         "movl $11, %%eax \n" \
         "int $0x80 \n"       \
         "addl $12, %%esp \n" \
         :"=a"(ret)          \
+        :"r"(path)          \
     );                      \
     ret;                    \
 })
@@ -119,7 +120,7 @@ task_1()
 static void
 task_2()
 {
-    exec();
+    exec("/one_task");
 }
 
 // 第一个进程的堆栈，页表，代码等都位于0-1M内

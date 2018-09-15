@@ -46,22 +46,22 @@ init_filesystem(uint16_t dev)
     // ino_t ino_1m = inode_1m->in_inum;
     // release_inode(inode_1m);
     // file_tail(dev, ino_1m);
-    IndexNode *node_2m = file_create("/2M", 0, 0);
-    // file_create("/2M", 0, 0);
-    file_create("/home/3M", 0, 0);
-    file_create("/home/3M/4M", 0, 0);
+    // IndexNode *node_2m = file_create("/2M", 0, 0);
+    // // file_create("/2M", 0, 0);
+    // file_create("/home/3M", 0, 0);
+    // file_create("/home/3M/4M", 0, 0);
 
-    char bufdata[1024];
-    for (int i = 0; i < 1023; ++i)
-        bufdata[i] = 'a';
-    bufdata[1022] = 'b';
-    for (int ii = 0; ii < 1; ++ii) {
-        for (int i = 0; i < 1024; ++i) {
-            file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
-        }
-        printk(" %x ", (uint16_t)ii);
-    }
-    release_inode(node_2m);
+    // char bufdata[1024];
+    // for (int i = 0; i < 1023; ++i)
+    //     bufdata[i] = 'a';
+    // bufdata[1022] = 'b';
+    // for (int ii = 0; ii < 1; ++ii) {
+    //     for (int i = 0; i < 1024; ++i) {
+    //         file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
+    //     }
+    //     printk(" %x ", (uint16_t)ii);
+    // }
+    // release_inode(node_2m);
     sync_dev(dev);
 
     IndexNode *inode = get_inode(dev, ROOT_INODE);

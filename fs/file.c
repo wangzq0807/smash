@@ -45,7 +45,7 @@ file_open(const char *pathname, int flags, int mode)
     if (*remain != 0 || inode == NULL) 
         return NULL;
 
-    return NULL;
+    return inode;
 };
 
 IndexNode *
@@ -83,6 +83,8 @@ ssize_t
 file_read(const IndexNode *inode, off_t seek, void *buf, size_t count)
 {
     ssize_t ret = 0;
+    if (inode->in_inode.in_file_size < seek)
+        return ret;
     count = MIN(inode->in_inode.in_file_size - seek, count);
     if (count > 0) {
         blk_t blk = get_zone(inode, seek);
