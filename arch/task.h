@@ -2,9 +2,15 @@
 #define __TASK_H__
 #include "sys/types.h"
 #include "x86.h"
+#include "fs/vfile.h"
+
+#define MAX_FD      64
+
+#define TS_RUN      1
+#define TS_ZOMBIE   2
 
 typedef struct _Task Task;
-struct _Task{
+struct _Task {
     pid_t           ts_pid;
     gid_t           ts_gid;
     uid_t           ts_uid;
@@ -12,12 +18,14 @@ struct _Task{
     uint32_t        ts_lock;
     time_t          ts_time;
     error_t         ts_exit;
+    VFile           *ts_filps[MAX_FD];
+    uint32_t        ts_findex;
 
     Task    *ts_parent;
-    Task    *ts_child_head;
-    Task    *ts_child_tail;
-    Task    *ts_next;
-    Task    *ts_prev;
+    Task    *ts_child_new;      // 最新的子进程
+    Task    *ts_child_old;      // 最旧的子进程
+    Task    *ts_older;          // 较老的兄弟进程
+    Task    *ts_newer;          // 较新的兄弟进程
     Task    *ts_hash_prev;
     Task    *ts_hash_next;
 

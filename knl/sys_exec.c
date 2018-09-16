@@ -54,10 +54,46 @@ sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
     return 0;
 }
 
+static void
+_free_task_memory(Task *task)
+{
+    pde_t *cur_pdt = (pde_t *)PAGE_FLOOR(task->ts_tss.t_CR3);
+    for (uint32_t npde = 1; npde < (PAGE_SIZE / sizeof(pde_t)); ++npde) {
+        if (cur_pdt[npde] & PAGE_PRESENT) {
+            pte_t *pet = (pte_t *)PAGE_FLOOR(cur_pdt[npde]);
+            for (uint32_t npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+                if (pet[npte] & PAGE_PRESENT)
+                    release_pypage(PAGE_FLOOR(pet[npte]));
+            }
+            cur_pdt[npde] &= ~PAGE_PRESENT;
+        }
+    }
+    // pte_t *pet = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
+    // for (uint32_t npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+    //     pet[npte] &= ~PAGE_PRESENT;
+    // }
+    // cur_pdt[0] &= ~PAGE_PRESENT;
+}
+
+extern int sys_close(IrqFrame *irq, int fd);
+
+static void
+_close_task_files(Task *task)
+{
+    for (int i = 0; i < task->ts_findex; ++i) {
+        sys_close(NULL, i);
+    }
+}
+
 int
 sys_exit(IrqFrame *irq, int code)
 {
-    printk("exit %x ", code);
-    // smash_memory();
+    Task *cur_task = current_task();
+    cur_task->ts_exit = code;
+    cur_task->ts_state = TS_ZOMBIE;
+    _free_task_memory(cur_task);
+    _close_task_files(cur_task);
+
+    switch_task();
     return 0;
 }

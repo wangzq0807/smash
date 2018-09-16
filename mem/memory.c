@@ -162,7 +162,10 @@ release_pypage(uint32_t page)
     }
 
     PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
-    if (node != NULL)   return -1;
+    if (node == NULL) {
+        printk("page %x is not found\n", page);
+        return -1;
+    }
 
     if (node->pn_refs == 1) {
         node->pn_refs = 0;

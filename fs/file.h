@@ -18,4 +18,7 @@ file_write(IndexNode *inode, off_t seek, const void *buf, size_t count);
 int
 file_close(IndexNode *inode);
 
+int
+file_trunc(IndexNode *inode);
+
 #endif // __FILE_H__

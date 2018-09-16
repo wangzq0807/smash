@@ -93,18 +93,22 @@ static void
 setup_links(Task *cur_task, Task *new_task)
 {
     new_task->ts_parent = cur_task;
-    new_task->ts_child_head = NULL;
-    new_task->ts_child_tail = NULL;
-    new_task->ts_next = NULL;
-    new_task->ts_prev = cur_task->ts_child_tail;
+    new_task->ts_child_new = NULL;
+    new_task->ts_child_old = NULL;
+    if (cur_task->ts_child_new != NULL)
+        new_task->ts_older = cur_task->ts_child_new;
+    else
+        new_task->ts_older = cur_task;
+    new_task->ts_newer = cur_task;
 
     // NOTE: 下面的操作未完成前，不能发生进程切换
     cli();
-    if (cur_task->ts_child_tail != NULL)
-        cur_task->ts_child_tail->ts_next = new_task;
-    if (cur_task->ts_child_head == NULL)
-        cur_task->ts_child_head = new_task;
-    cur_task->ts_child_tail = new_task;
+    if (cur_task->ts_child_old == NULL)
+        cur_task->ts_child_old = new_task;
+    if (cur_task->ts_child_new != NULL) {
+        cur_task->ts_child_new->ts_newer = new_task;
+    }
+    cur_task->ts_child_new = new_task;
     sti();
 }
 

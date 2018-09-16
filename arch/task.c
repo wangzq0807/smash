@@ -17,6 +17,36 @@ Mutex one_mutex;
 uint32_t conf_res1 = 1;
 uint32_t conf_res2 = 1;
 
+static Task *
+get_next_task(Task *cur)
+{
+    Task *ret = NULL;
+    // 从父节点开始，
+    // 如果有子进程，则执行子进程
+    // 如果没有子进程，则执行兄弟进程
+    // 如果没有子进程，且兄弟进程指向的是父进程(说明兄弟进程已穷尽)，则执行父进程的兄弟进程
+    if (cur->ts_child_new) {
+        ret = cur->ts_child_new;
+    }
+    else if (cur->ts_older) {
+        if (cur->ts_older == cur->ts_parent && cur->ts_parent->ts_older) {
+            ret = cur->ts_parent->ts_older;
+        }
+        else {
+            ret = cur->ts_older;
+        }
+    }
+    if (ret == NULL || ret == cur) {
+        return NULL;
+    }
+    else if (ret->ts_state == TS_ZOMBIE) {
+        return get_next_task(ret);
+    }
+    else {
+        return ret;
+    }
+}
+
 void
 switch_task()
 {
@@ -24,12 +54,11 @@ switch_task()
     // NOTE：下面这种切换方式是抢占式的，单核情况下，当两个线程需要同步时，加锁必须是原子操作
     // NOTE：对于非抢占式的内核，加锁无需原子操作
     Task *cur = current_task();
-    if (cur->ts_pid == 0 && cur->ts_child_head ) {
-        switch_tss(&cur->ts_child_head->ts_tss);
-    }
-    else if (cur->ts_pid == 1) {
-        switch_tss(&cur->ts_parent->ts_tss);
-    }
+    if (cur == NULL)    return; // NOTE:系统未初始化完成
+
+    Task *next = get_next_task(cur);
+    if (next != NULL && next != cur)
+        switch_tss(&next->ts_tss);
 }
 
 #define fork()              \
@@ -85,6 +114,7 @@ task_1()
     __asm__ volatile (
         "mov $0x17, %%ax \n"
         "mov %%ax, %%ds \n"
+        "mov %%ax, %%es \n"
         : : : "%eax"
     );
     pid_t pid = fork();
@@ -144,6 +174,12 @@ setup_first_task()
     map_vm_page(0xFFFF0000, us_addr);
     uint8_t *us_page = (uint8_t *)0xFFFF0000;
     task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
+
+    task1.ts_child_new = NULL;
+    task1.ts_child_old = NULL;
+    task1.ts_older = NULL;
+    task1.ts_newer = NULL;
+    task1.ts_parent = NULL;
 }
 
 void

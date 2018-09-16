@@ -85,7 +85,7 @@ file_read(const IndexNode *inode, off_t seek, void *buf, size_t count)
     ssize_t ret = 0;
     if (inode->in_inode.in_file_size < seek)
         return ret;
-    count = MIN(inode->in_inode.in_file_size - seek, count);
+    count = MIN(inode->in_inode.in_file_size - seek + 1, count);
     if (count > 0) {
         blk_t blk = get_zone(inode, seek);
         BlockBuffer *blkbuf = get_block(inode->in_dev, blk);
@@ -143,4 +143,10 @@ int
 file_close(IndexNode *inode)
 {
     return 0;
+}
+
+int
+file_trunc(IndexNode *inode)
+{
+    return truncate_zones(inode);
 }

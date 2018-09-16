@@ -28,9 +28,12 @@ TRAP_FUNC(IRQ_SYSCALL)
 all_intr_request:
     pushal
     pushl %ds
+    pushl %es
     movw $KNL_DS, %ax
     movw %ax, %ds
+    movw %ax, %es
     call on_all_irq
+    popl %es
     popl %ds
     popal
     addl $8, %esp    /* 中断号出栈 */

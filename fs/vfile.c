@@ -1,4 +1,5 @@
 #include "vfile.h"
+#include "list.h"
 
 #define     MAX_FILES   256
 ListEntity  files[MAX_FILES];
@@ -12,13 +13,13 @@ init_vfiles()
     }
 }
 
-static VFile *
-_get_empty_vfile()
+VFile *
+alloc_vfile()
 {
     ListEntity *entity = pop_front(&free_files);
     if (entity != NULL) {
         VFile *file = TO_INSTANCE(entity, VFile, f_link);
-        file->f_refs = 0;
+        file->f_refs = 1;
         file->f_mode = 0;
         file->f_seek = 0;
         return file;
@@ -40,28 +41,4 @@ release_vfile(VFile *file)
     if (file->f_refs == 0) {
         push_back(&free_files, &file->f_link);
     }
-}
-
-VFile *
-vfile_create(const char *pathname, int flags, int mode)
-{
-    return _get_empty_vfile();
-}
-
-VFile *
-vfile_open(const char *pathname, int flags, int mode)
-{
-    return _get_empty_vfile();
-}
-
-ssize_t
-vfile_read(const VFile *vfile, void *buf, size_t count)
-{
-    return 0;
-}
-
-ssize_t
-vfile_write(const VFile *vfile, const void *buf, size_t count)
-{
-    return 0;
 }

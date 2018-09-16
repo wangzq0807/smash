@@ -26,6 +26,7 @@ extern X86Desc idt_table[256];
 
 typedef struct _IrqFrame IrqFrame;
 struct _IrqFrame {
+    int     if_ES;  // NOTE: insw会用到这个寄存器
     int     if_DS;
     /* 下面是pushal保存的寄存器 */
     int     if_EDI;

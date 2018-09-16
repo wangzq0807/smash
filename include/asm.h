@@ -162,7 +162,10 @@ static inline Task *current_task(void) {
         "movl %%esp, %%eax \n"
         "sub $1, %%eax \n"
         "andl $0xfffff000, %%eax \n"
+        "test %%eax, %%eax \n"
+        "jz 1f \n"
         "movl (%%eax), %%eax \n"
+        "1:"
         :"=a"(cur)
     );
     return cur;
