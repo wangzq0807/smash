@@ -136,7 +136,7 @@ static inline void reload_sregs(uint16_t cs, uint16_t ds) {
         "movw %%bx, %%fs \n"
         "movw %%bx, %%gs \n"
         "movw %%bx, %%ss \n"
-        : :"a"(cs), "b"(ds)
+        : :"a"(cs), "b"(ds) :"esp"
     );
 }
 
@@ -215,9 +215,9 @@ static inline int call_syscall(void *irq, uint32_t cnt, uint32_t addr, void *fun
         "lea (,%1, 4), %2\n"        // 假定int的宽度为4字节
         "addl %2, %%esp \n"         // 所有参数出栈
         "4: \n"
-        :"=a"(ret)
+        :"+a"(ret)  // NOTE: eax不能被"r"使用，否则有可能得不到正确返回值
         :"ebx"(cnt), "r"(addr), "r"(func), "r"(irq) // NOTE: eax, ecx, edx的值要由调用者负责保存
-        :"ecx"
+        :"ecx", "esp"
     );
     return ret;
 }

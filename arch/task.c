@@ -81,6 +81,7 @@ switch_task()
         "int $0x80 \n"      \
         "popl %%eax \n"     \
         :"=a"(ret)          \
+        ::"memory", "esp"   \
     );                      \
     ret;                    \
 })
@@ -97,6 +98,7 @@ switch_task()
         "addl $12, %%esp \n" \
         :"=a"(ret)          \
         :"r"(path)          \
+        :"memory", "esp"    \
     );                      \
     ret;                    \
 })

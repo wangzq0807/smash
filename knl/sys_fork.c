@@ -122,5 +122,7 @@ sys_fork(IrqFrame *irq)
     setup_page_tables(cur_task, new_task);
     setup_links(cur_task, new_task);
 
+    new_task->ts_findex = 3;
+
     return new_task->ts_pid;
 }

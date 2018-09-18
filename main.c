@@ -42,6 +42,7 @@ init_filesystem(uint16_t dev)
     dump_super_block(dev);
     init_inodes(dev);
     init_zones(dev);
+    init_vfiles();
     // IndexNode* inode_1m = name_to_inode("/1M");
     // ino_t ino_1m = inode_1m->in_inum;
     // release_inode(inode_1m);

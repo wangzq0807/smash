@@ -12,7 +12,7 @@ sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
 {
     // TODO:权限控制
     IndexNode *fnode = NULL;
-    if (mode & O_CREAT)
+    if (flags & O_CREAT)
         fnode = file_create(filename, flags, mode);
     else
         fnode = file_open(filename, flags, mode);
@@ -22,17 +22,17 @@ sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
     if (vfile == NULL)  return -1;
     vfile->f_mode = mode;
     vfile->f_inode = fnode;
-    if (mode & O_TRUNC) {
+    if (flags & O_TRUNC) {
         file_trunc(fnode);
     }
-    if (mode & O_APPEND) {
+    if (flags & O_APPEND) {
         vfile->f_seek = fnode->in_inode.in_file_size;
     }
 
     Task *cur = current_task();
     if (cur->ts_findex < MAX_FD) {
-        cur->ts_filps[cur->ts_findex++] = vfile;
-        return 0;
+        cur->ts_filps[cur->ts_findex] = vfile;
+        return cur->ts_findex;
     }
     else {
         return -1;
