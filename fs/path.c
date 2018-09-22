@@ -6,6 +6,7 @@
 #include "buffer.h"
 #include "log.h"
 #include "asm.h"
+#include "file.h"
 
 uint16_t cur_inode = ROOT_INODE;
 uint16_t cur_dev = ROOT_DEVICE;
@@ -24,16 +25,17 @@ _next_file(IndexNode *inode, uint32_t next, Direction *dir)
 }
 
 ino_t
-search_file(IndexNode *inode, const char *name, int len)
+search_file(IndexNode *inode, const char *fname, int len)
 {
-    if (S_ISDIR(inode->in_inode.in_file_mode)) {
-        off_t seek = 0;
-        while (seek < inode->in_inode.in_file_size) {
-            Direction dir;
-            seek = _next_file(inode, seek, &dir);
-            if (strncmp(name, dir.dr_name, len) == 0) {
-                return dir.dr_inode;
-            }
+    if (!S_ISDIR(inode->in_inode.in_file_mode))    return -1;
+
+    off_t seek = 0;
+    while (seek < inode->in_inode.in_file_size) {
+        Direction dir;
+        seek = _next_file(inode, seek, &dir);
+        if (dir.dr_inode != INVALID_INODE &&
+            strncmp(fname, dir.dr_name, FILENAME_LEN) == 0 ) {
+            return dir.dr_inode;
         }
     }
     return INVALID_INODE;
@@ -88,4 +90,56 @@ name_to_inode(const char *pathname)
 
     release_inode(dirnode);
     return ret_inode;
+}
+
+int
+add_file_entry(IndexNode *dinode, const char *fname, IndexNode *inode)
+{
+    if (!S_ISDIR(dinode->in_inode.in_file_mode))    return NULL;
+
+    Direction dir;
+    strcpy(dir.dr_name, fname);
+    dir.dr_inode = inode->in_inum;
+
+    off_t seek = 0;
+    while (seek < dinode->in_inode.in_file_size) {
+        Direction dir;
+        seek = _next_file(dinode, seek, &dir);
+        if (dir.dr_inode == INVALID_INODE) {
+            seek -= sizeof(Direction);
+            file_write(dinode, seek, (void *)&dir, sizeof(Direction));
+        }
+    }
+    file_write(dinode, dinode->in_inode.in_file_size, (void *)&dir, sizeof(Direction));
+    dinode->in_inode.in_num_links++;
+    inode->in_inode.in_num_links++;
+    return 0;
+}
+
+int
+rm_file_entry(IndexNode *dinode, const char *fname)
+{
+    if (!S_ISDIR(dinode->in_inode.in_file_mode))    return -1;
+
+    off_t seek = 0;
+    while (seek < dinode->in_inode.in_file_size) {
+        Direction dir;
+        seek = _next_file(dinode, seek, &dir);
+        if (dir.dr_inode != INVALID_INODE &&
+            strncmp(fname, dir.dr_name, FILENAME_LEN) == 0 ) {
+
+            IndexNode *subinode = get_inode(dinode->in_dev, dir.dr_inode);
+            subinode->in_inode.in_num_links--;
+            subinode->in_status |= INODE_DIRTY;
+            if (subinode->in_inode.in_num_links == 0)
+                file_trunc(subinode);
+            release_inode(subinode);
+
+            dir.dr_inode = INVALID_INODE;
+            seek -= sizeof(Direction);
+            file_write(dinode, seek, (void *)&dir, sizeof(Direction));
+            dinode->in_inode.in_num_links--;
+        }
+    }
+    return 0;
 }

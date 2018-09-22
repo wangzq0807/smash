@@ -17,6 +17,12 @@ IndexNode *
 name_to_inode(const char *pathname);
 
 ino_t
-search_file(IndexNode *inode, const char *name, int len);
+search_file(IndexNode *dirinode, const char *fname, int len);
+
+int
+add_file_entry(IndexNode *dirinode, const char *fname, IndexNode *inode);
+
+int
+rm_file_entry(IndexNode *dinode, const char *fname);
 
 #endif // __PATH_H__

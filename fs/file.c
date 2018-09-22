@@ -9,45 +9,6 @@
 #include "log.h"
 #include "file.h"
 
-static int
-_file_append(IndexNode *inode, void *data, int len)
-{
-    if (len > BLOCK_SIZE )
-        return -1;
-    off_t tail = inode->in_inode.in_file_size;
-    blk_t blk = get_zone(inode, tail);
-    int offset = tail & (BLOCK_SIZE - 1);
-    int less = BLOCK_SIZE - offset;
-    int more = len - less;
-
-    BlockBuffer *buf = get_block(inode->in_dev, blk);
-    memcpy(buf->bf_data + offset, data, MIN(len, less));
-    buf->bf_status |= BUF_DIRTY;
-    release_block(buf);
-
-    if (more > 0) {
-        blk_t new_blk = alloc_zone(inode);
-        BlockBuffer *new_buf = get_block(inode->in_dev, new_blk);
-        memcpy(new_buf->bf_data, data+less, more);
-        new_buf->bf_status |= BUF_DIRTY;
-        release_block(new_buf);
-    }
-    inode->in_inode.in_file_size += len;
-    inode->in_status |= INODE_DIRTY;
-
-    return 0;
-}
-
-static void
-_add_entry(IndexNode *dinode, const char *fname, ino_t ino)
-{
-    Direction dir;
-    strcpy(dir.dr_name, fname);
-    dir.dr_inode = ino;
-    _file_append(dinode, &dir, sizeof(Direction));
-    dinode->in_inode.in_num_links += 1;
-}
-
 IndexNode *
 file_open(const char *pathname, int flags, int mode)
 {
@@ -74,7 +35,7 @@ file_create(const char *pathname, int flags, int mode)
         ret_inode->in_inode.in_num_links = 1;
         ret_inode->in_inode.in_file_size = 0;
 
-        _add_entry(dinode, basename, ret_inode->in_inum);
+        add_file_entry(dinode, basename, ret_inode);
     }
     else {
         ret_inode = get_inode(dinode->in_dev, ino);
@@ -167,7 +128,7 @@ file_link(const char *pathname, IndexNode *inode)
 
     ino_t ino = search_file(dinode, basename, FILENAME_LEN);
     if (ino == INVALID_INODE) {
-        _add_entry(dinode, basename, inode->in_inum);
+        add_file_entry(dinode, basename, inode);
     }
     else {
         ret = -1;
@@ -180,5 +141,12 @@ int
 file_unlink(const char *pathname, IndexNode *inode)
 {
     int ret = 0;
+    const char *basename = NULL;
+    IndexNode *dinode = name_to_dirinode(pathname, &basename);
+    if (dinode == NULL) return NULL;
+
+    rm_file_entry(dinode, basename);
+
+    release_inode(dinode);
     return ret;
 }

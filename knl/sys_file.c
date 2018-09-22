@@ -132,3 +132,15 @@ sys_unlink(IrqFrame *irq, const char *pathname)
     file_close(fnode);
     return ret;
 }
+
+int
+sys_mkdir(IrqFrame *irq, const char *pathname, int mode)
+{
+    return 0;
+}
+
+int
+sys_rmdir(IrqFrame *irq, const char *pathname)
+{
+    return 0;
+}
