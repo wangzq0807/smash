@@ -59,11 +59,12 @@ void
 dump_super_block(dev_t dev)
 {
     const SuperBlock *sb = get_super_block(dev);
+    printk("Super Block:\n");
     printk("sb_magic %x\n", sb->sb_magic);
     printk("sb_inodes %x\n", sb->sb_inodes);
     printk("sb_zones %x\n", sb->sb_zones);
     printk("sb_imap_blocks %x\n", sb->sb_imap_blocks);
     printk("sb_zmap_blocks %x\n", sb->sb_zmap_blocks);
     printk("sb_first_datazone %x\n", sb->sb_first_datazone);
-    printk("sb_log_zone_size %x", sb->sb_log_zone_size);
+    printk("sb_log_zone_size %x\n", sb->sb_log_zone_size);
 }

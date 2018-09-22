@@ -26,6 +26,8 @@ num2str(char *buf, int num, int flags)
             hexnum = hexnum >> 4;
             tmpbuf[i++] = asciinum[tmp];
         }
+        if (i == 0)
+            tmpbuf[i++] = '0';
     }
     else if (flags == INT_FMT) {
         while (num > 0) {
@@ -33,6 +35,8 @@ num2str(char *buf, int num, int flags)
             num = num / 10;
             tmpbuf[i++] = asciinum[tmp];
         }
+        if (i == 0)
+            tmpbuf[i++] = '0';
     }
 
     while(i > 0) {

@@ -3,6 +3,7 @@
 #include "log.h"
 #include "fs/file.h"
 #include "fs/vfile.h"
+#include "fs/path.h"
 #include "sys/types.h"
 #include "sys/fcntl.h"
 #include "asm.h"
@@ -136,11 +137,13 @@ sys_unlink(IrqFrame *irq, const char *pathname)
 int
 sys_mkdir(IrqFrame *irq, const char *pathname, int mode)
 {
+    make_dir(pathname, mode);
     return 0;
 }
 
 int
 sys_rmdir(IrqFrame *irq, const char *pathname)
 {
+    rm_dir(pathname);
     return 0;
 }

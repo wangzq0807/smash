@@ -121,6 +121,8 @@ file_trunc(IndexNode *inode)
 int
 file_link(const char *pathname, IndexNode *inode)
 {
+    if (S_ISDIR(inode->in_inode.in_file_mode))  return -1;
+
     int ret = 0;
     const char *basename = NULL;
     IndexNode *dinode = name_to_dirinode(pathname, &basename);

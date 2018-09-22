@@ -25,4 +25,10 @@ add_file_entry(IndexNode *dirinode, const char *fname, IndexNode *inode);
 int
 rm_file_entry(IndexNode *dinode, const char *fname);
 
+int
+make_dir(const char *pathname, int mode);
+
+int
+rm_dir(const char *pathname);
+
 #endif // __PATH_H__

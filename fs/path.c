@@ -111,7 +111,7 @@ add_file_entry(IndexNode *dinode, const char *fname, IndexNode *inode)
         }
     }
     file_write(dinode, dinode->in_inode.in_file_size, (void *)&dir, sizeof(Direction));
-    dinode->in_inode.in_num_links++;
+    // dinode->in_inode.in_num_links++;
     inode->in_inode.in_num_links++;
     return 0;
 }
@@ -138,8 +138,56 @@ rm_file_entry(IndexNode *dinode, const char *fname)
             dir.dr_inode = INVALID_INODE;
             seek -= sizeof(Direction);
             file_write(dinode, seek, (void *)&dir, sizeof(Direction));
-            dinode->in_inode.in_num_links--;
+            // dinode->in_inode.in_num_links--;
         }
     }
+    return 0;
+}
+
+int
+make_dir(const char *pathname, int mode)
+{
+    const char *basename = NULL;
+    IndexNode *dirnode = name_to_dirinode(pathname, &basename);
+    if (dirnode == NULL)    return -1;
+
+    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    if (ino != INVALID_INODE)   return -1;
+
+    IndexNode *subinode = alloc_inode(dirnode->in_dev);
+    subinode->in_inode.in_file_mode = mode | S_IFDIR;
+    add_file_entry(dirnode, basename, subinode);
+    add_file_entry(subinode, ".", subinode);
+    add_file_entry(subinode, "..", dirnode);
+    release_inode(subinode);
+
+    return 0;
+}
+
+int
+rm_dir(const char *pathname)
+{
+    const char *basename = NULL;
+    IndexNode *dirnode = name_to_dirinode(pathname, &basename);
+    if (dirnode == NULL)    return -1;
+
+    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    if (ino == INVALID_INODE)   return -1;
+
+    IndexNode *subinode = get_inode(dirnode->in_dev, ino);
+
+    off_t seek = 0;
+    while (seek < subinode->in_inode.in_file_size) {
+        Direction dir;
+        seek = _next_file(subinode, seek, &dir);
+        if (strcmp(dir.dr_name, ".") != 0 &&
+            strcmp(dir.dr_name, "..") != 0 ) {
+            return -1;
+        }
+    }
+    rm_file_entry(subinode, ".");
+    rm_file_entry(subinode, "..");
+    rm_file_entry(dirnode, basename);
+
     return 0;
 }
