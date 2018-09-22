@@ -23,8 +23,8 @@ _next_file(IndexNode *inode, uint32_t next, Direction *dir)
     return next + sizeof(Direction);
 }
 
-static ino_t
-_search_file(IndexNode *inode, const char *name, int len)
+ino_t
+search_file(IndexNode *inode, const char *name, int len)
 {
     if (S_ISDIR(inode->in_inode.in_file_mode)) {
         off_t seek = 0;
@@ -40,38 +40,52 @@ _search_file(IndexNode *inode, const char *name, int len)
 }
 
 IndexNode *
-name_to_inode(const char *name, const char **remain)
+name_to_dirinode(const char *pathname, const char **basename)
 {
     ino_t work_inode = ROOT_INODE;
     dev_t work_dev = ROOT_DEVICE;
-    if (name[0] == '/') {
+    if (pathname[0] == '/') {
         work_inode = ROOT_INODE;
         work_dev = ROOT_DEVICE;
-        name += 1;
+        pathname += 1;
     }
     else {
         work_inode = cur_inode;
         work_dev = cur_dev;
     }
 
-    while (*name) {
-        const char *next = strstr(name, "/");
-        const int len = next - name;
-        IndexNode *inode = get_inode(work_dev, work_inode);
-        ino_t next_inode = _search_file(inode, name, len);
-        // TODO: 不确定
-        work_dev = inode->in_dev;
-        release_inode(inode);
-
-        if (next_inode == INVALID_INODE)
+    while (*pathname) {
+        const char *next = strstr(pathname, "/");
+        const int len = next - pathname;
+        if (*next == '/' && *(next+1) != 0) {
+            IndexNode *inode = get_inode(work_dev, work_inode);
+            work_inode = search_file(inode, pathname, len);
+            // TODO: 不确定
+            work_dev = inode->in_dev;
+            release_inode(inode);
+            pathname = next + 1;
+        }
+        else {
             break;
-        if (*next == '/')
-            name = next + 1;
-        else if (*next == 0)
-            name = next;
-        work_inode = next_inode;
+        }
     }
-    if (remain != NULL)
-        *remain = name;
+    if (basename != NULL)
+        *basename = pathname;
     return get_inode(work_dev, work_inode);
+}
+
+IndexNode *
+name_to_inode(const char *pathname)
+{
+    const char *basename = NULL;
+    IndexNode *ret_inode = NULL;
+    IndexNode *dirnode = name_to_dirinode(pathname, &basename);
+    if (dirnode == NULL)    return NULL;
+
+    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    if (ino != INVALID_INODE)
+        ret_inode = get_inode(dirnode->in_dev, ino);
+
+    release_inode(dirnode);
+    return ret_inode;
 }

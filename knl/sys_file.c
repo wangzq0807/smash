@@ -40,7 +40,7 @@ sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
 }
 
 int
-sys_create(IrqFrame *irq, const char *filename, int flags, int mode)
+sys_creat(IrqFrame *irq, const char *filename, int flags, int mode)
 {
     return sys_open(irq, filename, O_CREAT|O_TRUNC, mode);
 }
@@ -100,10 +100,35 @@ sys_close(IrqFrame *irq, int fd)
         vfile = cur->ts_filps[fd];
         if (vfile == NULL)  return -1;
 
-        release_inode(vfile->f_inode);
+        file_close(vfile->f_inode);
         cur->ts_filps[fd] = NULL;
         release_vfile(vfile);
     }
 
     return 0;
+}
+
+int
+sys_link(IrqFrame *irq, const char *oldpath, const char *newpath)
+{
+    IndexNode *oldnode = file_open(oldpath, O_RDONLY, 0);
+    if (oldnode == NULL)    return -1;
+
+    int ret = file_link(newpath, oldnode);
+
+    file_close(oldnode);
+
+    return ret;
+}
+
+int
+sys_unlink(IrqFrame *irq, const char *pathname)
+{
+    IndexNode *fnode = file_open(pathname, O_RDONLY, 0);
+    if (fnode == NULL)  return -1;
+
+    int ret = file_unlink(pathname, fnode);
+
+    file_close(fnode);
+    return ret;
 }

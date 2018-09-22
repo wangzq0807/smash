@@ -21,9 +21,9 @@ int sys_none(IrqFrame *irq) { return 0 ;}
 // int sys_open(IrqFrame *irq) { return 0 ;}
 // int sys_close(IrqFrame *irq) { return 0 ;}
 int sys_waitpid(IrqFrame *irq) { return 0 ;}
-int sys_creat(IrqFrame *irq) { return 0 ;}
-int sys_link(IrqFrame *irq) { return 0 ;}
-int sys_unlink(IrqFrame *irq) { return 0 ;}
+// int sys_creat(IrqFrame *irq) { return 0 ;}
+// int sys_link(IrqFrame *irq) { return 0 ;}
+// int sys_unlink(IrqFrame *irq) { return 0 ;}
 // int sys_execve(IrqFrame *irq) { return 0 ;}
 int sys_chdir(IrqFrame *irq) { return 0 ;}
 int sys_time(IrqFrame *irq) { return 0 ;}

@@ -73,4 +73,12 @@ static inline const char *strstr(const char *str, const char *need) {
     return str;
 }
 
+static inline const char *strcpy(char *dst, const char *src) {
+    const char *ret = dst;
+    while (*src) {
+        *dst++ = *src++;
+    }
+    return ret;
+}
+
 #endif

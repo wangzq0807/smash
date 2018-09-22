@@ -21,4 +21,10 @@ file_close(IndexNode *inode);
 int
 file_trunc(IndexNode *inode);
 
+int
+file_link(const char *pathname, IndexNode *inode);
+
+int
+file_unlink(const char *pathname, IndexNode *inode);
+
 #endif // __FILE_H__

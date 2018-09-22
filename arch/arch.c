@@ -5,6 +5,7 @@
 #include "x86.h"
 #include "memory.h"
 #include "page.h"
+#include "utc.h"
 
 static void
 _init_8259A()
@@ -62,6 +63,8 @@ init_isa()
 
     _setup_pages();
     enable_paging();
+
+    init_utc();
     sti();
 }
 

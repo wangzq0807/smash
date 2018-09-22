@@ -11,15 +11,12 @@ struct _Direction {
 };
 
 IndexNode *
-name_to_inode(const char *name, const char **remain);
+name_to_dirinode(const char *pathname, const char **basename);
 
-static inline const char *file_name(const char *name) {
-    const char *ret = name;
-    for (; *name != NULL; ++name) {
-        if (*name == '/')
-            ret = name+1;
-    }
-    return ret;
-}
+IndexNode *
+name_to_inode(const char *pathname);
+
+ino_t
+search_file(IndexNode *inode, const char *name, int len);
 
 #endif // __PATH_H__

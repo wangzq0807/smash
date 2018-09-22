@@ -17,24 +17,6 @@
 #include "arch/task.h"
 
 void
-file_tail(uint16_t dev, uint16_t inode_num)
-{
-    uint32_t blk = 0;
-    IndexNode *one_inode = get_inode(dev, inode_num);
-    if (S_ISREG(one_inode->in_inode.in_file_mode)) {
-        uint32_t bytes = one_inode->in_inode.in_file_size - 3;
-        uint32_t offset = bytes & (BLOCK_SIZE - 1);
-        blk = get_zone(one_inode, bytes);
-        printk(" %x ", blk);
-        BlockBuffer *one_buf = get_block(one_inode->in_dev, blk);
-        char *content = (char *)one_buf->bf_data + offset;
-        printk(content);
-        release_block(one_buf);
-    }
-    release_inode(one_inode);
-}
-
-void
 init_filesystem(uint16_t dev)
 {
     init_partion(dev);
@@ -43,27 +25,6 @@ init_filesystem(uint16_t dev)
     init_inodes(dev);
     init_zones(dev);
     init_vfiles();
-    // IndexNode* inode_1m = name_to_inode("/1M");
-    // ino_t ino_1m = inode_1m->in_inum;
-    // release_inode(inode_1m);
-    // file_tail(dev, ino_1m);
-    // IndexNode *node_2m = file_create("/2M", 0, 0);
-    // // file_create("/2M", 0, 0);
-    // file_create("/home/3M", 0, 0);
-    // file_create("/home/3M/4M", 0, 0);
-
-    // char bufdata[1024];
-    // for (int i = 0; i < 1023; ++i)
-    //     bufdata[i] = 'a';
-    // bufdata[1022] = 'b';
-    // for (int ii = 0; ii < 1; ++ii) {
-    //     for (int i = 0; i < 1024; ++i) {
-    //         file_write(node_2m, ii * 1024 * 1023 + i*1023, bufdata, 1023);
-    //     }
-    //     printk(" %x ", (uint16_t)ii);
-    // }
-    // release_inode(node_2m);
-    sync_dev(dev);
 
     IndexNode *inode = get_inode(dev, ROOT_INODE);
     uint32_t blk = 0;

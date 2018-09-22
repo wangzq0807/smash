@@ -33,16 +33,26 @@ _file_append(IndexNode *inode, void *data, int len)
         release_block(new_buf);
     }
     inode->in_inode.in_file_size += len;
+    inode->in_status |= INODE_DIRTY;
 
     return 0;
+}
+
+static void
+_add_entry(IndexNode *dinode, const char *fname, ino_t ino)
+{
+    Direction dir;
+    strcpy(dir.dr_name, fname);
+    dir.dr_inode = ino;
+    _file_append(dinode, &dir, sizeof(Direction));
+    dinode->in_inode.in_num_links += 1;
 }
 
 IndexNode *
 file_open(const char *pathname, int flags, int mode)
 {
-    const char *remain = NULL;
-    IndexNode *inode = name_to_inode(pathname, &remain);
-    if (*remain != 0 || inode == NULL) 
+    IndexNode *inode = name_to_inode(pathname);
+    if (inode == NULL)
         return NULL;
 
     return inode;
@@ -51,32 +61,27 @@ file_open(const char *pathname, int flags, int mode)
 IndexNode *
 file_create(const char *pathname, int flags, int mode)
 {
-    const char *remain = NULL;
-    IndexNode *inode = name_to_inode(pathname, &remain);
-    if (*remain != 0) {
+    const char *basename = NULL;
+    IndexNode *ret_inode = NULL;
+    IndexNode *dinode = name_to_dirinode(pathname, &basename);
+    if (dinode == NULL) return NULL;
+
+    ino_t ino = search_file(dinode, basename, FILENAME_LEN);
+    if (ino == INVALID_INODE) {
         // create new file
-        const char *subdir = strstr(remain, "/");
-        if (*subdir == 0) {
-            Direction dir;
-            memcpy(dir.dr_name, remain, strlen(remain)+1);
+        ret_inode = alloc_inode(dinode->in_dev);
+        ret_inode->in_inode.in_file_mode = mode;
+        ret_inode->in_inode.in_num_links = 1;
+        ret_inode->in_inode.in_file_size = 0;
 
-            IndexNode *new_inode = alloc_inode(inode->in_dev);
-            new_inode->in_inode.in_file_mode = S_IFREG | S_IRUSR | S_IWUSR;
-            new_inode->in_inode.in_num_links = 1;
-            new_inode->in_inode.in_file_size = 0;
-            dir.dr_inode = new_inode->in_inum;
-
-            _file_append(inode, &dir, sizeof(Direction));
-            inode->in_status |= INODE_DIRTY;
-            release_inode(inode);
-            return new_inode;
-        }
+        _add_entry(dinode, basename, ret_inode->in_inum);
     }
     else {
-        // open org file
-        return inode;
+        ret_inode = get_inode(dinode->in_dev, ino);
     }
-    return NULL;
+    release_inode(dinode);
+
+    return ret_inode;
 }
 
 ssize_t
@@ -142,6 +147,7 @@ file_write(IndexNode *inode, off_t seek, const void *buf, size_t count)
 int
 file_close(IndexNode *inode)
 {
+    release_inode(inode);
     return 0;
 }
 
@@ -149,4 +155,30 @@ int
 file_trunc(IndexNode *inode)
 {
     return truncate_zones(inode);
+}
+
+int
+file_link(const char *pathname, IndexNode *inode)
+{
+    int ret = 0;
+    const char *basename = NULL;
+    IndexNode *dinode = name_to_dirinode(pathname, &basename);
+    if (dinode == NULL) return NULL;
+
+    ino_t ino = search_file(dinode, basename, FILENAME_LEN);
+    if (ino == INVALID_INODE) {
+        _add_entry(dinode, basename, inode->in_inum);
+    }
+    else {
+        ret = -1;
+    }
+    release_inode(dinode);
+    return ret;
+}
+
+int
+file_unlink(const char *pathname, IndexNode *inode)
+{
+    int ret = 0;
+    return ret;
 }
