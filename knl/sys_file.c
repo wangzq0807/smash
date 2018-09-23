@@ -147,3 +147,28 @@ sys_rmdir(IrqFrame *irq, const char *pathname)
     rm_dir(pathname);
     return 0;
 }
+
+int
+sys_chdir(IrqFrame *irq, const char *path)
+{
+    return 0;
+}
+
+int
+sys_mknod(IrqFrame *irq, const char *path, mode_t mode, dev_t dev)
+{
+    return 0;
+}
+
+int
+sys_chmod(IrqFrame *irq, const char *path, mode_t mode)
+{
+    IndexNode *finode = name_to_inode(path);
+    if (finode == NULL)  return -1;
+
+    finode->in_inode.in_file_mode = mode;
+    finode->in_status |= INODE_DIRTY;
+    release_inode(finode);
+
+    return 0;
+}

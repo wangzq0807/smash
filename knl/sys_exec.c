@@ -97,3 +97,9 @@ sys_exit(IrqFrame *irq, int code)
     switch_task();
     return 0;
 }
+
+int
+sys_waitpid(IrqFrame *irq, pid_t pid, int *status, int options)
+{
+    return 0;
+}

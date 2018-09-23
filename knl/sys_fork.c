@@ -76,15 +76,7 @@ setup_page_tables(Task *cur_task, Task *new_task)
             }
         }
     }
-    // 复制内核所在的0 - 4M页表
-    pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
-    pte_t *new_pte = (pte_t *)alloc_vm_page();
-    new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
-        if (cur_pte[npte] & PAGE_PRESENT) {
-            new_pte[npte] = cur_pte[npte];  
-        }
-    }
+
     /* 刷新tlb */
     load_cr3(cur_pdt);
 }

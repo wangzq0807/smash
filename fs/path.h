@@ -7,7 +7,7 @@ typedef struct _IndexNode IndexNode;
 typedef struct _Direction Direction;
 struct _Direction {
     ino_t       dr_inode;
-    char        dr_name[FILENAME_LEN];
+    char        dr_name[FILENAME_LEN+1];
 };
 
 IndexNode *

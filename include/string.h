@@ -3,10 +3,9 @@
 #include "sys/types.h"
 
 static inline void memcpy(void *dest, const void *src, size_t size) {
-    size--;
-    do {
+    while (size--) {
         ((uint8_t*)dest)[size] = ((uint8_t*)src)[size];
-    } while (size--);
+    };
 }
 
 static inline void memset(void *dest, int value, size_t size) {

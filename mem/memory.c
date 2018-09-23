@@ -251,6 +251,20 @@ map_vm_page(uint32_t linaddr, uint32_t pyaddr)
     invlpg((void *)linaddr);
 }
 
+void
+switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt)
+{
+    // 复制内核所在的0 - 4M页表
+    pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
+    pte_t *new_pte = (pte_t *)alloc_vm_page();
+    new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+        if (cur_pte[npte] & PAGE_PRESENT) {
+            new_pte[npte] = cur_pte[npte];
+        }
+    }
+}
+
 uint32_t
 alloc_spage() {
     // 640K的最后一个页面0x9F000不能用?

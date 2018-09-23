@@ -54,6 +54,8 @@ release_vm_page(void *addr);
 void
 map_vm_page(uint32_t linaddr, uint32_t pyaddr);
 
+void
+switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt);
 //====================================
 // 静态内存分配
 // 初始化时,0 - 1M已完成跟物理地址的一一映射，

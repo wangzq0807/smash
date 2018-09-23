@@ -19,6 +19,8 @@
 void
 init_filesystem(uint16_t dev)
 {
+    init_disk();
+    init_block_buffer();
     init_partion(dev);
     init_super_block(dev);
     dump_super_block(dev);
@@ -56,8 +58,6 @@ start_main()
     init_memory(4*1024*1024, 8*1024*1024);
     init_isa();
     init_keyboard();
-    init_disk();
-    init_block_buffer();
     init_filesystem(ROOT_DEVICE);
     start_task();
     // init_filesystem();

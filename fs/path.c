@@ -14,6 +14,7 @@ uint16_t cur_dev = ROOT_DEVICE;
 uint32_t
 _next_file(IndexNode *inode, uint32_t next, Direction *dir)
 {
+    // TODO: 性能待优化
     uint32_t offset = next & (BLOCK_SIZE - 1);
     uint32_t zone = get_zone(inode, next);
     // TODO: zone和block
@@ -131,14 +132,20 @@ rm_file_entry(IndexNode *dinode, const char *fname)
             IndexNode *subinode = get_inode(dinode->in_dev, dir.dr_inode);
             subinode->in_inode.in_num_links--;
             subinode->in_status |= INODE_DIRTY;
-            if (subinode->in_inode.in_num_links == 0)
+            if (subinode->in_inode.in_num_links == 0) {
                 file_trunc(subinode);
-            release_inode(subinode);
+                delete_inode(subinode);
+            }
+            else {
+                release_inode(subinode);
+            }
 
             dir.dr_inode = INVALID_INODE;
             seek -= sizeof(Direction);
             file_write(dinode, seek, (void *)&dir, sizeof(Direction));
             // dinode->in_inode.in_num_links--;
+            sync_dev(dinode->in_dev);
+            break;
         }
     }
     return 0;
@@ -160,6 +167,8 @@ make_dir(const char *pathname, int mode)
     add_file_entry(subinode, ".", subinode);
     add_file_entry(subinode, "..", dirnode);
     release_inode(subinode);
+    sync_dev(dirnode->in_dev);
+    release_inode(dirnode);
 
     return 0;
 }
@@ -188,6 +197,9 @@ rm_dir(const char *pathname)
     rm_file_entry(subinode, ".");
     rm_file_entry(subinode, "..");
     rm_file_entry(dirnode, basename);
+    sync_dev(dirnode->in_dev);
+    release_inode(subinode);
+    release_inode(dirnode);
 
     return 0;
 }

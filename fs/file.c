@@ -40,6 +40,7 @@ file_create(const char *pathname, int flags, int mode)
     else {
         ret_inode = get_inode(dinode->in_dev, ino);
     }
+    sync_dev(dinode->in_dev);
     release_inode(dinode);
 
     return ret_inode;
@@ -102,6 +103,7 @@ file_write(IndexNode *inode, off_t seek, const void *buf, size_t count)
     }
     inode->in_inode.in_file_size = MAX(inode->in_inode.in_file_size, seek + ret);
     inode->in_status |= INODE_DIRTY;
+    sync_dev(inode->in_dev);
     return ret;
 }
 
@@ -115,7 +117,9 @@ file_close(IndexNode *inode)
 int
 file_trunc(IndexNode *inode)
 {
-    return truncate_zones(inode);
+    int ret = truncate_zones(inode);
+    sync_dev(inode->in_dev);
+    return ret;
 }
 
 int

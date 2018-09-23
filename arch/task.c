@@ -39,9 +39,6 @@ get_next_task(Task *cur)
     if (ret == NULL || ret == cur) {
         return NULL;
     }
-    else if (ret->ts_state == TS_ZOMBIE) {
-        return get_next_task(ret);
-    }
     else {
         return ret;
     }
@@ -56,9 +53,17 @@ switch_task()
     Task *cur = current_task();
     if (cur == NULL)    return; // NOTE:系统未初始化完成
 
-    Task *next = get_next_task(cur);
-    if (next != NULL && next != cur)
+    Task *next = cur;
+    do {
+        next = get_next_task(next);
+    } while (next != NULL && next->ts_state == TS_ZOMBIE);
+
+    if (next != NULL && next != cur) {
+        pde_t *cur_pde = (pde_t *)cur->ts_tss.t_CR3;
+        pde_t *next_pde = (pde_t *)next->ts_tss.t_CR3;
+        switch_vm_page(cur_pde, next_pde);
         switch_tss(&next->ts_tss);
+    }
 }
 
 #define fork()              \

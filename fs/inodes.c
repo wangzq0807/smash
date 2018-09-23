@@ -170,6 +170,7 @@ error_t
 delete_inode(IndexNode *inode)
 {
     _clear_bitmap(inode_map, inode->in_inum);
+    release_inode(inode);
     return 0;
 }
 

@@ -14,7 +14,7 @@
 
 #define DIRECT_ZONE             7           // 直接索引区块数
 #define NUMBER_ZONE             10          // 总的索引区块数
-#define FILENAME_LEN            30          // 文件名长度
+#define FILENAME_LEN            29          // 文件名长度
 
 #define ROOT_INODE              1           // 根节点
 #define INVALID_ZONE            0
