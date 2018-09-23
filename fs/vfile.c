@@ -42,3 +42,15 @@ release_vfile(VFile *file)
         push_back(&free_files, &file->f_link);
     }
 }
+
+VFile *
+dup_vfile(VFile *file)
+{
+    VFile *ret = alloc_vfile();
+    file->f_inode->in_refs++;
+    ret->f_inode = file->f_inode;
+    ret->f_refs = file->f_refs;
+    ret->f_mode = file->f_mode;
+    ret->f_seek = file->f_seek;
+    return ret;
+}

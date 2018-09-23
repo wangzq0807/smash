@@ -114,7 +114,9 @@ sys_fork(IrqFrame *irq)
     setup_page_tables(cur_task, new_task);
     setup_links(cur_task, new_task);
 
-    new_task->ts_findex = 3;
+    for (int i = 0; i < MAX_FD; ++i)
+        new_task->ts_filps[i] = dup_vfile(cur_task->ts_filps[i]);
+    new_task->ts_findex = cur_task->ts_findex;
 
     return new_task->ts_pid;
 }

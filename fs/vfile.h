@@ -24,5 +24,7 @@ add_vfile_refs(VFile *file);
 void
 release_vfile(VFile *file);
 
+VFile *
+dup_vfile(VFile *file);
 
 #endif // __VFILE_H__
