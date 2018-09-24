@@ -1,6 +1,9 @@
 #include "tty.h"
 #include "console.h"
 #include "log.h"
+#include "arch/task.h"
+#include "asm.h"
+#include "string.h"
 
 #define QUEUE_LEN    256
 typedef struct _ttyDev      ttyDev;
@@ -11,6 +14,7 @@ struct _ttyQueue
     int     tq_head;
     int     tq_tail;
     char    tq_buf[QUEUE_LEN];
+    Task    *tq_wait_task;
 };
 
 struct _ttyDev
@@ -26,8 +30,10 @@ init_tty()
 {
     console_tty.td_read_q.tq_head = 0;
     console_tty.td_read_q.tq_tail = 0;
+    console_tty.td_read_q.tq_wait_task = NULL;
     console_tty.td_write_q.tq_head = 0;
     console_tty.td_write_q.tq_tail = 0;
+    console_tty.td_write_q.tq_wait_task = NULL;
     return 0;
 }
 
@@ -77,7 +83,8 @@ _pop_queue(ttyQueue *queue)
     return ret;
 }
 
-static int
+// TODO: 不要static，会导致GCC出BUG
+int
 _backspace_queue(ttyQueue *queue)
 {
     if (_is_empty_queue(queue)) return -1;
@@ -94,6 +101,7 @@ _backspace_queue(ttyQueue *queue)
 void
 on_tty_intr(char c)
 {
+    return ;
     char sz[2] = {c, 0};
     if (c == '\b') {
         int bs = _backspace_queue(&console_tty.td_read_q);
@@ -102,11 +110,15 @@ on_tty_intr(char c)
         }
     }
     else if(c == '\r') {
+        if (_is_full_queue(&console_tty.td_read_q))  return;
         _put_queue(&console_tty.td_read_q, c);
+        wakeup(console_tty.td_read_q.tq_wait_task);
         console_print(sz);
     }
     else {
+        if (_is_full_queue(&console_tty.td_read_q))  return;
         _put_queue(&console_tty.td_read_q, c);
+        wakeup(console_tty.td_read_q.tq_wait_task);
         console_print(sz);
     }
 }
@@ -114,18 +126,33 @@ on_tty_intr(char c)
 int
 tty_read(char *buf, int cnt)
 {
-    int i = 0;
-    while(i++ < cnt) {
-        buf[i] = (char)_pop_queue(&console_tty.td_read_q);
-    }
     return 0;
+    int i = 0;
+    if (_is_empty_queue(&console_tty.td_read_q)) {
+        console_tty.td_read_q.tq_wait_task = current_task();
+        sleep(console_tty.td_read_q.tq_wait_task);
+    }
+
+    while(i < cnt) {
+        if (_is_empty_queue(&console_tty.td_read_q)) {
+            console_tty.td_read_q.tq_wait_task = current_task();
+            sleep(console_tty.td_read_q.tq_wait_task);
+        }
+
+        buf[i] = (char)_pop_queue(&console_tty.td_read_q);
+        if (buf[i] == '\r')
+            break;
+        ++i;
+    }
+    return i;
 }
 
 int
 tty_write(const char *buf, int cnt)
 {
-    int i = 0;
-    while(i++ < cnt)
-        _put_queue(&console_tty.td_write_q, buf[i]);
-    return 0;
+    console_print(buf);
+    // int i = 0;
+    // while(i++ < cnt)
+    //     _put_queue(&console_tty.td_write_q, buf[i]);
+    return strlen(buf);
 }

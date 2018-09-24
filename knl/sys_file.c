@@ -6,7 +6,9 @@
 #include "fs/path.h"
 #include "sys/types.h"
 #include "sys/fcntl.h"
+#include "sys/stat.h"
 #include "asm.h"
+#include "dev/char/tty.h"
 
 int
 sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
@@ -58,6 +60,9 @@ sys_read(IrqFrame *irq, int fd, void *buf, size_t count)
     if (vfile == NULL)  return -1;
 
     int readcnt = 0;
+    if (S_ISCHR(vfile->f_inode->in_inode.in_file_mode)) {
+        return tty_read(buf, count);
+    }
     while (readcnt < count) {
         int siz = file_read(vfile->f_inode, vfile->f_seek, buf, count);
         if (siz == 0)
@@ -66,7 +71,7 @@ sys_read(IrqFrame *irq, int fd, void *buf, size_t count)
         vfile->f_seek += siz;
     }
 
-    return 0;
+    return readcnt;
 }
 
 int
@@ -80,16 +85,19 @@ sys_write(IrqFrame *irq, int fd, const void *buf, size_t count)
     }
     if (vfile == NULL)  return -1;
 
-    int readcnt = 0;
-    while (readcnt < count) {
+    int writecnt = 0;
+    if (S_ISCHR(vfile->f_inode->in_inode.in_file_mode)) {
+        return tty_write(buf, count);
+    }
+    while (writecnt < count) {
         int siz = file_write(vfile->f_inode, vfile->f_seek, buf, count);
         if (siz == 0)
             break;
-        readcnt += siz;
+        writecnt += siz;
         vfile->f_seek += siz;
     }
 
-    return 0;
+    return writecnt;
 }
 
 int

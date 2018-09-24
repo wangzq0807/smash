@@ -8,6 +8,7 @@
 
 #define TS_RUN      1
 #define TS_ZOMBIE   2
+#define TS_SLEEP    3
 
 typedef struct _Task Task;
 struct _Task {
@@ -37,5 +38,11 @@ start_task();
 
 void
 switch_task();
+
+void
+sleep(Task *ts);
+
+void
+wakeup(Task *ts);
 
 #endif // __TASK_H__

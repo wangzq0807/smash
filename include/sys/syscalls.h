@@ -39,8 +39,10 @@ SYSCALL(time, 0)            // 13
 SYSCALL(mknod, 3)           // 14
 SYSCALL(chmod, 2)           // 15
 SYSCALL(chown, 3)           // 16
+
 SYSCALL(mkdir, 2)           // 17
 SYSCALL(rmdir, 1)           // 18
+SYSCALL(pause, 0)           // 19
 // break, 3)
 // stat, 3)
 // lseek, 3)

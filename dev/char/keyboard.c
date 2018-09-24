@@ -56,7 +56,7 @@ int
 init_keyboard()
 {
     set_trap_handler(IRQ_KEYBOARD, on_keyboard_handler);
-    outb( 0, 0x64);
+    // outb( 0, 0x64);
     return 0;
 }
 

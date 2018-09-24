@@ -56,7 +56,9 @@ switch_task()
     Task *next = cur;
     do {
         next = get_next_task(next);
-    } while (next != NULL && next->ts_state == TS_ZOMBIE);
+    } while (next != NULL
+        && (next->ts_state == TS_ZOMBIE
+        || next->ts_state == TS_SLEEP));
 
     if (next != NULL && next != cur) {
         pde_t *cur_pde = (pde_t *)cur->ts_tss.t_CR3;
@@ -77,16 +79,13 @@ switch_task()
     pid;                    \
 })
 
-#define child_print()       \
+#define sys_pause()         \
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
-        "pushl $1 \n"       \
-        "movl $1, %%eax \n" \
+        "movl $19, %%eax \n" \
         "int $0x80 \n"      \
-        "popl %%eax \n"     \
         :"=a"(ret)          \
-        ::"memory", "esp"   \
     );                      \
     ret;                    \
 })
@@ -115,7 +114,7 @@ switch_task()
         pause();        \
 }
 
-static void
+void
 task_1()
 {
     __asm__ volatile (
@@ -131,8 +130,7 @@ task_1()
     }
     else {
         while (1) {
-            // printk("P");
-            delay();
+            sys_pause();
         }
     }
     task_2();
@@ -197,4 +195,20 @@ start_task()
     /* 开始第一个进程 */
     setup_first_task();
     start_first_task(&task1.ts_tss, task_1);
+}
+
+void
+sleep(Task *ts)
+{
+    if (ts == NULL) return;
+    ts->ts_state = TS_SLEEP;
+    switch_task();
+}
+
+void
+wakeup(Task *ts)
+{
+    if (ts == NULL) return;
+    if (ts->ts_state != TS_ZOMBIE)
+        ts->ts_state = TS_RUN;
 }

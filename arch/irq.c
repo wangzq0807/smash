@@ -106,7 +106,7 @@ on_all_irq(IrqFrame irqframe)
 void
 on_timer_handler(IrqFrame *irqframe)
 {
-    switch_task();
+    // switch_task();
 }
 
 void

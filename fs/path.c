@@ -35,7 +35,7 @@ search_file(IndexNode *inode, const char *fname, int len)
         Direction dir;
         seek = _next_file(inode, seek, &dir);
         if (dir.dr_inode != INVALID_INODE &&
-            strncmp(fname, dir.dr_name, FILENAME_LEN) == 0 ) {
+            strncmp(fname, dir.dr_name, len) == 0 ) {
             return dir.dr_inode;
         }
     }

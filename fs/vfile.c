@@ -46,6 +46,8 @@ release_vfile(VFile *file)
 VFile *
 dup_vfile(VFile *file)
 {
+    if (file == NULL)   return NULL;
+
     VFile *ret = alloc_vfile();
     file->f_inode->in_refs++;
     ret->f_inode = file->f_inode;
