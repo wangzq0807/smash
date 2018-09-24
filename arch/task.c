@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "page.h"
 #include "irq.h"
+#include "sys/fcntl.h"
 
 /* 任务一 */
 Task task1;
@@ -107,12 +108,22 @@ switch_task()
     ret;                    \
 })
 
-#define delay()         \
-{                       \
-    int cnt = 100000;   \
-    while(cnt--)        \
-        pause();        \
-}
+#define open(path, flag, mode)  \
+({                              \
+    int ret = 0;                \
+    __asm__ volatile (          \
+        "pushl %3 \n"           \
+        "pushl %2 \n"           \
+        "pushl %1 \n"           \
+        "movl $5, %%eax \n"     \
+        "int $0x80 \n"          \
+        "addl $12, %%esp \n"    \
+        :"=a"(ret)              \
+        :"r"(path), "r"(flag), ""(mode) \
+        :"esp"              \
+    );                      \
+    ret;                    \
+})
 
 void
 task_1()
@@ -123,6 +134,7 @@ task_1()
         "mov %%ax, %%es \n"
         : : : "%eax"
     );
+    open("/dev/tty", O_RDWR, 0);
     pid_t pid = fork();
 
     if (pid == 0) {

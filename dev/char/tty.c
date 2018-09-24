@@ -46,14 +46,12 @@ _is_empty_queue(ttyQueue *queue)
         return 0;
 }
 
-// TODO: 不要static，会导致GCC出BUG
-int
+static int
 _is_full_queue(ttyQueue *queue)
 {
     if ((queue->tq_head + 1) == queue->tq_tail) {
         return 1;
     }
-    // TODO : 下面这种判断方式会导致GCC出BUG
     else if ((queue->tq_tail == 0) && (queue->tq_head == (QUEUE_LEN-1))) {
         return 1;
     }
@@ -83,8 +81,7 @@ _pop_queue(ttyQueue *queue)
     return ret;
 }
 
-// TODO: 不要static，会导致GCC出BUG
-int
+static int
 _backspace_queue(ttyQueue *queue)
 {
     if (_is_empty_queue(queue)) return -1;
@@ -101,7 +98,6 @@ _backspace_queue(ttyQueue *queue)
 void
 on_tty_intr(char c)
 {
-    return ;
     char sz[2] = {c, 0};
     if (c == '\b') {
         int bs = _backspace_queue(&console_tty.td_read_q);
@@ -118,7 +114,6 @@ on_tty_intr(char c)
     else {
         if (_is_full_queue(&console_tty.td_read_q))  return;
         _put_queue(&console_tty.td_read_q, c);
-        wakeup(console_tty.td_read_q.tq_wait_task);
         console_print(sz);
     }
 }
@@ -126,7 +121,6 @@ on_tty_intr(char c)
 int
 tty_read(char *buf, int cnt)
 {
-    return 0;
     int i = 0;
     if (_is_empty_queue(&console_tty.td_read_q)) {
         console_tty.td_read_q.tq_wait_task = current_task();
@@ -151,8 +145,6 @@ int
 tty_write(const char *buf, int cnt)
 {
     console_print(buf);
-    // int i = 0;
-    // while(i++ < cnt)
-    //     _put_queue(&console_tty.td_write_q, buf[i]);
+
     return strlen(buf);
 }

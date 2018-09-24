@@ -75,7 +75,6 @@ _on_key_press(int code)
     }
     // 普通ascii码
     if (asciicode != 0) {
-        // printk("%c", asciicode);
         on_tty_intr(asciicode);
         return;
     }

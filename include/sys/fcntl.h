@@ -9,4 +9,5 @@
 #define O_CREAT     0x200
 #define O_TRUNC     0x400
 
+#define O_RDWR      (O_RDONLY|O_WRONLY)
 #endif // __FCNTL_H__
