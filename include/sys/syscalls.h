@@ -43,17 +43,6 @@ SYSCALL(chown, 3)           // 16
 SYSCALL(mkdir, 2)           // 17
 SYSCALL(rmdir, 1)           // 18
 SYSCALL(pause, 0)           // 19
-// break, 3)
-// stat, 3)
-// lseek, 3)
-// getpid, 0)
-// mount, 4)
-// umount, 2)
-// setuid, 1)
-// getuid, 0)
-// stime, 1)
-// ptrace, 4)
-// alarm, )
 
 SYSCALLS_END()
 

@@ -13,7 +13,6 @@
 int
 sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
 {
-    printk("exec %s\n", execfile);
     IndexNode *fnode = file_open(execfile, O_RDONLY, 0);
     const uint32_t filesize = fnode->in_inode.in_file_size;
     uint32_t sizecnt = 0;
@@ -24,8 +23,8 @@ sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
     for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
         file_read(fnode, n * BLOCK_SIZE , headbuf + n * BLOCK_SIZE, BLOCK_SIZE);
     }
+
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
-    printk("elf %x\n", elfheader->eh_magic);
     irqframe->if_EIP = elfheader->eh_entry;
     uint32_t linear = PAGE_FLOOR(elfheader->eh_entry);
     map_vm_page(linear, pyheader);  // TODO:假设entry和elfheader在同一个页面
@@ -42,11 +41,10 @@ sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
         void *buf = (void *)(linear + sizecnt);
         map_vm_page(linear + sizecnt, pyaddr);
         for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
-            int rd = file_read( fnode,
-                                sizecnt + n * BLOCK_SIZE,
-                                buf + n * BLOCK_SIZE,
-                                BLOCK_SIZE);
-            printk(" rd %x ", rd);
+            file_read(  fnode,
+                        sizecnt + n * BLOCK_SIZE,
+                        buf + n * BLOCK_SIZE,
+                        BLOCK_SIZE);
         }
         sizecnt += PAGE_SIZE;
     }
