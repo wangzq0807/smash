@@ -138,7 +138,7 @@ tty_read(char *buf, int cnt)
             break;
         ++i;
     }
-    return i;
+    return i + 1;
 }
 
 int
