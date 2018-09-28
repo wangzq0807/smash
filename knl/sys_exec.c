@@ -7,13 +7,46 @@
 #include "memory.h"
 #include "fs/file.h"
 #include "sys/fcntl.h"
+#include "string.h"
 
 #define ELF_FILE       0x40000000
 
 int
-sys_execve(IrqFrame *irqframe, char *execfile, char **argv, char **envp)
+sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **envp)
 {
     IndexNode *fnode = file_open(execfile, O_RDONLY, 0);
+    if (fnode == NULL)  return -1;
+    // 清空堆栈(此时堆栈已复制)
+    // irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
+    // NOTE:先做参数拷贝后读elf，防止elf将当前进程的参数覆盖
+    if (argv != NULL) {
+        // 参数入栈
+        int nsize = 0;
+        int args[10];
+        int argc = 0;
+        for (; argv[argc] != NULL; ++argc) {
+            nsize += (strlen(argv[argc])+1 + sizeof(int) - 1) & ~(sizeof(int) - 1);
+            args[argc] = irqframe->if_ESP - nsize;
+        }
+        nsize += sizeof(int) * nsize;
+        if (argc > 0) {
+            memcpy((void *)(irqframe->if_ESP - nsize), args, nsize);
+            irqframe->if_ESP -= nsize;
+        }
+        else {
+            irqframe->if_ESP -= sizeof(int);
+            *(int *)(irqframe->if_ESP) = NULL;
+        }
+        irqframe->if_ESP -= sizeof(int);
+        *(int *)(irqframe->if_ESP) = argc;
+    }
+    else {
+        irqframe->if_ESP -= sizeof(int);
+        *(int *)(irqframe->if_ESP) = NULL;
+        irqframe->if_ESP -= sizeof(int);
+        *(int *)(irqframe->if_ESP) = 0;
+    }
+
     const uint32_t filesize = fnode->in_inode.in_file_size;
     uint32_t sizecnt = 0;
     // 读取elfheader

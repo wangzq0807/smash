@@ -216,7 +216,7 @@ static inline int call_syscall(void *irq, uint32_t cnt, uint32_t addr, void *fun
         "addl %2, %%esp \n"         // 所有参数出栈
         "4: \n"
         :"+a"(ret)  // NOTE: eax不能被"r"使用，否则有可能得不到正确返回值
-        :"ebx"(cnt), "r"(addr), "r"(func), "r"(irq) // NOTE: eax, ecx, edx的值要由调用者负责保存
+        :"ebx"(cnt), "r"(addr+4), "r"(func), "r"(irq) // NOTE: eax, ecx, edx的值要由调用者负责保存
         :"ecx", "esp"
     );
     return ret;

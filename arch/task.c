@@ -73,8 +73,10 @@ switch_task()
 ({                          \
     pid_t pid = 0;          \
     __asm__ volatile (      \
+        "pushl $0 \n"       \
         "movl $2, %%eax \n" \
         "int $0x80 \n"      \
+        "addl $4, %%esp \n" \
         :"=a"(pid)          \
     );                      \
     pid;                    \
@@ -84,8 +86,10 @@ switch_task()
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
+        "pushl $0 \n"       \
         "movl $19, %%eax \n" \
         "int $0x80 \n"      \
+        "addl $4, %%esp \n" \
         :"=a"(ret)          \
     );                      \
     ret;                    \
@@ -95,12 +99,13 @@ switch_task()
 ({                          \
     int ret = 0;            \
     __asm__ volatile (      \
-        "pushl $3 \n"       \
-        "pushl $2 \n"       \
+        "pushl $0 \n"       \
+        "pushl $0 \n"       \
         "pushl %1 \n"       \
+        "pushl $0 \n"    \
         "movl $11, %%eax \n" \
         "int $0x80 \n"       \
-        "addl $12, %%esp \n" \
+        "addl $16, %%esp \n" \
         :"=a"(ret)          \
         :"r"(path)          \
         :"memory", "esp"    \
@@ -115,9 +120,10 @@ switch_task()
         "pushl %3 \n"           \
         "pushl %2 \n"           \
         "pushl %1 \n"           \
+        "pushl %0 \n"           \
         "movl $5, %%eax \n"     \
         "int $0x80 \n"          \
-        "addl $12, %%esp \n"    \
+        "addl $16, %%esp \n"    \
         :"=a"(ret)              \
         :"r"(path), "r"(flag), ""(mode) \
         :"esp"              \
@@ -187,6 +193,7 @@ setup_first_task()
     task1.ts_tss.t_LDT = KNL_LDT;
 
     // 用户态堆栈
+    // TODO:堆栈操作最好抽取出来
     int us_addr = alloc_pypage();
     map_vm_page(0xFFFF0000, us_addr);
     uint8_t *us_page = (uint8_t *)0xFFFF0000;
