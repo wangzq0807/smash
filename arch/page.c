@@ -9,14 +9,14 @@ void
 on_page_fault(IrqFrame *irq)
 {
     uint32_t linear = PAGE_FLOOR(get_cr2());
-    printk(" %x ", linear);
+    printk(" %x ", get_cr2());
     uint32_t npdt = linear >> 22;
     uint32_t npte = (linear >> 12) & 0x3FF;
 
     pde_t *pdt = (pde_t *)get_cr3();
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
 
-    int pyaddr = pte[npdt] & 0xFFFFF000;
+    int pyaddr = pte[npte] & 0xFFFFF000;
     int refs = get_pypage_refs(pyaddr);
     if (refs > 1) {
         uint32_t new_page = alloc_pypage();

@@ -81,6 +81,7 @@ init_memory(uint32_t start, uint32_t end)
 
     max_end = end;
     cur_start = start;
+    free_memory.pl_free = NULL;
 }
 
 static void
@@ -204,6 +205,8 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
     while (--len) {
         *dist_page++ = *src_page++;
     }
+    unmap_vm_page(0xFFFFF000);
+    unmap_vm_page(0xFFFFE000);
 }
 
 void *
@@ -249,6 +252,19 @@ map_vm_page(uint32_t linaddr, uint32_t pyaddr)
     pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
     pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
     invlpg((void *)linaddr);
+}
+
+void
+unmap_vm_page(uint32_t linaddr)
+{
+    uint32_t npdt = linaddr >> 22;
+    uint32_t npte = (linaddr >> 12) & 0x3FF;
+    pde_t *pdt = (pde_t *)get_cr3();
+    if (pdt[npdt] & PAGE_PRESENT) {
+        pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
+        pte[npte] = 0;
+        invlpg((void *)linaddr);
+    }
 }
 
 void

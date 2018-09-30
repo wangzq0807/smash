@@ -11,6 +11,8 @@
 
 #define ELF_FILE       0x40000000
 
+static void _free_task_memory(Task *task);
+
 int
 sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **envp)
 {
@@ -48,6 +50,11 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     }
 
     const uint32_t filesize = fnode->in_inode.in_file_size;
+    // 释放当前进程的物理内存
+    _free_task_memory(current_task());
+    uint32_t ustack = alloc_pypage();
+    map_vm_page(0xFFFF0000, ustack);
+
     uint32_t sizecnt = 0;
     // 读取elfheader
     uint32_t pyheader = alloc_pypage();

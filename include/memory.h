@@ -55,6 +55,9 @@ void
 map_vm_page(uint32_t linaddr, uint32_t pyaddr);
 
 void
+unmap_vm_page(uint32_t linaddr);
+
+void
 switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt);
 //====================================
 // 静态内存分配

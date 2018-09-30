@@ -94,14 +94,12 @@ setup_links(Task *cur_task, Task *new_task)
     new_task->ts_newer = cur_task;
 
     // NOTE: 下面的操作未完成前，不能发生进程切换
-    cli();
     if (cur_task->ts_child_old == NULL)
         cur_task->ts_child_old = new_task;
     if (cur_task->ts_child_new != NULL) {
         cur_task->ts_child_new->ts_newer = new_task;
     }
     cur_task->ts_child_new = new_task;
-    sti();
 }
 
 int
@@ -117,6 +115,8 @@ sys_fork(IrqFrame *irq)
     for (int i = 0; i < MAX_FD; ++i)
         new_task->ts_filps[i] = dup_vfile(cur_task->ts_filps[i]);
     new_task->ts_findex = cur_task->ts_findex;
+    // 允许新进程被调度执行
+    new_task->ts_state = TS_RUN;
 
     return new_task->ts_pid;
 }

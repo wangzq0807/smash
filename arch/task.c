@@ -57,9 +57,7 @@ switch_task()
     Task *next = cur;
     do {
         next = get_next_task(next);
-    } while (next != NULL
-        && (next->ts_state == TS_ZOMBIE
-        || next->ts_state == TS_SLEEP));
+    } while (next != NULL && next->ts_state != TS_RUN);
 
     if (next != NULL && next != cur) {
         pde_t *cur_pde = (pde_t *)cur->ts_tss.t_CR3;
@@ -204,6 +202,7 @@ setup_first_task()
     task1.ts_older = NULL;
     task1.ts_newer = NULL;
     task1.ts_parent = NULL;
+    task1.ts_state = TS_RUN;
 }
 
 void
