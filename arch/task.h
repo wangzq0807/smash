@@ -27,8 +27,7 @@ struct _Task {
     Task    *ts_child_old;      // 最旧的子进程
     Task    *ts_older;          // 较老的兄弟进程
     Task    *ts_newer;          // 较新的兄弟进程
-    Task    *ts_hash_prev;
-    Task    *ts_hash_next;
+    ListEntity      ts_hash_link;
 
     X86TSS  ts_tss;
 };
@@ -44,5 +43,11 @@ sleep(Task *ts);
 
 void
 wakeup(Task *ts);
+
+Task *
+new_task(Task *parent);
+
+Task *
+get_task(pid_t pid);
 
 #endif // __TASK_H__

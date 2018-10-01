@@ -230,3 +230,87 @@ wakeup(Task *ts)
     if (ts->ts_state != TS_ZOMBIE)
         ts->ts_state = TS_RUN;
 }
+
+
+#define TSK_HASH_LEN    64
+#define HASH(pid)   (pid & (TSK_HASH_LEN - 1))
+
+ListHead    tsk_hash_map[TSK_HASH_LEN];
+
+static Task *
+_get_hash_entity(pid_t pid)
+{
+    pid_t hashpid = HASH(pid);
+    ListHead listhead = tsk_hash_map[hashpid];
+    ListEntity *iter = listhead.lh_list;
+    while (iter != NULL) {
+        Task *tsk = TO_INSTANCE(iter, Task, ts_hash_link);
+        if (tsk != NULL && tsk->ts_pid == pid) {
+            return tsk;
+        }
+        iter = iter->le_next;
+        if (iter == listhead.lh_list)
+            break;
+    }
+    return NULL;
+}
+
+static int
+_remove_hash_entity(Task *task)
+{
+    pid_t hashpid = HASH(task->ts_pid);
+    ListHead listhead = tsk_hash_map[hashpid];
+    remove_entity(&listhead, &task->ts_hash_link);
+    return 0;
+}
+
+static int
+_put_hash_entity(Task *task)
+{
+    Task *org = _get_hash_entity(task->ts_pid);
+    if (org != NULL)
+        _remove_hash_entity(org);
+
+    pid_t hashpid = HASH(task->ts_pid);
+    ListHead listhead = tsk_hash_map[hashpid];
+    push_front(&listhead, &task->ts_hash_link);
+    return 0;
+}
+
+static void
+setup_links(Task *parent_task, Task *new_task)
+{
+    new_task->ts_parent = parent_task;
+    new_task->ts_child_new = NULL;
+    new_task->ts_child_old = NULL;
+    if (parent_task->ts_child_new != NULL)
+        new_task->ts_older = parent_task->ts_child_new;
+    else
+        new_task->ts_older = parent_task;
+    new_task->ts_newer = parent_task;
+
+    // NOTE: 下面的操作未完成前，不能发生进程切换
+    if (parent_task->ts_child_old == NULL)
+        parent_task->ts_child_old = new_task;
+    if (parent_task->ts_child_new != NULL) {
+        parent_task->ts_child_new->ts_newer = new_task;
+    }
+    parent_task->ts_child_new = new_task;
+    _put_hash_entity(new_task);
+}
+
+Task *
+new_task(Task *parent)
+{
+    static pid_t nextpid = 1;
+    Task *new_task = (Task *)alloc_vm_page();
+    new_task->ts_pid = nextpid++;
+    setup_links(parent, new_task);
+    return new_task;
+}
+
+Task *
+get_task(pid_t pid)
+{
+    return NULL;
+}

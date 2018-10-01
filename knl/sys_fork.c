@@ -7,8 +7,6 @@
 #include "string.h"
 #include "log.h"
 
-pid_t nextpid = 1;
-
 static void
 setup_new_tss(IrqFrame *irq, Task *new_task)
 {
@@ -81,42 +79,19 @@ setup_page_tables(Task *cur_task, Task *new_task)
     load_cr3(cur_pdt);
 }
 
-static void
-setup_links(Task *cur_task, Task *new_task)
-{
-    new_task->ts_parent = cur_task;
-    new_task->ts_child_new = NULL;
-    new_task->ts_child_old = NULL;
-    if (cur_task->ts_child_new != NULL)
-        new_task->ts_older = cur_task->ts_child_new;
-    else
-        new_task->ts_older = cur_task;
-    new_task->ts_newer = cur_task;
-
-    // NOTE: 下面的操作未完成前，不能发生进程切换
-    if (cur_task->ts_child_old == NULL)
-        cur_task->ts_child_old = new_task;
-    if (cur_task->ts_child_new != NULL) {
-        cur_task->ts_child_new->ts_newer = new_task;
-    }
-    cur_task->ts_child_new = new_task;
-}
-
 int
 sys_fork(IrqFrame *irq)
 {
     Task *cur_task = current_task();
-    Task *new_task = (Task *)alloc_vm_page();
-    new_task->ts_pid = nextpid++;
-    setup_new_tss(irq, new_task);
-    setup_page_tables(cur_task, new_task);
-    setup_links(cur_task, new_task);
+    Task *newtsk = new_task(cur_task);
+    setup_new_tss(irq, newtsk);
+    setup_page_tables(cur_task, newtsk);
 
     for (int i = 0; i < MAX_FD; ++i)
-        new_task->ts_filps[i] = dup_vfile(cur_task->ts_filps[i]);
-    new_task->ts_findex = cur_task->ts_findex;
+        newtsk->ts_filps[i] = dup_vfile(cur_task->ts_filps[i]);
+    newtsk->ts_findex = cur_task->ts_findex;
     // 允许新进程被调度执行
-    new_task->ts_state = TS_RUN;
+    newtsk->ts_state = TS_RUN;
 
-    return new_task->ts_pid;
+    return newtsk->ts_pid;
 }
