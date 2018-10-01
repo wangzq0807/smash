@@ -115,17 +115,16 @@ _free_task_memory(Task *task)
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pte_t *pet = (pte_t *)PAGE_FLOOR(cur_pdt[npde]);
             for (uint32_t npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
-                if (pet[npte] & PAGE_PRESENT)
+                if (pet[npte] & PAGE_PRESENT) {
                     release_pypage(PAGE_FLOOR(pet[npte]));
+                    pet[npte] = 0;  // NOTE:回收页表项
+                }
             }
-            cur_pdt[npde] &= ~PAGE_PRESENT;
+            // NOTE:回收页表项及页表自身(与delete_task配合)
+            release_vm_page(pet);
+            cur_pdt[npde] = 0;
         }
     }
-    // pte_t *pet = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
-    // for (uint32_t npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
-    //     pet[npte] &= ~PAGE_PRESENT;
-    // }
-    // cur_pdt[0] &= ~PAGE_PRESENT;
 }
 
 extern int sys_close(IrqFrame *irq, int fd);
@@ -146,6 +145,8 @@ sys_exit(IrqFrame *irq, int code)
     cur_task->ts_state = TS_ZOMBIE;
     _free_task_memory(cur_task);
     _close_task_files(cur_task);
+    if (cur_task->ts_wait != NULL)
+        wakeup(cur_task->ts_wait);
 
     switch_task();
     return 0;
@@ -154,6 +155,31 @@ sys_exit(IrqFrame *irq, int code)
 int
 sys_waitpid(IrqFrame *irq, pid_t pid, int *status, int options)
 {
+    if (pid > 0) {
+        Task *task = get_task(pid);
+        if (task == NULL)   return -1;
+        Task *curtask = current_task();
+        if (task->ts_parent != curtask) return -1;
+
+        if (task->ts_state != TS_ZOMBIE) {
+            task->ts_wait = curtask;
+            sleep(task->ts_wait);
+        }
+        if (status != NULL)
+            *status = task->ts_exit;
+        delete_task(task);
+        return pid;
+    }
+    else if (pid < -1) {
+        // TODO:wait groupid == |pid|
+    }
+    else if (pid == 0) {
+        // TODO:wait groupid == cur.groupid
+    }
+    else if (pid == -1) {
+        // TODO:wait any
+    }
+
     return 0;
 }
 

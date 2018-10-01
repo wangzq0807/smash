@@ -92,6 +92,7 @@ sys_fork(IrqFrame *irq)
     newtsk->ts_findex = cur_task->ts_findex;
     // 允许新进程被调度执行
     newtsk->ts_state = TS_RUN;
+    newtsk->ts_wait = NULL;
 
     return newtsk->ts_pid;
 }

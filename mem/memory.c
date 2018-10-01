@@ -272,12 +272,16 @@ switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt)
 {
     // 复制内核所在的0 - 4M页表
     pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
-    pte_t *new_pte = (pte_t *)alloc_vm_page();
+    pte_t *new_pte = NULL;
+
+    if (new_pdt[0] & PAGE_PRESENT)
+        new_pte = (pte_t *)PAGE_FLOOR(new_pdt[0]);
+    else {
+        new_pte = (pte_t *)alloc_vm_page();
+    }
     new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
-        if (cur_pte[npte] & PAGE_PRESENT) {
-            new_pte[npte] = cur_pte[npte];
-        }
+        new_pte[npte] = cur_pte[npte];
     }
 }
 

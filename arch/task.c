@@ -241,15 +241,15 @@ static Task *
 _get_hash_entity(pid_t pid)
 {
     pid_t hashpid = HASH(pid);
-    ListHead listhead = tsk_hash_map[hashpid];
-    ListEntity *iter = listhead.lh_list;
+    ListHead *listhead = &tsk_hash_map[hashpid];
+    ListEntity *iter = listhead->lh_list;
     while (iter != NULL) {
         Task *tsk = TO_INSTANCE(iter, Task, ts_hash_link);
         if (tsk != NULL && tsk->ts_pid == pid) {
             return tsk;
         }
         iter = iter->le_next;
-        if (iter == listhead.lh_list)
+        if (iter == listhead->lh_list)
             break;
     }
     return NULL;
@@ -259,8 +259,8 @@ static int
 _remove_hash_entity(Task *task)
 {
     pid_t hashpid = HASH(task->ts_pid);
-    ListHead listhead = tsk_hash_map[hashpid];
-    remove_entity(&listhead, &task->ts_hash_link);
+    ListHead *listhead = &tsk_hash_map[hashpid];
+    remove_entity(listhead, &task->ts_hash_link);
     return 0;
 }
 
@@ -272,13 +272,13 @@ _put_hash_entity(Task *task)
         _remove_hash_entity(org);
 
     pid_t hashpid = HASH(task->ts_pid);
-    ListHead listhead = tsk_hash_map[hashpid];
-    push_front(&listhead, &task->ts_hash_link);
+    ListHead *listhead = &tsk_hash_map[hashpid];
+    push_front(listhead, &task->ts_hash_link);
     return 0;
 }
 
 static void
-setup_links(Task *parent_task, Task *new_task)
+setup_task_link(Task *parent_task, Task *new_task)
 {
     new_task->ts_parent = parent_task;
     new_task->ts_child_new = NULL;
@@ -299,18 +299,68 @@ setup_links(Task *parent_task, Task *new_task)
     _put_hash_entity(new_task);
 }
 
+static void
+unlink_task(Task *task)
+{
+    Task *older = task->ts_older;
+    Task *newer = task->ts_newer;
+    Task *parent = task->ts_parent;
+    // NOTE: 下面的操作未完成前，不允许发生进程切换
+    if (older != NULL && newer != NULL) {
+        if (newer != parent)
+            newer->ts_older = task->ts_child_new;
+        else
+            parent->ts_child_new = task->ts_child_new;
+        if (older != parent)
+            older->ts_newer = task->ts_child_old;
+        else
+            parent->ts_child_old = task->ts_child_old;
+    }
+
+    Task *iter = task->ts_child_new;
+    while (iter != NULL) {
+        iter->ts_parent = task->ts_parent;
+        if (iter == task->ts_child_old)
+            break;
+        iter = iter->ts_older;
+    }
+    _remove_hash_entity(task);
+}
+
 Task *
 new_task(Task *parent)
 {
     static pid_t nextpid = 1;
     Task *new_task = (Task *)alloc_vm_page();
     new_task->ts_pid = nextpid++;
-    setup_links(parent, new_task);
+    setup_task_link(parent, new_task);
     return new_task;
+}
+
+int
+delete_task(Task *task)
+{
+    // NOTE: 被删除的一定不能是当前进程
+    if (task == current_task()) return -1;
+
+    unlink_task(task);
+    // 回收内核堆栈, NOTE: esp要减1
+    release_vm_page((void *)PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
+    // 回收pte和pdt
+    pde_t *pdt = (pde_t *)task->ts_tss.t_CR3;
+    pte_t *pte = (pte_t *)PAGE_FLOOR(pdt[0]);
+    release_vm_page(pte);
+    // NOTE:先修改pdt[0],后释放指向pdt的页表项，否则，pdt[0]会无法访问.
+    pdt[0] = 0;
+    release_vm_page(pdt);
+    // 回收task
+    release_vm_page(task);
+
+    return 0;
 }
 
 Task *
 get_task(pid_t pid)
 {
-    return NULL;
+    return _get_hash_entity(pid);
 }
