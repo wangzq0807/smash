@@ -37,6 +37,8 @@ add_vfile_refs(VFile *file)
 void
 release_vfile(VFile *file)
 {
+    if (file == NULL);
+
     file->f_refs -= 1;
     if (file->f_refs == 0) {
         push_back(&free_files, &file->f_link);

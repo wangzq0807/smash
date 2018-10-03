@@ -159,7 +159,7 @@ sys_rmdir(IrqFrame *irq, const char *pathname)
 int
 sys_chdir(IrqFrame *irq, const char *path)
 {
-    return 0;
+    return change_dir(path);
 }
 
 int

@@ -21,6 +21,8 @@ struct _Task {
     error_t         ts_exit;
     VFile           *ts_filps[MAX_FD];
     uint32_t        ts_findex;
+    dev_t           ts_cdev;
+    ino_t           ts_cinode;
 
     Task    *ts_parent;
     Task    *ts_child_new;      // 最新的子进程

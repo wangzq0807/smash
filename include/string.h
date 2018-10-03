@@ -80,4 +80,33 @@ static inline const char *strcpy(char *dst, const char *src) {
     return ret;
 }
 
+static inline char *strsep(char **str, const char *delim) {
+    char *ret = *str;
+    char *itr = *str;
+    const char *diter = delim;
+    for (; *itr; ++itr) {
+        int isdelim = 0;
+        for (; *diter; ++diter) {
+            if (*itr == *diter) {
+                isdelim = 1;
+                break;
+            }
+        }
+        diter = delim;
+        if (isdelim) {
+            if (itr == ret)
+                ret++;
+            else {
+                *itr++ = 0;
+                break;
+            }
+        }
+    }
+    *str = itr;
+    if (*ret)
+        return ret;
+    else
+        return NULL;
+}
+
 #endif

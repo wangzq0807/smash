@@ -26,6 +26,9 @@ int
 rm_file_entry(IndexNode *dinode, const char *fname);
 
 int
+change_dir(const char *pathname);
+
+int
 make_dir(const char *pathname, int mode);
 
 int

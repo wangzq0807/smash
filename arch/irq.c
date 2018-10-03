@@ -8,6 +8,7 @@
 /* 中断描述符表 */
 X86Desc idt_table[256] = { 0 };
 X86DTR idt_ptr = { 0 };
+TrapCall trapcalls[48];
 
 #define DECL_TRAP_FUNC(num) extern void trap##num();
 DECL_TRAP_FUNC(IRQ_PAGE)
@@ -47,7 +48,7 @@ setup_idt()
     for (int32_t i = 0; i < 256; ++i) {
         set_trap_gate(i, &TRAP_FUNC(IRQ_IGNORE), KNL_DPL);
     }
-    set_trap_gate(IRQ_PAGE, &TRAP_FUNC(IRQ_PAGE), USR_DPL);
+    set_trap_gate(IRQ_PAGE, &TRAP_FUNC(IRQ_PAGE), KNL_DPL);
     /* 设置时钟中断 */
     set_intr_gate(IRQ_TIME, &TRAP_FUNC(IRQ_TIME), KNL_DPL);
     /* 键盘中断 */
@@ -72,7 +73,7 @@ on_all_irq(IrqFrame irqframe)
 
     switch (irqframe.if_irqno) {
         case IRQ_PAGE: {
-            printk(" irq_page ");
+            // printk(" irq_page ");
             on_page_fault(&irqframe);
             break;
         }
@@ -88,7 +89,7 @@ on_all_irq(IrqFrame irqframe)
         }
         case IRQ_KEYBOARD:
         case IRQ_DISK: {
-            TrapCall tcall = syscalls[irqframe.if_irqno];
+            TrapCall tcall = trapcalls[irqframe.if_irqno];
             if (tcall.sc_func != NULL)
                 tcall.sc_func(&irqframe);
             break;
@@ -117,5 +118,5 @@ on_ignore_handler(IrqFrame *irqframe)
 
 void set_trap_handler(int num, trap_func f)
 {
-    syscalls[num].sc_func = f;
+    trapcalls[num].sc_func = f;
 }

@@ -90,9 +90,11 @@ sys_fork(IrqFrame *irq)
     for (int i = 0; i < MAX_FD; ++i)
         newtsk->ts_filps[i] = dup_vfile(cur_task->ts_filps[i]);
     newtsk->ts_findex = cur_task->ts_findex;
+    newtsk->ts_cdev = cur_task->ts_cdev;
+    newtsk->ts_cinode = cur_task->ts_cinode;
+    newtsk->ts_wait = NULL;
     // 允许新进程被调度执行
     newtsk->ts_state = TS_RUN;
-    newtsk->ts_wait = NULL;
 
     return newtsk->ts_pid;
 }

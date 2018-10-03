@@ -7,6 +7,8 @@
 #include "log.h"
 #include "asm.h"
 #include "file.h"
+#include "asm.h"
+#include "arch/task.h"
 
 uint16_t cur_inode = ROOT_INODE;
 uint16_t cur_dev = ROOT_DEVICE;
@@ -53,8 +55,9 @@ name_to_dirinode(const char *pathname, const char **basename)
         pathname += 1;
     }
     else {
-        work_inode = cur_inode;
-        work_dev = cur_dev;
+        Task *curtask = current_task();
+        work_inode = curtask->ts_cinode;
+        work_dev = curtask->ts_cdev;
     }
 
     while (*pathname) {
@@ -149,6 +152,34 @@ rm_file_entry(IndexNode *dinode, const char *fname)
         }
     }
     return 0;
+}
+
+int
+change_dir(const char *pathname)
+{
+    const char *basename = NULL;
+    IndexNode *dirnode = name_to_dirinode(pathname, &basename);
+    if (dirnode == NULL)    return -1;
+
+    IndexNode *inode = NULL;
+    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    if (ino != INVALID_INODE)
+        inode = get_inode(dirnode->in_dev, ino);
+    if (inode == NULL) {
+        release_inode(dirnode);
+        release_inode(inode);
+        return -1;
+    }
+
+    Task *curtask = current_task();
+    if (S_ISDIR(inode->in_inode.in_file_mode)) {
+        curtask->ts_cdev = inode->in_dev;
+        curtask->ts_cinode = inode->in_inum;
+        release_inode(inode);
+        release_inode(dirnode);
+    }
+
+    return -1;
 }
 
 int

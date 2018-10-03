@@ -6,6 +6,7 @@
 #include "log.h"
 #include "memory.h"
 #include "fs/file.h"
+#include "fs/path.h"
 #include "sys/fcntl.h"
 #include "string.h"
 
@@ -33,8 +34,16 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     }
 
     const uint32_t filesize = fnode->in_inode.in_file_size;
-    // 释放当前进程的所有物理内存
-    _free_task_memory(current_task());
+    // 释放当前进程的所有打开文件和物理内存
+    Task *curtask = current_task();
+    for (int i = 1; i < MAX_FD; ++i) {
+        VFile *vf = curtask->ts_filps[i];
+        if (vf != NULL) {
+            file_close(vf->f_inode);
+            release_vfile(vf);
+        }
+    }
+    _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = alloc_pypage();
     map_vm_page(0xFFFF0000, ustack);
@@ -103,6 +112,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     }
 
     load_cr3(pdt);
+    file_close(fnode);
 
     return 0;
 }
