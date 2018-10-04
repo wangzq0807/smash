@@ -2,14 +2,14 @@
 #include "list.h"
 
 #define     MAX_FILES   256
-ListEntity  files[MAX_FILES];
+VFile  files[MAX_FILES];
 ListHead    free_files;
 
 void
 init_vfiles()
 {
     for (int i = 0; i < MAX_FILES; ++i) {
-        push_back(&free_files, &files[i]);
+        push_back(&free_files, &files[i].f_link);
     }
 }
 

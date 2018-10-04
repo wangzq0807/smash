@@ -203,6 +203,8 @@ setup_first_task()
     task1.ts_newer = NULL;
     task1.ts_parent = NULL;
     task1.ts_state = TS_RUN;
+    task1.ts_cdev = ROOT_DEVICE;
+    task1.ts_cinode = ROOT_INODE;
 }
 
 void
