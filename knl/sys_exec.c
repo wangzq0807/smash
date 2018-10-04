@@ -199,3 +199,10 @@ sys_pause(IrqFrame *irq)
     switch_task();
     return 0;
 }
+
+int
+sys_getpid(IrqFrame *irq)
+{
+    Task *task = current_task();
+    return task->ts_pid;
+}
