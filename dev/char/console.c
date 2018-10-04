@@ -104,10 +104,10 @@ _scroll_down(int nline)
 static void
 _update_cursor()
 {
-    // outb(0xe, 0x3d4);
-    // outb((uint8_t)(cursor_pos >> 8), 0x3d5);
-    // outb(0xf, 0x3d4);
-    // outb((uint8_t)(cursor_pos & 0xff), 0x3d5);
+    outb(0xe, 0x3d4);
+    outb((uint8_t)(cursor_pos >> 8), 0x3d5);
+    outb(0xf, 0x3d4);
+    outb((uint8_t)(cursor_pos & 0xff), 0x3d5);
 }
 
 void

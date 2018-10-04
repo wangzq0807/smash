@@ -27,29 +27,6 @@ init_filesystem(uint16_t dev)
     init_inodes(dev);
     init_zones(dev);
     init_vfiles();
-
-    IndexNode *inode = get_inode(dev, ROOT_INODE);
-    uint32_t blk = 0;
-    blk = get_zone(inode, 0);
-
-    BlockBuffer *buf = get_block(inode->in_dev, blk);
-    uint8_t *data = buf->bf_data;
-    uint32_t file_size = inode->in_inode.in_file_size;
-    release_inode(inode);
-
-    Direction dir;
-    uint32_t file_seek = 0;
-    while (file_seek < file_size) {
-        memcpy(&dir, data+file_seek, sizeof(Direction));
-        printk(dir.dr_name);
-        printk(" ");
-
-        // file_tail(dev, dir.dr_inode);
-
-        printk("\n");
-        file_seek += sizeof(Direction);
-    }
-    release_block(buf);
 }
 
 void
