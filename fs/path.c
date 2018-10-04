@@ -122,6 +122,7 @@ add_file_entry(IndexNode *dinode, const char *fname, IndexNode *inode)
     file_write(dinode, dinode->in_inode.in_file_size, (void *)&dir, sizeof(Direction));
     // dinode->in_inode.in_num_links++;
     inode->in_inode.in_num_links++;
+    inode->in_status |= INODE_DIRTY;
     return 0;
 }
 
@@ -138,6 +139,12 @@ rm_file_entry(IndexNode *dinode, const char *fname)
             strncmp(fname, dir.dr_name, FILENAME_LEN) == 0 ) {
 
             IndexNode *subinode = get_inode(dinode->in_dev, dir.dr_inode);
+            if (subinode == NULL) return -1;
+            if (S_ISDIR(subinode->in_inode.in_file_mode)) {
+                release_inode(subinode);
+                return -1;
+            }
+
             subinode->in_inode.in_num_links--;
             subinode->in_status |= INODE_DIRTY;
             if (subinode->in_inode.in_num_links == 0) {
@@ -212,7 +219,8 @@ rm_dir(const char *pathname)
     while (seek < subinode->in_inode.in_file_size) {
         Direction dir;
         seek = _next_file(subinode, seek, &dir);
-        if (strcmp(dir.dr_name, ".") != 0 &&
+        if (dir.dr_inode != INVALID_INODE &&
+            strcmp(dir.dr_name, ".") != 0 &&
             strcmp(dir.dr_name, "..") != 0 ) {
             return -1;
         }

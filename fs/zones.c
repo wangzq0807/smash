@@ -57,10 +57,11 @@ _clear_bitmap(BlockBuffer **node_map, blk_t cnt)
     int blkbits = BLOCK_SIZE << 3;
     blk_t num = cnt / blkbits;
     blk_t bits = cnt % blkbits;
-    blk_t index = bits / sizeof(int);
-    int bit = bits % sizeof(int);
+    blk_t index = bits / (sizeof(int)*8);
+    int bit = bits % (sizeof(int)*8);
     BlockBuffer *buffer = node_map[num];
     _clear_bit(&((int *)buffer->bf_data)[index], bit);
+    buffer->bf_status |= BUF_DIRTY;
     return 0;
 }
 

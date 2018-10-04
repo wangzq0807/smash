@@ -135,13 +135,7 @@ sys_link(IrqFrame *irq, const char *oldpath, const char *newpath)
 int
 sys_unlink(IrqFrame *irq, const char *pathname)
 {
-    IndexNode *fnode = file_open(pathname, O_RDONLY, 0);
-    if (fnode == NULL)  return -1;
-
-    int ret = file_unlink(pathname, fnode);
-
-    file_close(fnode);
-    return ret;
+    return file_unlink(pathname);
 }
 
 int

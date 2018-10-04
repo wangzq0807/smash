@@ -125,7 +125,7 @@ file_trunc(IndexNode *inode)
 int
 file_link(const char *pathname, IndexNode *inode)
 {
-    if (S_ISDIR(inode->in_inode.in_file_mode))  return -1;
+    if (!S_ISREG(inode->in_inode.in_file_mode))  return -1;
 
     int ret = 0;
     const char *basename = NULL;
@@ -144,14 +144,14 @@ file_link(const char *pathname, IndexNode *inode)
 }
 
 int
-file_unlink(const char *pathname, IndexNode *inode)
+file_unlink(const char *pathname)
 {
     int ret = 0;
     const char *basename = NULL;
     IndexNode *dinode = name_to_dirinode(pathname, &basename);
     if (dinode == NULL) return NULL;
 
-    rm_file_entry(dinode, basename);
+    ret = rm_file_entry(dinode, basename);
 
     release_inode(dinode);
     return ret;

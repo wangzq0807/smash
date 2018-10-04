@@ -25,6 +25,6 @@ int
 file_link(const char *pathname, IndexNode *inode);
 
 int
-file_unlink(const char *pathname, IndexNode *inode);
+file_unlink(const char *pathname);
 
 #endif // __FILE_H__
