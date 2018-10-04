@@ -43,6 +43,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
             release_vfile(vf);
         }
     }
+    curtask->ts_findex = 1;
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = alloc_pypage();

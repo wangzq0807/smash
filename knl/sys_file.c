@@ -35,9 +35,11 @@ sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
     Task *cur = current_task();
     if (cur->ts_findex < MAX_FD) {
         cur->ts_filps[cur->ts_findex] = vfile;
-        return cur->ts_findex;
+        return cur->ts_findex++;
     }
     else {
+        file_close(fnode);
+        release_vfile(vfile);
         return -1;
     }
 }
