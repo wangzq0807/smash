@@ -88,11 +88,16 @@ name_to_inode(const char *pathname)
     IndexNode *dirnode = name_to_dirinode(pathname, &basename);
     if (dirnode == NULL)    return NULL;
 
-    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
-    if (ino != INVALID_INODE)
-        ret_inode = get_inode(dirnode->in_dev, ino);
+    if (basename != NULL && basename[0] != 0) {
+        ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+        if (ino != INVALID_INODE)
+            ret_inode = get_inode(dirnode->in_dev, ino);
+        release_inode(dirnode);
+    }
+    else {
+        ret_inode = dirnode;
+    }
 
-    release_inode(dirnode);
     return ret_inode;
 }
 
@@ -157,29 +162,16 @@ rm_file_entry(IndexNode *dinode, const char *fname)
 int
 change_dir(const char *pathname)
 {
-    const char *basename = NULL;
-    IndexNode *dirnode = name_to_dirinode(pathname, &basename);
-    if (dirnode == NULL)    return -1;
-
-    IndexNode *inode = NULL;
-    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
-    if (ino != INVALID_INODE)
-        inode = get_inode(dirnode->in_dev, ino);
-    if (inode == NULL) {
-        release_inode(dirnode);
-        release_inode(inode);
-        return -1;
-    }
+    IndexNode *inode = name_to_inode(pathname);
+    if (inode == NULL)  return -1;
+    if (!S_ISDIR(inode->in_inode.in_file_mode)) return -1;
 
     Task *curtask = current_task();
-    if (S_ISDIR(inode->in_inode.in_file_mode)) {
-        curtask->ts_cdev = inode->in_dev;
-        curtask->ts_cinode = inode->in_inum;
-        release_inode(inode);
-        release_inode(dirnode);
-    }
+    curtask->ts_cdev = inode->in_dev;
+    curtask->ts_cinode = inode->in_inum;
+    release_inode(inode);
 
-    return -1;
+    return 0;
 }
 
 int
