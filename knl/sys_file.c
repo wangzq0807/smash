@@ -4,6 +4,7 @@
 #include "fs/file.h"
 #include "fs/vfile.h"
 #include "fs/path.h"
+#include "fs/pipe.h"
 #include "sys/types.h"
 #include "sys/fcntl.h"
 #include "sys/stat.h"
@@ -32,15 +33,14 @@ sys_open(IrqFrame *irq, const char *filename, int flags, int mode)
         vfile->f_seek = fnode->in_inode.in_file_size;
     }
 
-    Task *cur = current_task();
-    if (cur->ts_findex < MAX_FD) {
-        cur->ts_filps[cur->ts_findex] = vfile;
-        return cur->ts_findex++;
-    }
-    else {
+    int fd = map_vfile(vfile);
+    if (fd == -1) {
         file_close(fnode);
         release_vfile(vfile);
         return -1;
+    }
+    else {
+        return fd;
     }
 }
 
@@ -62,6 +62,10 @@ sys_read(IrqFrame *irq, int fd, void *buf, size_t count)
     if (vfile == NULL)  return -1;
 
     int readcnt = 0;
+    if (vfile->f_type == VF_PIPE) {
+        readcnt = pipe_read(vfile->f_pipe, buf, count);
+        return readcnt;
+    }
     if (S_ISCHR(vfile->f_inode->in_inode.in_file_mode)) {
         return tty_read(buf, count);
     }
@@ -88,6 +92,10 @@ sys_write(IrqFrame *irq, int fd, const void *buf, size_t count)
     if (vfile == NULL)  return -1;
 
     int writecnt = 0;
+    if (vfile->f_type == VF_PIPE) {
+        writecnt = pipe_write(vfile->f_pipe, buf, count);
+        return writecnt;
+    }
     if (S_ISCHR(vfile->f_inode->in_inode.in_file_mode)) {
         return tty_write(buf, count);
     }
@@ -111,7 +119,6 @@ sys_close(IrqFrame *irq, int fd)
         vfile = cur->ts_filps[fd];
         if (vfile == NULL)  return -1;
 
-        file_close(vfile->f_inode);
         cur->ts_filps[fd] = NULL;
         release_vfile(vfile);
     }
@@ -175,4 +182,25 @@ sys_chmod(IrqFrame *irq, const char *path, mode_t mode)
     release_inode(finode);
 
     return 0;
+}
+
+int
+sys_pipe(IrqFrame *irq, int *pipefd)
+{
+    return alloc_pipe(pipefd, pipefd + 1);
+}
+
+int
+sys_dup(IrqFrame *irq, int fd)
+{
+    VFile* vfile = NULL;
+    if (fd < MAX_FD) {
+        Task *cur = current_task();
+        vfile = cur->ts_filps[fd];
+    }
+    if (vfile == NULL)  return -1;
+
+    VFile* newfile = dup_vfile(vfile);
+    int newfd = map_vfile(newfile);
+    return newfd;
 }

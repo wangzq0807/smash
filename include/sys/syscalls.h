@@ -44,6 +44,8 @@ SYSCALL(mkdir, 2)           // 17
 SYSCALL(rmdir, 1)           // 18
 SYSCALL(pause, 0)           // 19
 SYSCALL(getpid, 0)          // 20
+SYSCALL(pipe, 1)            // 21
+SYSCALL(dup, 1)             // 22
 
 SYSCALLS_END()
 

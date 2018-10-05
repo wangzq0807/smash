@@ -110,6 +110,7 @@ file_write(IndexNode *inode, off_t seek, const void *buf, size_t count)
 int
 file_close(IndexNode *inode)
 {
+    if (inode == NULL)  return 0;
     release_inode(inode);
     return 0;
 }

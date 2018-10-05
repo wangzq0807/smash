@@ -1,5 +1,9 @@
 #include "vfile.h"
 #include "list.h"
+#include "file.h"
+#include "arch/task.h"
+#include "asm.h"
+#include "pipe.h"
 
 #define     MAX_FILES   256
 VFile  files[MAX_FILES];
@@ -22,6 +26,8 @@ alloc_vfile()
         file->f_refs = 1;
         file->f_mode = 0;
         file->f_seek = 0;
+        file->f_type = VF_NORMAL;
+        file->f_pipe = NULL;
         return file;
     }
     return NULL;
@@ -41,6 +47,10 @@ release_vfile(VFile *file)
 
     file->f_refs -= 1;
     if (file->f_refs == 0) {
+        if (file->f_type == VF_NORMAL)
+            file_close(file->f_inode);
+        else if (file->f_type == VF_PIPE)
+            close_pipe(file->f_pipe, file);
         push_back(&free_files, &file->f_link);
     }
 }
@@ -50,11 +60,21 @@ dup_vfile(VFile *file)
 {
     if (file == NULL)   return NULL;
 
-    VFile *ret = alloc_vfile();
-    file->f_inode->in_refs++;
-    ret->f_inode = file->f_inode;
-    ret->f_refs = file->f_refs;
-    ret->f_mode = file->f_mode;
-    ret->f_seek = file->f_seek;
-    return ret;
+    file->f_refs += 1;
+    return file;
+}
+
+int
+map_vfile(VFile *file)
+{
+    Task *cur = current_task();
+    int i = 0;
+    for (; i < MAX_FD; ++i) {
+        if (cur->ts_filps[i] == NULL) {
+            cur->ts_filps[i] = file;
+            break;
+        }
+    }
+    if (i == MAX_FD)    return -1;
+    else return i;
 }

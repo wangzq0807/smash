@@ -20,7 +20,6 @@ struct _Task {
     time_t          ts_time;
     error_t         ts_exit;
     VFile           *ts_filps[MAX_FD];
-    uint32_t        ts_findex;
     dev_t           ts_cdev;
     ino_t           ts_cinode;
 

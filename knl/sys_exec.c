@@ -36,14 +36,13 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     const uint32_t filesize = fnode->in_inode.in_file_size;
     // 释放当前进程的所有打开文件和物理内存
     Task *curtask = current_task();
-    for (int i = 1; i < MAX_FD; ++i) {
-        VFile *vf = curtask->ts_filps[i];
-        if (vf != NULL) {
-            file_close(vf->f_inode);
-            release_vfile(vf);
-        }
-    }
-    curtask->ts_findex = 1;
+    // for (int i = 1; i < MAX_FD; ++i) {
+    //     VFile *vf = curtask->ts_filps[i];
+    //     if (vf != NULL) {
+    //         // file_close(vf->f_inode);
+    //         release_vfile(vf);
+    //     }
+    // }
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = alloc_pypage();
@@ -143,7 +142,7 @@ extern int sys_close(IrqFrame *irq, int fd);
 static void
 _close_task_files(Task *task)
 {
-    for (int i = 0; i < task->ts_findex; ++i) {
+    for (int i = 0; i < MAX_FD; ++i) {
         sys_close(NULL, i);
     }
 }
@@ -154,8 +153,8 @@ sys_exit(IrqFrame *irq, int code)
     Task *cur_task = current_task();
     cur_task->ts_exit = code;
     cur_task->ts_state = TS_ZOMBIE;
-    _free_task_memory(cur_task);
     _close_task_files(cur_task);
+    _free_task_memory(cur_task);
     if (cur_task->ts_wait != NULL)
         wakeup(cur_task->ts_wait);
 

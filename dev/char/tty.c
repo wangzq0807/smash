@@ -55,6 +55,9 @@ _is_full_queue(ttyQueue *queue)
     else if ((queue->tq_tail == 0) && (queue->tq_head == (QUEUE_LEN-1))) {
         return 1;
     }
+    else if ((queue->tq_head == 0) && (queue->tq_tail == (QUEUE_LEN-1))) {
+        return 1;
+    }
     else {
         return 0;
     }
