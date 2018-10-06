@@ -109,4 +109,27 @@ static inline char *strsep(char **str, const char *delim) {
         return NULL;
 }
 
+static inline char *strim(char *str, const char *trim) {
+    char *ret = str;
+    char *itr = str;
+    char *end = NULL;
+    const char *itrim = trim;
+    for (; *itr; ++itr, ++ret) {
+        for (; *itrim && (*itr != *itrim); ++itrim);
+        if (*itrim == 0)
+            break;
+        itrim = trim;
+    }
+
+    for (; *itr; ++itr) {
+        for (; *itrim && (*itr != *itrim); ++itrim);
+        if (*itrim == 0)
+            end = itr;
+        itrim = trim;
+    }
+    if (end != NULL)
+        *(++end) = 0;
+    return ret;
+}
+
 #endif

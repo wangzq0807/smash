@@ -138,7 +138,8 @@ task_1()
         "mov %%ax, %%es \n"
         : : : "%eax"
     );
-    open("/dev/tty", O_RDWR, 0);
+    open("/dev/tty", O_RDONLY, 0);
+    open("/dev/tty", O_WRONLY, 0);
     pid_t pid = fork();
 
     if (pid == 0) {

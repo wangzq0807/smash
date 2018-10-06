@@ -218,7 +218,10 @@ alloc_vm_page()
         if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
             uint32_t pyaddr = (npte << 12);
             cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-            void *ret = (void *)(pyaddr);
+            int *ret = (int *)(pyaddr);
+            // 页面清0
+            for (int i = 0; i < PAGE_SIZE / sizeof(int); ++i)
+                ret[i] = 0;
             invlpg(ret);
             return ret;
         }
