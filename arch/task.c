@@ -172,7 +172,7 @@ task_1()
 static void
 task_2()
 {
-    exec("/bash");
+    exec("/bin/bash");
 }
 
 // 第一个进程的堆栈，页表，代码等都位于0-1M内

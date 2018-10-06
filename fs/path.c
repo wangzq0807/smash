@@ -89,7 +89,11 @@ name_to_inode(const char *pathname)
     if (dirnode == NULL)    return NULL;
 
     if (basename != NULL && basename[0] != 0) {
-        ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+        // TODO : 对结尾为'/'的文件路径进行检查
+        int len = strlen(basename);
+        if (basename[len -1] == '/')
+            len -= 1;
+        ino_t ino = search_file(dirnode, basename, len);
         if (ino != INVALID_INODE)
             ret_inode = get_inode(dirnode->in_dev, ino);
         release_inode(dirnode);
