@@ -6,6 +6,7 @@
 #include "page.h"
 #include "irq.h"
 #include "sys/fcntl.h"
+#include "unistd.h"
 
 /* 任务一 */
 Task task1;
@@ -67,19 +68,6 @@ switch_task()
     }
 }
 
-#define fork()              \
-({                          \
-    pid_t pid = 0;          \
-    __asm__ volatile (      \
-        "pushl $0 \n"       \
-        "movl $2, %%eax \n" \
-        "int $0x80 \n"      \
-        "addl $4, %%esp \n" \
-        :"=a"(pid)          \
-    );                      \
-    pid;                    \
-})
-
 #define sys_pause()         \
 ({                          \
     int ret = 0;            \
@@ -89,42 +77,6 @@ switch_task()
         "int $0x80 \n"      \
         "addl $4, %%esp \n" \
         :"=a"(ret)          \
-    );                      \
-    ret;                    \
-})
-
-#define exec(path)          \
-({                          \
-    int ret = 0;            \
-    __asm__ volatile (      \
-        "pushl $0 \n"       \
-        "pushl $0 \n"       \
-        "pushl %1 \n"       \
-        "pushl $0 \n"    \
-        "movl $11, %%eax \n" \
-        "int $0x80 \n"       \
-        "addl $16, %%esp \n" \
-        :"=a"(ret)          \
-        :"r"(path)          \
-        :"memory", "esp"    \
-    );                      \
-    ret;                    \
-})
-
-#define open(path, flag, mode)  \
-({                              \
-    int ret = 0;                \
-    __asm__ volatile (          \
-        "pushl %3 \n"           \
-        "pushl %2 \n"           \
-        "pushl %1 \n"           \
-        "pushl %0 \n"           \
-        "movl $5, %%eax \n"     \
-        "int $0x80 \n"          \
-        "addl $16, %%esp \n"    \
-        :"=a"(ret)              \
-        :"r"(path), "r"(flag), ""(mode) \
-        :"esp"              \
     );                      \
     ret;                    \
 })
@@ -172,7 +124,7 @@ task_1()
 static void
 task_2()
 {
-    exec("/bin/bash");
+    execve("/bin/bash", 0, NULL);
 }
 
 // 第一个进程的堆栈，页表，代码等都位于0-1M内

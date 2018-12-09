@@ -19,7 +19,8 @@ add_subdirectory (usr)
 # 源文件(head.S放最前面)
 set (KERNAL_SRCS
     ./arch/boot/head.S
-    ./arch/intr.S
+	./arch/intr.S
+	./usr/core/syscalls.S
 	./knl/sys_file.c
 	./knl/sys_fork.c
 	./knl/syscalls.c

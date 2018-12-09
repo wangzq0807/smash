@@ -35,10 +35,6 @@ static inline void insw(uint32_t cnt, uint16_t port, void *buffer) {
     );
 }
 
-static inline void pause() {
-    __asm__ volatile ("pause");
-}
-
 static inline void cli() {
     __asm__ volatile ("cli");
 }

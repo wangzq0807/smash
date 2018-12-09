@@ -221,7 +221,7 @@ wait_for(BlockBuffer *buffer)
     while (buffer->bf_status != BUF_FREE) {
         // NOTE : 告诉gcc，内存被修改，必须重新从内存中读取bf_status的值
         // 如果不注明的话，判断条件仅会执行一次，从而形成死循环
-        asm volatile("":::"memory");
-        pause();
+        __asm__ volatile("":::"memory");
+        __asm__ volatile ("pause");
     }
 }
