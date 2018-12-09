@@ -77,6 +77,7 @@ static inline const char *strcpy(char *dst, const char *src) {
     while (*src) {
         *dst++ = *src++;
     }
+    *dst = 0;
     return ret;
 }
 
@@ -130,6 +131,13 @@ static inline char *strim(char *str, const char *trim) {
     if (end != NULL)
         *(++end) = 0;
     return ret;
+}
+
+static inline char *strcat(char *dst, const char *src) {
+    char *itr = dst;
+    while (*itr++);
+    strcpy(itr-1, src);
+    return dst;
 }
 
 #endif
