@@ -1,7 +1,7 @@
 
 set (LD_FLAGS "-m elf_i386 -static")
 set(CMAKE_C_LINK_EXECUTABLE
-    "ld ${LD_FLAGS} <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+    "ld ${LD_FLAGS} <OBJECTS> -o <TARGET>")
 
 set (CORE_SRCS
     core/crt.c
