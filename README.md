@@ -9,7 +9,7 @@ smash是一个类Unix的内核，实现了基于分段和分页的内存管理�
 ## 开发环境
 * Ubuntu 16.04
 * gcc 5.4.0
-* bochs 2.6.5+
+* bochs-x 2.6.5+
 * cmake 3.0+
 ## 编译内核
 ```sh
@@ -19,6 +19,7 @@ make
 ```
 ## 制作根文件系统
 要运行内核，首先需要在_build目录下，创建一块虚拟磁盘，具体创建方法如下，你也可以直接[下载](https://pan.baidu.com/s/1w8Xrc3vILAlCCl2TACJGXg)
+* 下载的童鞋可以跳过第1步和第3步
 ### 1. 创建虚拟磁盘和minix-v2分区
 ```sh
 # 创建一个10M的空文件
@@ -55,7 +56,7 @@ sudo cp bash ls cat echo rm /mnt/bin
 ### 3. 运行
 在_build目录下执行
 ```sh
-bochs -f bochsrc
+bochs -q -f bochsrc
 ```
 ## 系统调用一览
 ```c
