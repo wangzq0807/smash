@@ -34,14 +34,13 @@ init_inodes(dev_t dev)
         inode_map[i] = get_block(dev, inode_begin + i);
     }
 
-    free_inodes.lh_list = NULL;
-    free_inodes.lh_lock = 0;
+    list_init(&free_inodes);
     for (int i = 0; i < MAX_INODE_NUM; ++i) {
         IndexNode *inode = &inode_list[i];
         inode->in_status = INODE_FREE;
         inode->in_refs = 0;
         inode->in_inum = 0;
-        push_back(&free_inodes, &inode->in_link);
+        list_push_back(&free_inodes, &inode->in_link);
     }
 
     return 0;
@@ -146,11 +145,11 @@ alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
     IndexNode *inode = NULL;
-    if (free_inodes.lh_list == NULL) {
+    if (list_get_head(&free_inodes) == NULL) {
         // TODO : error
     }
     else {
-        ListEntity *p = pop_front(&free_inodes);
+        ListEntity *p = list_pop_front(&free_inodes);
         inode = TO_INSTANCE(p, IndexNode, in_link);
         _remove_hash_entity(inode);
     }
@@ -183,7 +182,7 @@ get_inode(dev_t dev, ino_t inode_index)
         inode = _get_hash_entity(dev, inode_index);
         if (inode != NULL) {
             if (inode->in_refs == 0)
-                remove_entity(&free_inodes, &inode->in_link);
+                list_remove_entity(&free_inodes, &inode->in_link);
             inode->in_refs += 1;
             if (inode->in_status == INODE_LOCK) {
                 inode = NULL;
@@ -194,11 +193,11 @@ get_inode(dev_t dev, ino_t inode_index)
         }
         else {
             // 申请一个新的IndexNode
-            if (free_inodes.lh_list == NULL) {
+            if (list_get_head(&free_inodes) == NULL) {
                 // TODO : error
             }
             else {
-                ListEntity *p = pop_front(&free_inodes);
+                ListEntity *p = list_pop_front(&free_inodes);
                 inode = TO_INSTANCE(p, IndexNode, in_link);
                 _remove_hash_entity(inode);
             }
@@ -243,7 +242,7 @@ release_inode(IndexNode *inode)
         }
         inode->in_status = INODE_FREE;
         // 将inode放入空闲列表
-        push_back(&free_inodes, &inode->in_link);
+        list_push_back(&free_inodes, &inode->in_link);
     }
     inode->in_status = 0;
 }

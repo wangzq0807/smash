@@ -13,14 +13,14 @@ void
 init_vfiles()
 {
     for (int i = 0; i < MAX_FILES; ++i) {
-        push_back(&free_files, &files[i].f_link);
+        list_push_back(&free_files, &files[i].f_link);
     }
 }
 
 VFile *
 alloc_vfile()
 {
-    ListEntity *entity = pop_front(&free_files);
+    ListEntity *entity = list_pop_front(&free_files);
     if (entity != NULL) {
         VFile *file = TO_INSTANCE(entity, VFile, f_link);
         file->f_refs = 1;
@@ -51,7 +51,7 @@ release_vfile(VFile *file)
             file_close(file->f_inode);
         else if (file->f_type == VF_PIPE)
             close_pipe(file->f_pipe, file);
-        push_back(&free_files, &file->f_link);
+        list_push_back(&free_files, &file->f_link);
     }
 }
 

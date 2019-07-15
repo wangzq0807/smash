@@ -197,14 +197,15 @@ _get_hash_entity(pid_t pid)
 {
     pid_t hashpid = HASH(pid);
     ListHead *listhead = &tsk_hash_map[hashpid];
-    ListEntity *iter = listhead->lh_list;
+    ListEntity *begin = list_get_head(listhead);
+    ListEntity *iter = begin;
     while (iter != NULL) {
         Task *tsk = TO_INSTANCE(iter, Task, ts_hash_link);
         if (tsk != NULL && tsk->ts_pid == pid) {
             return tsk;
         }
         iter = iter->le_next;
-        if (iter == listhead->lh_list)
+        if (iter == begin)
             break;
     }
     return NULL;
@@ -215,7 +216,7 @@ _remove_hash_entity(Task *task)
 {
     pid_t hashpid = HASH(task->ts_pid);
     ListHead *listhead = &tsk_hash_map[hashpid];
-    remove_entity(listhead, &task->ts_hash_link);
+    list_remove_entity(listhead, &task->ts_hash_link);
     return 0;
 }
 
@@ -228,7 +229,7 @@ _put_hash_entity(Task *task)
 
     pid_t hashpid = HASH(task->ts_pid);
     ListHead *listhead = &tsk_hash_map[hashpid];
-    push_front(listhead, &task->ts_hash_link);
+    list_push_front(listhead, &task->ts_hash_link);
     return 0;
 }
 

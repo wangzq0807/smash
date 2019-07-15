@@ -33,7 +33,7 @@ _remove_hash_entity(PageNode *node)
 {
     uint32_t hash_val = HASH(node->pn_page);
     ListHead *head = &hash_map[hash_val];
-    remove_entity(head, &node->pn_hash_link);
+    list_remove_entity(head, &node->pn_hash_link);
 
     return 0;
 }
@@ -43,13 +43,14 @@ _get_hash_entity(uint32_t page)
 {
     uint32_t hash_val = HASH(page);
     ListHead head = hash_map[hash_val];
-    ListEntity *iter = head.lh_list;
+    ListEntity *begin = list_get_head(&head);
+    ListEntity *iter = begin;
     while (iter != NULL) {
         PageNode *node = TO_INSTANCE(iter, PageNode, pn_hash_link);
         if (node != NULL && node->pn_page == page)
             return node;
         iter = iter->le_next;
-        if (iter == head.lh_list)
+        if (iter == begin)
             break;
     }
     return NULL;
@@ -64,7 +65,7 @@ _put_hash_entity(PageNode *node)
 
     uint32_t hash_val = HASH(node->pn_page);
     ListHead *head = &hash_map[hash_val];
-    push_front(head, &node->pn_hash_link);
+    list_push_front(head, &node->pn_hash_link);
 
     return 0;
 }

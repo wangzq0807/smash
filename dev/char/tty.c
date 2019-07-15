@@ -11,10 +11,10 @@ typedef struct _ttyQueue    ttyQueue;
 
 struct _ttyQueue
 {
-    int     tq_head;
-    int     tq_tail;
-    char    tq_buf[QUEUE_LEN];
-    Task    *tq_wait_task;
+    uint32_t    tq_head;
+    uint32_t    tq_tail;
+    char        tq_buf[QUEUE_LEN];
+    Task        *tq_wait_task;
 };
 
 struct _ttyDev
@@ -37,30 +37,16 @@ init_tty()
     return 0;
 }
 
-static int
+static inline int
 _is_empty_queue(ttyQueue *queue)
 {
-    if (queue->tq_head == queue->tq_tail)
-        return 1;
-    else
-        return 0;
+    return (queue->tq_head == queue->tq_tail);
 }
 
-static int
+static inline int
 _is_full_queue(ttyQueue *queue)
 {
-    if ((queue->tq_head + 1) == queue->tq_tail) {
-        return 1;
-    }
-    else if ((queue->tq_tail == 0) && (queue->tq_head == (QUEUE_LEN-1))) {
-        return 1;
-    }
-    else if ((queue->tq_head == 0) && (queue->tq_tail == (QUEUE_LEN-1))) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+    return (queue->tq_tail - queue->tq_head) >= QUEUE_LEN;
 }
 
 static int
@@ -69,8 +55,6 @@ _put_queue(ttyQueue *queue, char c)
     if (_is_full_queue(queue))  return -1;
     queue->tq_buf[queue->tq_head] = c;
     queue->tq_head++;
-    if (queue->tq_head == QUEUE_LEN)
-        queue->tq_head = 0;
     return 0;
 }
 
@@ -79,8 +63,7 @@ _pop_queue(ttyQueue *queue)
 {
     if (_is_empty_queue(queue)) return -1;
     int ret = queue->tq_buf[queue->tq_tail];
-    if (++queue->tq_tail == QUEUE_LEN)
-        queue->tq_tail = 0;
+    queue->tq_tail++;
     return ret;
 }
 

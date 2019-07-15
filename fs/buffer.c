@@ -32,9 +32,8 @@ init_block_buffer()
         iter->bf_dev = 0;
         iter->bf_blk = 0;
         iter->bf_status = BUF_FREE;
-        push_back(&free_buffers, &iter->bf_link);
+        list_push_back(&free_buffers, &iter->bf_link);
     }
-    free_buffers.lh_lock = 0;
 
     return 0;
 }
@@ -99,7 +98,7 @@ _get_block(dev_t dev, blk_t blk)
         BlockBuffer *buf = _get_hash_entity(dev, blk);
         if (buf != NULL) {
             if (buf->bf_refs++ == 0)
-                remove_entity(&free_buffers, &buf->bf_link);
+                list_remove_entity(&free_buffers, &buf->bf_link);
             if (buf->bf_status & BUF_BUSY) {
                 // 5. 缓存命中，但缓冲区状态为"busy"
                 // TODO: sleep for buf
@@ -160,10 +159,10 @@ get_block(dev_t dev, blk_t blk)
 static BlockBuffer *
 buffer_new( )
 {
-    if (free_buffers.lh_list == NULL)
+    if (list_get_head(&free_buffers) == NULL)
         return NULL;
 
-    ListEntity *p = pop_front(&free_buffers);
+    ListEntity *p = list_pop_front(&free_buffers);
     BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
     ret->bf_refs = 1;
     _remove_hash_entity(ret);
@@ -179,21 +178,21 @@ release_block(BlockBuffer *buf)
     // TODO: 唤醒等待当前缓冲区的进程
     // TODO: 唤醒等待空闲缓冲区的进程
     if (buf->bf_status == BUF_FREE) {
-        push_back(&free_buffers, &buf->bf_link);
+        list_push_back(&free_buffers, &buf->bf_link);
     }
     else if (buf->bf_status & BUF_BUSY) {
         // 读写尚未完成，就想释放buf?
         // 必须先等待读写完成!!!
         // TODO: 以异步方式等待磁盘
         wait_for(buf);
-        push_back(&free_buffers, &buf->bf_link);
+        list_push_back(&free_buffers, &buf->bf_link);
     }
     else if (buf->bf_status & BUF_DIRTY) {
         buf->bf_status = BUF_BUSY;
         ata_write(buf);
         // TODO: 以异步方式写磁盘
         wait_for(buf);
-        push_back(&free_buffers, &buf->bf_link);
+        list_push_back(&free_buffers, &buf->bf_link);
     }
 
     return 0;

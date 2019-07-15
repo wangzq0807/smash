@@ -10,8 +10,9 @@ struct _ListEntity {
 
 typedef struct _ListHead ListHead;
 struct _ListHead {
-    int                 lh_lock;
-    ListEntity   *lh_list;
+    uint32_t        lh_size;
+    ListEntity      *lh_head;
+    ListEntity      *lh_tail;
 };
 
 #define TO_INSTANCE(entity, stype, lname) ({     \
@@ -21,61 +22,81 @@ struct _ListHead {
 })
 
 static inline void
-push_back(ListHead *phead, ListEntity *pentity)
+list_init(ListHead* list)
 {
-    if (!phead->lh_list) {
-        phead->lh_list = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list->le_next = pentity;
+    list->lh_size = 0;
+    list->lh_head = NULL;
+    list->lh_tail = NULL;
+}
+
+static inline ListEntity*
+list_get_head(ListHead* phead)
+{
+    return phead->lh_head;
+}
+
+static inline void
+list_push_back(ListHead *phead, ListEntity *pentity)
+{
+    if (!phead->lh_head) {
+        phead->lh_head = pentity;
+        phead->lh_head->le_prev = pentity;
+        phead->lh_head->le_next = pentity;
+        phead->lh_size = 1;
     }
     else {
-        ListEntity *prev = phead->lh_list->le_prev;
+        ListEntity *prev = phead->lh_head->le_prev;
         pentity->le_prev = prev;
-        pentity->le_next = phead->lh_list;
+        pentity->le_next = phead->lh_head;
         prev->le_next = pentity;
-        phead->lh_list->le_prev = pentity;
+        phead->lh_head->le_prev = pentity;
+        phead->lh_size++;
     }
 }
 
 static inline void
-push_front(ListHead *phead, ListEntity *pentity)
+list_push_front(ListHead *phead, ListEntity *pentity)
 {
-    if (!phead->lh_list) {
-        phead->lh_list = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list->le_next = pentity;
+    if (!phead->lh_head) {
+        phead->lh_head = pentity;
+        phead->lh_head->le_prev = pentity;
+        phead->lh_head->le_next = pentity;
+        phead->lh_size = 1;
     }
     else {
-        ListEntity *prev = phead->lh_list->le_prev;
+        ListEntity *prev = phead->lh_head->le_prev;
         pentity->le_prev = prev;
-        pentity->le_next = phead->lh_list;
+        pentity->le_next = phead->lh_head;
         prev->le_next = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list = pentity;
+        phead->lh_head->le_prev = pentity;
+        phead->lh_head = pentity;
+        phead->lh_size++;
     }
 }
 
 static inline ListEntity *
-pop_front(ListHead *phead)
+list_pop_front(ListHead *phead)
 {
-    if (phead->lh_list == NULL)
+    if (phead->lh_head == NULL)
         return NULL;
-    ListEntity *ret = phead->lh_list;
+    ListEntity *ret = phead->lh_head;
     if (ret->le_next == ret) {
-        phead->lh_list = NULL;
+        phead->lh_head = NULL;
+        phead->lh_size = 0;
     }
     else {
-        phead->lh_list = ret->le_next;
+        phead->lh_head = ret->le_next;
         ret->le_prev->le_next = ret->le_next;
         ret->le_next->le_prev = ret->le_prev;
+        phead->lh_size--;
     }
     return ret;
 }
 
 static inline void
-remove_entity(ListHead *phead, ListEntity *pentity)
+list_remove_entity(ListHead *phead, ListEntity *pentity)
 {
-    if (phead->lh_list == NULL)
+    if (phead->lh_head == NULL)
         return;
     if (pentity->le_next == NULL || pentity->le_prev == NULL)
         return;
@@ -84,11 +105,13 @@ remove_entity(ListHead *phead, ListEntity *pentity)
     if (next != pentity && prev != pentity) {
         next->le_prev = prev;
         prev->le_next = next;
-        if (pentity == phead->lh_list)
-            phead->lh_list = next;
+        phead->lh_size--;
+        if (pentity == phead->lh_head)
+            phead->lh_head = next;
     }
     else {
-        phead->lh_list = NULL;
+        phead->lh_head = NULL;
+        phead->lh_size=0;
     }
     pentity->le_next = NULL;
     pentity->le_prev = NULL;
