@@ -13,7 +13,7 @@ set(CMAKE_C_LINK_EXECUTABLE
 set(CMAKE_ASM_LINK_EXECUTABLE
     "<CMAKE_LINKER> <CMAKE_ASM_LINK_FLAGS> <OBJECTS> -o <TARGET>")
 
-include_directories (. include)
+include_directories (. include common)
 add_subdirectory (usr)
 
 # 源文件(head.S放最前面)
@@ -32,7 +32,7 @@ set (KERNAL_SRCS
 	./arch/utc.c
 	./arch/irq.c
 	./arch/arch.c
-	./lib/lock.c
+	./common/lock.c
 	./lib/log.c
 	./dev/char/keyboard.c
 	./dev/char/console.c
