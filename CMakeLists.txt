@@ -5,7 +5,7 @@ enable_language (ASM)
 add_compile_options (-g -O2 -m32 -Wall -Werror -ffreestanding -nostdinc -fno-builtin)
 
 # 链接选项
-set (CMAKE_ASM_LINK_FLAGS "-m elf_i386 -Ttext 0x0")
+set (CMAKE_ASM_LINK_FLAGS "-T ${CMAKE_SOURCE_DIR}/smash.ld -m elf_i386 -Ttext 0x0")
 
 # 使用ld作为链接器
 set(CMAKE_C_LINK_EXECUTABLE
