@@ -33,6 +33,7 @@ set (KERNAL_SRCS
 	./arch/irq.c
 	./arch/arch.c
 	./common/lock.c
+	./common/random.c
 	./lib/log.c
 	./dev/char/keyboard.c
 	./dev/char/console.c
