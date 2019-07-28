@@ -5,7 +5,8 @@
 #include "asm.h"
 #include "string.h"
 
-#define QUEUE_LEN    256
+#define QUEUE_LOG_LEN   3
+#define QUEUE_LEN       (1 << QUEUE_LOG_LEN)
 typedef struct _ttyDev      ttyDev;
 typedef struct _ttyQueue    ttyQueue;
 
@@ -37,6 +38,12 @@ init_tty()
     return 0;
 }
 
+static inline uint32_t
+_get_buf_index(uint32_t pos)
+{
+    return pos & (QUEUE_LEN-1);
+}
+
 static inline int
 _is_empty_queue(ttyQueue *queue)
 {
@@ -46,14 +53,15 @@ _is_empty_queue(ttyQueue *queue)
 static inline int
 _is_full_queue(ttyQueue *queue)
 {
-    return (queue->tq_tail - queue->tq_head) >= QUEUE_LEN;
+    return (queue->tq_head - queue->tq_tail) >= QUEUE_LEN;
 }
 
 static int
 _put_queue(ttyQueue *queue, char c)
 {
     if (_is_full_queue(queue))  return -1;
-    queue->tq_buf[queue->tq_head] = c;
+    const uint32_t pos = _get_buf_index(queue->tq_head);
+    queue->tq_buf[pos] = c;
     queue->tq_head++;
     return 0;
 }
@@ -62,7 +70,8 @@ static int
 _pop_queue(ttyQueue *queue)
 {
     if (_is_empty_queue(queue)) return -1;
-    int ret = queue->tq_buf[queue->tq_tail];
+    const uint32_t pos = _get_buf_index(queue->tq_tail);
+    const int ret = queue->tq_buf[pos];
     queue->tq_tail++;
     return ret;
 }
@@ -71,10 +80,9 @@ static int
 _backspace_queue(ttyQueue *queue)
 {
     if (_is_empty_queue(queue)) return -1;
-    int prehead = queue->tq_head - 1;
-    if (prehead == -1)
-        prehead = QUEUE_LEN - 1;
-    char lc = queue->tq_buf[prehead];
+    const uint32_t prehead = queue->tq_head - 1;
+    const uint32_t pos = _get_buf_index(prehead);
+    char lc = queue->tq_buf[pos];
     if (lc == '\r') return -1;
 
     queue->tq_head = prehead;

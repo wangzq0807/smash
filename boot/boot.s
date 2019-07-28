@@ -1,6 +1,8 @@
 /* 系统启动时，会将软盘或硬盘第一个启动扇区（512字节）加载到0x7c00位置
  * 然后跳转到0x7c00位置
  */
+ /* jmp 标号 : 按标号地址与当前地址的差值进行寻址? */
+ /* lgdt/movw 标号 : 按标号地址进行寻址? */
 BOOTSEG     = 0x07C0
 BOOTSEG2    = 0x9000
 HEADSEG     = 0x1000
@@ -11,6 +13,7 @@ HEADLEN     = 254		/* 254 sector = 127KB */
 .text
 .global _start
 _start:
+    /* 将boot移动到(BOOTSEG2, 0)处 */
     movw $BOOTSEG, %ax
     movw %ax, %ds
     movw $BOOTSEG2, %ax
@@ -21,7 +24,7 @@ _start:
     xorw %di, %di
     movw $256, %cx
     rep movsw
-    jmpl $BOOTSEG2, $_start2
+    jmpl $BOOTSEG2, $(_start2-_start)
 _start2:
     movw %cs, %ax
     movw %ax, %ds
@@ -60,7 +63,7 @@ lba_read:
      * LBA读磁盘
      *********************/
      movw $0x4200, %ax	/* AH = 0x42 */
-     lea lba_pack, %bx	/* DS:SI 指向 lba_pack */
+     movw $(lba_pack - _start), %bx	/* DS:SI 指向 lba_pack */
      movw %bx, %si
      movw $0x80, %cx	/* CL = 0x80 */
      int  $0x13
@@ -95,8 +98,8 @@ protect_mode:
     /* 设置gdtr和idtr */
     movw $BOOTSEG2, %ax
     movw %ax, %ds
-    lidt idt_ptr
-    lgdt gdt_ptr
+    lidt idt_ptr-_start
+    lgdt gdt_ptr-_start
     /* 开启保护模式 */
     movl %cr0, %eax
     orl  $1, %eax
@@ -120,5 +123,5 @@ idt_ptr: .word 0
     .word 0, 0
 
 gdt_ptr: .word 0x7ff			/* 2^11 = 2048, 256项 */
-    .long gdt_table + (BOOTSEG2<<4)	/* base = 0x7xxx */
+    .long gdt_table-_start + (BOOTSEG2<<4)	/* base = 0x7xxx */
 

@@ -1,7 +1,10 @@
-
+enable_language (ASM)
+# 编译选项
+add_compile_options (-g -O2 -m32 -Wall -Werror -ffreestanding -nostdinc -fno-builtin)
 set (LD_FLAGS "-m elf_i386 -static")
 set(CMAKE_C_LINK_EXECUTABLE
     "ld ${LD_FLAGS} <OBJECTS> -o <TARGET>")
+include_directories(. ../kernel/include)
 
 set (CORE_SRCS
     core/crt.c
