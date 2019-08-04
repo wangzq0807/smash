@@ -123,5 +123,5 @@ idt_ptr: .word 0
     .word 0, 0
 
 gdt_ptr: .word 0x7ff			/* 2^11 = 2048, 256项 */
-    .long gdt_table-_start + (BOOTSEG2<<4)	/* base = 0x7xxx */
+    .long (gdt_table-_start) + (BOOTSEG2<<4)	/* base = 0x7xxx */
 

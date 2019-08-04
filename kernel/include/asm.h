@@ -88,15 +88,16 @@ static inline void invlpg(void *ptr) {
     );
 }
 
-static inline void load_cr3(void *pdt) {
+// pdt : 页表的物理地址
+static inline void load_cr3(void* pdt) {
     __asm__(
         "movl %0, %%cr3 \n"
         : :"r"(pdt)
     );
 }
 
-static inline int get_cr3() {
-    register int ret;
+static inline size_t get_cr3() {
+    register size_t ret;
     __asm__(
         "movl %%cr3, %0 \n"
         :"=r"(ret)
@@ -104,8 +105,8 @@ static inline int get_cr3() {
     return ret;
 }
 
-static inline int get_cr2() {
-    register int cr2;
+static inline size_t get_cr2() {
+    register size_t cr2;
     __asm__(
         "movl %%cr2, %0"
         :"=r"(cr2)
@@ -122,6 +123,7 @@ static inline void enable_paging() {
     );
 }
 
+// 重新加载cs和ds, gdt或ldt被修改时用到
 static inline void reload_sregs(uint16_t cs, uint16_t ds) {
     __asm__ volatile (
         "pushl %%eax \n"
@@ -136,6 +138,17 @@ static inline void reload_sregs(uint16_t cs, uint16_t ds) {
     );
 }
 
+/* 构造一个假的中断帧,然后返回
+    ---------
+    |  ds   |
+    ---------
+    | stack |
+    ---------
+    |  cs   |
+    ---------
+    |  ip   |
+    ---------
+ */
 static inline void switch_to_user(
     uint32_t code_sel, uint32_t data_sel, void* user_stack, void* entry) {
     __asm__ volatile (

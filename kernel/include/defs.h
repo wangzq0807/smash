@@ -12,9 +12,13 @@ typedef long long       int64_t;
 
 typedef int32_t         error_t;
 
+//common
+typedef uint32_t        size_t;
+typedef uint32_t        ssize_t;
+
 // mem
-typedef uint32_t        pde_t;
-typedef uint32_t        pte_t;
+typedef size_t          pde_t;
+typedef size_t          pte_t;
 // fs
 typedef uint32_t        lba_t;
 typedef uint32_t        blk_t;
