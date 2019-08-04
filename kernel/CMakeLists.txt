@@ -41,6 +41,7 @@ set (KERNAL_SRCS
 	./dev/char/keyboard.c
 	./dev/char/console.c
 	./dev/char/tty.c
+	./dev/char/serial.c
 	./fs/superblk.c
 	./fs/partion.c
 	./fs/inodes.c

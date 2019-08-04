@@ -15,6 +15,7 @@
 #include "fs/path.h"
 #include "fs/file.h"
 #include "arch/task.h"
+#include "dev/char/serial.h"
 
 void
 init_filesystem(uint16_t dev)
@@ -32,6 +33,7 @@ init_filesystem(uint16_t dev)
 void
 start_main()
 {
+    init_serial(COM_PORT1);
     init_memory(4*1024*1024, 8*1024*1024);
     init_isa();
     init_keyboard();
