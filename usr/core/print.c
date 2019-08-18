@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "unistd.h"
 #include "string.h"
+#include "stdarg.h"
 
 #define COPY_MODE   0
 #define FMT_MODE    1
@@ -47,20 +48,22 @@ num2str(char *buf, int num, int flags)
     return buf;
 }
 
-char printbuf[256];
-void
+int
 printf(const char *fmt, ...)
 {
-    va_list args;
+    char printbuf[256];
+    volatile va_list args;
     va_start(args, fmt);
-    vsprintf(printbuf, fmt, args);
+    int len = vsprintf(printbuf, fmt, args);
     write(stdout, printbuf, strlen(printbuf));
     va_end(args);
+    return len;
 }
 
-void
+int
 vsprintf(char *buf, const char *fmt, va_list args)
 {
+    char* iter = buf;
     int mode = COPY_MODE;
     for(; *fmt; ++fmt) {
         if (mode == COPY_MODE) {
@@ -68,26 +71,26 @@ vsprintf(char *buf, const char *fmt, va_list args)
                 mode = FMT_MODE;
                 continue;
             }
-            *buf++ = *fmt;
+            *iter++ = *fmt;
         }
         else if (mode == FMT_MODE) {
             switch (*fmt) {
                 case 'X':
                 case 'x':
-                    buf = num2str(buf, va_arg(args, int), HEX_FMT);
+                    iter = num2str(iter, va_arg(args, int), HEX_FMT);
                     break;
                 case 'd':
                 case 'i':
-                    buf = num2str(buf, va_arg(args, int), INT_FMT);
+                    iter = num2str(iter, va_arg(args, int), INT_FMT);
                     break;
                 case 'c':
-                    *buf++ = va_arg(args, char);
+                    *iter++ = va_arg(args, char);
                     break;
                 case 's':
                 {
                     char *src = va_arg(args, char*);
                     while (*src) {
-                        *buf++ = *src++;
+                        *iter++ = *src++;
                     }
                     break;
                 }
@@ -97,5 +100,6 @@ vsprintf(char *buf, const char *fmt, va_list args)
             mode = COPY_MODE;
         }
     }
-    *buf = '\0';
+    *iter = '\0';
+    return iter - buf;
 }

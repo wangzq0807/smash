@@ -62,7 +62,7 @@ pipe_read(void *pipeptr, void *buf, int size)
 {
     int ret = 0;
     Pipe *pipe = (Pipe*)pipeptr;
-    // printk("pipe_read %x %x %x ", pipe->p_head, pipe->p_tail, size);
+    KLOG(DEBUG, "pipe_read %x %x %x ", pipe->p_head, pipe->p_tail, size);
     if (_is_empty_queue(pipe)) {
         pipe->p_rdwait = current_task();
         sleep(pipe->p_rdwait);
@@ -89,7 +89,7 @@ pipe_read(void *pipeptr, void *buf, int size)
             ret = len1 + more;
         }
     }
-    // printk("rend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
+    KLOG(DEBUG, "rend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
 
     wakeup(pipe->p_wrwait);
     pipe->p_wrwait = NULL;
@@ -102,7 +102,7 @@ pipe_write(void *pipeptr, const void *buf, int size)
 {
     int ret = 0;
     Pipe *pipe = (Pipe*)pipeptr;
-    // printk("pipe_write %x %x %x ", pipe->p_head, pipe->p_tail, size);
+    KLOG(DEBUG, "pipe_write %x %x %x ", pipe->p_head, pipe->p_tail, size);
     if (_is_full_queue(pipe)) {
         pipe->p_wrwait = current_task();
         sleep(pipe->p_wrwait);
@@ -131,7 +131,7 @@ pipe_write(void *pipeptr, const void *buf, int size)
             pipe->p_tail = more;
         }
     }
-    // printk("wend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
+    KLOG(DEBUG, "wend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
 
     wakeup(pipe->p_rdwait);
     pipe->p_rdwait = NULL;
@@ -148,7 +148,7 @@ close_pipe(void *pipeptr, void *file)
         pipe->p_wrpipe = NULL;
 
     if (pipe->p_rdpipe == NULL && pipe->p_wrpipe == NULL) {
-        // printk("release_vm ");
+        KLOG(DEBUG, "release_vm ");
         release_vm_page(pipe);
     }
     return 0;

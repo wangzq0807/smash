@@ -1,2 +1,7 @@
 // use bochs 0xe9 port for debug
 #cmakedefine BOCHS_IODEBUG
+
+// enable / disable kernel log
+#cmakedefine KLOG_ENABLE
+// 0:debug, 1:info, 2:warn, 3:error
+#define KLOG_LEVEL  @KLOG_LEVEL@

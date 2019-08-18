@@ -77,6 +77,6 @@ start_first_task(X86TSS *tss, void *func)
 void
 dump_tss(X86TSS *tss)
 {
-    printk("dumptss cs:%x, eip:%x, ss:%x, esp:%x, ss0:%x, esp0:%x \n",
+    KLOG(DEBUG, "dumptss cs:%x, eip:%x, ss:%x, esp:%x, ss0:%x, esp0:%x \n",
         tss->t_CS, tss->t_EIP, tss->t_SS, tss->t_ESP, tss->t_SS_0, tss->t_ESP_0);
 }

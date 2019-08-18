@@ -1,6 +1,7 @@
 #include "log.h"
 #include "asm.h"
-#include "config.h"
+
+const LogLevel log_level = KLOG_LEVEL;
 
 #define COPY_MODE   0
 #define FMT_MODE    1
@@ -47,25 +48,34 @@ num2str(char *buf, int num, int flags)
     return buf;
 }
 
-char printbuf[256];
-void
+int
 printk(const char *fmt, ...)
 {
-    va_list args;
+    char printbuf[256];
+    volatile va_list args;  // Note: 必须volatile,否则可能被优化为inline
     va_start(args, fmt);
-    vsprintf(printbuf, fmt, args);
-    // console_print(printbuf);
-#ifdef BOCHS_IODEBUG
+    int len = vsprintf(printbuf, fmt, args);
     const char* tmp = printbuf;
     while (*tmp != '\0')
         outb(*tmp++, 0xe9);
-#endif
     va_end(args);
+    return len;
 }
 
-void
+int
+sprintf(char *str, const char *fmt, ...)
+{
+    volatile va_list args;  // Note: 必须volatile,否则可能被优化为inline
+    va_start(args, fmt);
+    int len = vsprintf(str, fmt, args);
+    va_end(args);
+    return len;
+}
+
+int
 vsprintf(char *buf, const char *fmt, va_list args)
 {
+    char* iter = buf;
     int mode = COPY_MODE;
     for(; *fmt; ++fmt) {
         if (mode == COPY_MODE) {
@@ -73,26 +83,26 @@ vsprintf(char *buf, const char *fmt, va_list args)
                 mode = FMT_MODE;
                 continue;
             }
-            *buf++ = *fmt;
+            *iter++ = *fmt;
         }
         else if (mode == FMT_MODE) {
             switch (*fmt) {
                 case 'X':
                 case 'x':
-                    buf = num2str(buf, va_arg(args, int), HEX_FMT);
+                    iter = num2str(iter, va_arg(args, int), HEX_FMT);
                     break;
                 case 'd':
                 case 'i':
-                    buf = num2str(buf, va_arg(args, int), INT_FMT);
+                    iter = num2str(iter, va_arg(args, int), INT_FMT);
                     break;
                 case 'c':
-                    *buf++ = va_arg(args, char);
+                    *iter++ = va_arg(args, char);
                     break;
                 case 's':
                 {
                     char *src = va_arg(args, char*);
                     while (*src) {
-                        *buf++ = *src++;
+                        *iter++ = *src++;
                     }
                     break;
                 }
@@ -102,5 +112,20 @@ vsprintf(char *buf, const char *fmt, va_list args)
             mode = COPY_MODE;
         }
     }
-    *buf = '\0';
+    *iter = '\0';
+    return iter - buf;
+}
+
+int
+log_write(LogLevel lv, const char *fmt, ...)
+{
+    char printbuf[256];
+    volatile va_list args;
+    va_start(args, fmt);
+    vsprintf(printbuf, fmt, args);
+    va_end(args);
+
+    const char* szlevel[4] = {"[Debug]", "[Info ]", "[Warn ]", "Error"};
+    printk("%s: %s\n", szlevel[lv], printbuf);
+    return 0;
 }

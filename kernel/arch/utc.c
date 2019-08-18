@@ -27,6 +27,7 @@ struct _RTCTime {
 void
 init_utc()
 {
+#ifdef KLOG_ENABLE
     RTCTime rtime;
     rtime.rt_seconds = READ_CMOS(0x0);
     rtime.rt_minutes = READ_CMOS(0x2);
@@ -35,6 +36,6 @@ init_utc()
     rtime.rt_month = READ_CMOS(0x8);
     rtime.rt_year = READ_CMOS(0x9);
     rtime.rt_century = READ_CMOS(0x32);
-
-    printk("DATE: %d%d, %d, %d \n", BCD2BIN(rtime.rt_century),BCD2BIN(rtime.rt_year), BCD2BIN(rtime.rt_month), BCD2BIN(rtime.rt_day));
+    KLOG(DEBUG, "DATE: %d%d, %d, %d", BCD2BIN(rtime.rt_century),BCD2BIN(rtime.rt_year), BCD2BIN(rtime.rt_month), BCD2BIN(rtime.rt_day));
+#endif
 }

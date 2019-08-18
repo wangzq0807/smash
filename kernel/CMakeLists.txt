@@ -4,9 +4,11 @@ enable_language (ASM)
 # 编译选项
 add_compile_options (-g -O2 -m32 -Wall -Werror -ffreestanding -nostdinc -fno-builtin)
 # 
+set(KLOG_LEVEL 1)
+option(BOCHS_IODEBUG "Enable bochs io debugger" ON)
+option(KLOG_ENABLE "Enable kernel log" ON)
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
 				${CMAKE_CURRENT_SOURCE_DIR}/config.h)
-option(BOCHS_IODEBUG "Enable bochs io debugger" ON)
 
 # 链接选项
 set (CMAKE_ASM_LINK_FLAGS "-m elf_i386 -Ttext 0x0")

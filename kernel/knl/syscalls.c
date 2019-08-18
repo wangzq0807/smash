@@ -2,15 +2,14 @@
 #include "sys/syscalls.h"
 
 #ifdef __SYSCALLS_H__
-#undef __SYSCALLS_H__
+    #undef __SYSCALLS_H__
 
-#undef SYSCALLS_BEGIN
-#undef SYSCALLS_END
-#undef SYSCALL
-
-#define SYSCALLS_SOURCE
-#include "sys/syscalls.h"
-
+    #undef SYSCALLS_BEGIN
+    #undef SYSCALLS_END
+    #undef SYSCALL
+    // 注册系统调用
+    #define REGIST_SYSCALL
+    #include "sys/syscalls.h"
 #endif  // __SYSCALLS_H__
 
 int sys_none(IrqFrame *irq) { return 0 ;}

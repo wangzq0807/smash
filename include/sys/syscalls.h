@@ -5,7 +5,7 @@
 
 typedef struct _TrapCall TrapCall;
 
-#ifdef SYSCALLS_SOURCE
+#ifdef REGIST_SYSCALL
     #define SYSCALLS_BEGIN()        TrapCall syscalls[] = {
     #define SYSCALLS_END()          };
     #define SYSCALL(name, params)   { params, sys_##name },

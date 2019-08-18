@@ -73,7 +73,6 @@ on_all_irq(IrqFrame irqframe)
 
     switch (irqframe.if_irqno) {
         case IRQ_PAGE: {
-            // printk(" irq_page ");
             on_page_fault(&irqframe);
             break;
         }
@@ -83,6 +82,7 @@ on_all_irq(IrqFrame irqframe)
         }
         case IRQ_SYSCALL: {
             TrapCall *tc = &syscalls[irqframe.if_EAX];
+            KLOG(DEBUG, "syscall: %d", irqframe.if_EAX);
             irqframe.if_EAX = call_syscall(&irqframe, tc->sc_params, irqframe.if_ESP, tc->sc_func);
             // irqframe.if_EAX = syscalls[irqframe.if_EAX].sc_func(&irqframe);
             break;
@@ -113,7 +113,7 @@ on_timer_handler(IrqFrame *irqframe)
 void
 on_ignore_handler(IrqFrame *irqframe)
 {
-    printk(" ignore %x\n", irqframe->if_EIP);
+    KLOG(WARN, " ignore %x\n", irqframe->if_EIP);
 }
 
 void set_trap_handler(int num, trap_func f)

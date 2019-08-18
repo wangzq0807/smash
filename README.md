@@ -121,8 +121,8 @@ extern int dup(int fd);
 * boot : 存放引导程序
 * commom : 存放基础数据结构,算法
 * kernel : 内核代码
-* usr : 应用程序
 * include : unix标准头文件
+* usr : 应用程序
 
 ### kernel设计
 

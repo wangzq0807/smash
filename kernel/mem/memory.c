@@ -76,7 +76,7 @@ init_memory(uint32_t start, uint32_t end)
     if ( (start > end)
         || (size_t)(start) & (PAGE_SIZE - 1)
         || (size_t)(end) & (PAGE_SIZE - 1) ) {
-        printk("wrong memory range\n");
+        KLOG(ERROR, "wrong memory range\n");
         return;
     }
 
@@ -141,7 +141,7 @@ int
 add_pypage_refs(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
-        printk("wrong page address\n");
+        KLOG(ERROR, "wrong page address\n");
         return -1;
     }
 
@@ -159,13 +159,13 @@ int
 release_pypage(uint32_t page)
 {
     if ((size_t)(page) & (PAGE_SIZE - 1)) {
-        printk("wrong page address\n");
+        KLOG(ERROR, "wrong page address");
         return -1;
     }
 
     PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
     if (node == NULL) {
-        printk("page %x is not found\n", page);
+        KLOG(ERROR, "page %x is not found", page);
         return -1;
     }
 

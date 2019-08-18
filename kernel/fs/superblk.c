@@ -41,7 +41,7 @@ init_super_block(dev_t dev)
     BlockBuffer *buffer = get_block(dev, pos);
     memcpy(&super_blk[0], buffer->bf_data, sizeof(super_blk));
     if (super_blk[0].sb_magic != MINIX_V2 ) {
-        printk("only minifs v2 is supported\n");
+        KLOG(ERROR, "only minifs v2 is supported\n");
         ret = -1;
     }
     release_block(buffer);
@@ -58,13 +58,15 @@ get_super_block(dev_t dev)
 void
 dump_super_block(dev_t dev)
 {
+#ifdef KLOG_ENABLE
     const SuperBlock *sb = get_super_block(dev);
-    printk("Super Block:\n");
-    printk("sb_magic %x\n", sb->sb_magic);
-    printk("sb_inodes %x\n", sb->sb_inodes);
-    printk("sb_zones %x\n", sb->sb_zones);
-    printk("sb_imap_blocks %x\n", sb->sb_imap_blocks);
-    printk("sb_zmap_blocks %x\n", sb->sb_zmap_blocks);
-    printk("sb_first_datazone %x\n", sb->sb_first_datazone);
-    printk("sb_log_zone_size %x\n", sb->sb_log_zone_size);
+    KLOG(DEBUG, "Super Block:");
+    KLOG(DEBUG, "sb_magic %x", sb->sb_magic);
+    KLOG(DEBUG, "sb_inodes %x", sb->sb_inodes);
+    KLOG(DEBUG, "sb_zones %x", sb->sb_zones);
+    KLOG(DEBUG, "sb_imap_blocks %x", sb->sb_imap_blocks);
+    KLOG(DEBUG, "sb_zmap_blocks %x", sb->sb_zmap_blocks);
+    KLOG(DEBUG, "sb_first_datazone %x", sb->sb_first_datazone);
+    KLOG(DEBUG, "sb_log_zone_size %x", sb->sb_log_zone_size);
+#endif
 }
