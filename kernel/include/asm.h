@@ -3,7 +3,7 @@
 
 #include "sys/types.h"
 
-static inline void outb(uint8_t value, uint16_t port) {
+static inline void outb(uint16_t port, uint8_t value) {
     __asm__ volatile (
         "outb %%al, %%dx\n"
         : : "a"(value), "d"(port)
@@ -19,7 +19,7 @@ static inline uint8_t inb(uint16_t port) {
     return ret;
 }
 
-static inline void outsw(void *buffer, uint32_t cnt, uint16_t port) {
+static inline void outsw(uint16_t port, void *buffer, uint32_t cnt) {
     __asm__ volatile (
         "cld \n"
         "rep outsw \n"
@@ -27,7 +27,7 @@ static inline void outsw(void *buffer, uint32_t cnt, uint16_t port) {
     );
 }
 
-static inline void insw(uint32_t cnt, uint16_t port, void *buffer) {
+static inline void insw(uint16_t port, void *buffer, uint32_t cnt) {
     __asm__ volatile (
         "cld \n"
         "rep insw \n"

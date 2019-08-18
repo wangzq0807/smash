@@ -57,36 +57,36 @@ int nComPort = COM_PORT1;
 
 static inline void _set_rate(ComRate rate)
 {
-    outb(rate & 0xff, nComPort + 0);
-    outb(rate >> 8, nComPort + 1);
+    outb(nComPort + 0, rate & 0xff);
+    outb(nComPort + 1, rate >> 8);
 }
 
 static inline void _set_proto(ComDataBits dbits, ComStopBits sbits )
 {
-    outb(dbits|sbits, nComPort + 3);
+    outb(nComPort + 3, dbits|sbits);
 }
 
 void init_serial(int port)
 {
     nComPort = port;
-    outb(IF_DISABLE, nComPort+1);
+    outb(nComPort+1, IF_DISABLE);
     {
-        outb(DLAP_BIT, nComPort + 3);           // 设置DLAP
+        outb(nComPort + 3, DLAP_BIT);           // 设置DLAP
         _set_rate(ComR57600);                   // 设置波特率
-        outb(0, nComPort + 3);                  // 清除DLAP
+        outb(nComPort + 3, 0);                  // 清除DLAP
         _set_proto(ComDataBits8, ComStopBits1); // 8bit数据, 1bit停止
     }
-    outb(IF_ENABLE, nComPort+1);
+    outb(nComPort+1, IF_ENABLE);
 }
 
 void set_rate(ComRate rate)
 {
-    outb(DLAP_BIT, nComPort + 3);    // 设置DLAP
+    outb(nComPort + 3, DLAP_BIT);    // 设置DLAP
     _set_rate(rate);
-    outb(0, nComPort + 3);           // 清除DLAP
+    outb(nComPort + 3, 0);           // 清除DLAP
 }
 
 void write_serial(char a)
 {
-    outb(a, nComPort);
+    outb(nComPort, a);
 }

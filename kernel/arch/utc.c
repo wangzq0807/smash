@@ -7,7 +7,7 @@
 #define CMOS_DATA_PORT  0x71
 #define READ_CMOS(reg)          \
 ({                              \
-    outb(0x80|(reg), CMOS_CMD_PORT); \
+    outb(CMOS_CMD_PORT, 0x80|(reg)); \
     inb(CMOS_DATA_PORT);        \
 })
 

@@ -57,7 +57,7 @@ printk(const char *fmt, ...)
     int len = vsprintf(printbuf, fmt, args);
     const char* tmp = printbuf;
     while (*tmp != '\0')
-        outb(*tmp++, 0xe9);
+        outb(0xe9, *tmp++);
     va_end(args);
     return len;
 }

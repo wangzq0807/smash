@@ -73,7 +73,7 @@ _put_hash_entity(PageNode *node)
 void
 init_memory(uint32_t start, uint32_t end)
 {
-    if ( (start > end)
+    if ( (start >= end)
         || (size_t)(start) & (PAGE_SIZE - 1)
         || (size_t)(end) & (PAGE_SIZE - 1) ) {
         KLOG(ERROR, "wrong memory range\n");

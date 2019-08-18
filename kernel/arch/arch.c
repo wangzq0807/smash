@@ -11,29 +11,29 @@ static void
 _init_8259A()
 {
     /* init_ICW1: 00010001b,多片级联,使用ICW4 */
-    outb(0x11, 0x20);
-    outb(0x11, 0xA0);
+    outb(0x20, 0x11);
+    outb(0xA0, 0x11);
     /* init_ICW2: 中断号 0x20 - 0x27, 0x28 - 0x2f */
-    outb(0x20, 0x21);
-    outb(0x28, 0xA1);
+    outb(0x21, 0x20);
+    outb(0xA1, 0x28);
     /* init_ICW3: 100b, IR2 接从片 */
-    outb(0x4, 0x21);        /* 100b, IR2 接从片 */
-    outb(0x2, 0xA1);        /* 接主片IR2 */
+    outb(0x21, 0x4);        /* 100b, IR2 接从片 */
+    outb(0xA1, 0x2);        /* 接主片IR2 */
     /* init_ICW4: 普通全嵌套, 非缓冲, 非自动结束 */
-    outb(0x1, 0x21);        /* 普通全嵌套, 非缓冲, 非自动结束 */
-    outb(0x1, 0xA1);
+    outb(0x21, 0x1);        /* 普通全嵌套, 非缓冲, 非自动结束 */
+    outb(0xA1, 0x1);
 }
 
 static void
 _init_timer()
 {
     /* 写入控制字, 使用方式3, 计数器0 */
-    outb(0x36, 0x43);
+    outb(0x43, 0x36);
     /* 写入计数值，设置每10ms中断一次 */
     uint8_t low = BYTE1(11930);
-    outb(low, 0x40);    /* 先写低字节 */
+    outb(0x40, low);    /* 先写低字节 */
     uint8_t high = BYTE2(11930);
-    outb(high, 0x40);   /* 后写高字节 */
+    outb(0x40, high);   /* 后写高字节 */
 }
 
 static void

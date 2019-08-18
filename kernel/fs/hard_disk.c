@@ -80,13 +80,13 @@ ata_cmd(uint32_t lba_addr, uint8_t cnt, uint8_t cmd)
     // op ata disk by LBA-28bit-mode
     lba_addr = lba_addr & 0xffffff;             // 28bit
     if (last_drv != drv_mode)
-        outb(drv_mode, ATA_REG_DRV);            // 选择M/S驱动器，选择LBA/CHS模式
+        outb(ATA_REG_DRV, drv_mode);            // 选择M/S驱动器，选择LBA/CHS模式
         // TODO: wait for 400ns
-    outb(cnt, ATA_REG_COUNT);                   // 扇区数(0-255, 0表示传输256个扇区)
-    outb(BYTE1(lba_addr), ATA_REG_LBA1);        // LBA 0-7
-    outb(BYTE2(lba_addr), ATA_REG_LBA2);        // LBA 8-15
-    outb(BYTE3(lba_addr), ATA_REG_LBA3);        // LBA 16-23
-    outb(cmd, ATA_REG_CMD);                     // 发送命令到驱动器
+    outb(ATA_REG_COUNT, cnt);                   // 扇区数(0-255, 0表示传输256个扇区)
+    outb(ATA_REG_LBA1, BYTE1(lba_addr));        // LBA 0-7
+    outb(ATA_REG_LBA2, BYTE2(lba_addr));        // LBA 8-15
+    outb(ATA_REG_LBA3, BYTE3(lba_addr));        // LBA 16-23
+    outb(ATA_REG_CMD, cmd);                     // 发送命令到驱动器
     return 0;
 }
 
@@ -164,7 +164,7 @@ do_request()
     if (cmd == ATA_CMD_WRITE) {
         ata_wait_ready();
         // begin write
-        outsw(buffer->bf_data, BLOCK_SIZE/2, ATA_REG_DATA);
+        outsw(ATA_REG_DATA, buffer->bf_data, BLOCK_SIZE/2);
     }
     unlock(&disk_queue.dr_lock);
     return 0;
@@ -177,7 +177,7 @@ on_disk_handler(IrqFrame *irq)
     BlockBuffer *buffer = req->dr_buf;
 
     if (req->dr_cmd == ATA_CMD_READ)
-        insw(BLOCK_SIZE/2, ATA_REG_DATA, buffer->bf_data);
+        insw(ATA_REG_DATA, buffer->bf_data, BLOCK_SIZE/2);
     // 释放/解锁缓冲区
     if (buffer->bf_status & BUF_BUSY) {
         // 不需要加锁，因为BUSY时，我们只有在这里才修改bf_status的值

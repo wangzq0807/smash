@@ -69,7 +69,7 @@ on_all_irq(IrqFrame irqframe)
 {
     /* 设置8259A的OCW2,发送结束中断命令 */
     outb(0x20, 0x20);
-    outb(0x20, 0xA0);
+    outb(0xA0, 0x20);
 
     switch (irqframe.if_irqno) {
         case IRQ_PAGE: {
