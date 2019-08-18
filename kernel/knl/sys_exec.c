@@ -2,7 +2,7 @@
 #include "arch/task.h"
 #include "arch/page.h"
 #include "asm.h"
-#include "elf.h"
+#include "elf/elf.h"
 #include "log.h"
 #include "memory.h"
 #include "fs/file.h"

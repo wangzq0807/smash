@@ -20,7 +20,7 @@ typedef uint32_t        ssize_t;
 typedef size_t          pde_t;
 typedef size_t          pte_t;
 // fs
-typedef uint32_t        lba_t;
+typedef uint64_t        lba_t;
 typedef uint32_t        blk_t;
 typedef uint32_t        zone_t;
 

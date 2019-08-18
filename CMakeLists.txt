@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 
-include_directories (common)
+include_directories (common include)
 
 add_subdirectory(boot)
 add_subdirectory(kernel)

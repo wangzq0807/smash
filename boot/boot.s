@@ -1,10 +1,14 @@
 /* 系统启动时，会将软盘或硬盘第一个启动扇区（512字节）加载到0x7c00位置
- * 然后跳转到0x7c00位置
+ * 然后跳转到0x7c00位置.
+ * 1. 从内存将boot代码移动到(BOOTSEG2, 0)
+ * 2. 从磁盘将kernel代码移动到(HEADSEG, 0),保留bios中断[0, HEADSEG*16]
+ * 3. 从内存将(HEADSEG, 0)处代码移动到0x00
+ * 4. 开启保护模式
  */
  /* jmp 标号 : 按标号地址与当前地址的差值进行寻址? */
  /* lgdt/movw 标号 : 按标号地址进行寻址? */
 BOOTSEG     = 0x07C0
-BOOTSEG2    = 0x9000
+BOOTSEG2    = 0x9000    /* 预留足够多的空间[64K, 576K]来读入kernel */
 HEADSEG     = 0x1000
 HEADLEN     = 254		/* 254 sector = 127KB */
 .code16
@@ -50,11 +54,11 @@ lba_error:
     jmp lba_error
 
 lba_pack:
-    .word 0x1000	/* 16 byte */
+    .word 0x0010	/* lba_pack的长度16 byte */
     .word HEADLEN	/* read 1024 sector */
-    .word 0x0000	/* mem buffer 0x1000:0x000*/
-    .word HEADSEG
-    .long 0x1		/* start lba address 2 */
+    .word 0x0000	/* mem buffer 段内偏移 */
+    .word HEADSEG   /* mem buffer (HEADSEG, 0) */
+    .long 0x1		/* LBA的32位低地址 */
     .long 0x0
 
 lba_read:
