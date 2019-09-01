@@ -5,7 +5,7 @@
 #include "asm.h"
 #include "string.h"
 
-#define QUEUE_LOG_LEN   3
+#define QUEUE_LOG_LEN   8
 #define QUEUE_LEN       (1 << QUEUE_LOG_LEN)
 typedef struct _ttyDev      ttyDev;
 typedef struct _ttyQueue    ttyQueue;
