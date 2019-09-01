@@ -16,42 +16,11 @@ uint32_t param_buf[64];
 static void _free_task_memory(Task *task);
 
 int
-sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **envp)
+copy_args(int frameEsp, int argc, int argsz)
 {
-    IndexNode *fnode = file_open(execfile, O_RDONLY, 0);
-    if (fnode == NULL)  return -1;
-    // NOTE:先做参数拷贝后释放内存
-    int argc = 0;
-    int argsz = 0;
-    // 将参数拷贝到内核
-    while (argv != NULL && argv[argc] != NULL) {
-        int slen = strlen(argv[argc]) + 1;
-        int numlen = (slen + sizeof(int) - 1) / sizeof(int);
-        param_buf[argsz++] = numlen;
-        memcpy(&(param_buf[argsz]), argv[argc], slen);
-        argsz += numlen;
-        ++argc;
-    }
-
-    const uint32_t filesize = fnode->in_inode.in_file_size;
-    // 释放当前进程的所有打开文件和物理内存
-    Task *curtask = current_task();
-    // for (int i = 1; i < MAX_FD; ++i) {
-    //     VFile *vf = curtask->ts_filps[i];
-    //     if (vf != NULL) {
-    //         // file_close(vf->f_inode);
-    //         release_vfile(vf);
-    //     }
-    // }
-    _free_task_memory(curtask);
-    // 重新创建用户态堆栈
-    uint32_t ustack = alloc_pypage();
-    map_vm_page(0xFFFF0000, ustack);
-    irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
-    // 将参数拷贝到用户态堆栈中
     if (argc > 0) {
-        irqframe->if_ESP -= argsz*sizeof(uint32_t);
-        uint32_t *destargs = (uint32_t *)(irqframe->if_ESP);
+        frameEsp -= argsz*sizeof(uint32_t);
+        uint32_t *destargs = (uint32_t *)(frameEsp);
         int argi = 0;
         int argoffset = argc;
         int nextparam = 0;
@@ -63,20 +32,26 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
             argoffset += numlen;
             nextparam += numlen + 1;
         }
-        irqframe->if_ESP -= 3*sizeof(uint32_t);
-        destargs = (uint32_t *)(irqframe->if_ESP);
+        frameEsp -= 3*sizeof(uint32_t);
+        destargs = (uint32_t *)(frameEsp);
         destargs[0] = 0;        // _start的返回地址
         destargs[1] = argc;     // 参数个数
         destargs[2] = (uint32_t)&destargs[3]; // 参数
     }
     else {
-        irqframe->if_ESP -= 3*sizeof(uint32_t);
-        uint32_t *destargs = (uint32_t *)(irqframe->if_ESP);
+        frameEsp -= 3*sizeof(uint32_t);
+        uint32_t *destargs = (uint32_t *)(frameEsp);
         destargs[0] = 0;        // _start的返回地址
         destargs[1] = 0;        // 参数个数
         destargs[2] = NULL;     // 参数
     }
+    return frameEsp;
+}
 
+int
+load_elf(IndexNode *fnode)
+{
+    const uint32_t filesize = fnode->in_inode.in_file_size;
     uint32_t sizecnt = 0;
     // 读取elfheader
     uint32_t pyheader = alloc_pypage();
@@ -87,7 +62,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     }
 
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
-    irqframe->if_EIP = elfheader->eh_entry;
+    int frameIp = elfheader->eh_entry;
     uint32_t linear = PAGE_FLOOR(elfheader->eh_entry);
     map_vm_page(linear, pyheader);  // TODO:假设entry和elfheader在同一个页面
     if (linear != ELF_FILE) {
@@ -112,6 +87,45 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     }
 
     load_cr3(pdt);
+    return frameIp;
+}
+
+int
+sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **envp)
+{
+    IndexNode *fnode = file_open(execfile, O_RDONLY, 0);
+    if (fnode == NULL)  return -1;
+    // NOTE:先做参数拷贝后释放内存
+    int argc = 0;
+    int argsz = 0;
+    // 将参数拷贝到内核
+    while (argv != NULL && argv[argc] != NULL) {
+        int slen = strlen(argv[argc]) + 1;
+        int numlen = (slen + sizeof(int) - 1) / sizeof(int);
+        param_buf[argsz++] = numlen;
+        memcpy(&(param_buf[argsz]), argv[argc], slen);
+        argsz += numlen;
+        ++argc;
+    }
+
+    // 释放当前进程的所有打开文件和物理内存
+    Task *curtask = current_task();
+    // for (int i = 1; i < MAX_FD; ++i) {
+    //     VFile *vf = curtask->ts_filps[i];
+    //     if (vf != NULL) {
+    //         // file_close(vf->f_inode);
+    //         release_vfile(vf);
+    //     }
+    // }
+    _free_task_memory(curtask);
+    // 重新创建用户态堆栈
+    uint32_t ustack = alloc_pypage();
+    map_vm_page(0xFFFF0000, ustack);
+    irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
+    // 将参数拷贝到用户态堆栈中
+    irqframe->if_ESP = copy_args(irqframe->if_ESP, argc, argsz);
+
+    irqframe->if_EIP = load_elf(fnode);
     file_close(fnode);
 
     return 0;
