@@ -54,7 +54,8 @@ set (KERNAL_SRCS
 	./fs/hard_disk.c
 	./fs/path.c
 	./fs/zones.c
-	./mem/memory.c)
+	./mem/memory.c
+	./lib/elf.c)
 # 目标kernel
 add_executable (smash
     ${KERNAL_SRCS})

@@ -2,7 +2,7 @@
 #include "arch/task.h"
 #include "arch/page.h"
 #include "asm.h"
-#include "elf/elf.h"
+#include "elf.h"
 #include "log.h"
 #include "memory.h"
 #include "fs/file.h"
@@ -51,6 +51,7 @@ copy_args(int frameEsp, int argc, int argsz)
 int
 load_elf(IndexNode *fnode)
 {
+    /*
     const uint32_t filesize = fnode->in_inode.in_file_size;
     uint32_t sizecnt = 0;
     // 读取elfheader
@@ -87,7 +88,8 @@ load_elf(IndexNode *fnode)
     }
 
     load_cr3(pdt);
-    return frameIp;
+    return frameIp;*/
+    return -1;
 }
 
 int

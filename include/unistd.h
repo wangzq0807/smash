@@ -14,8 +14,8 @@
 
 extern int exit(int code);
 extern int fork(void);
-extern int read(int fd, char *buf, int count);
-extern int write(int fd, const char *buf, int count);
+extern int read(int fd, void *buf, int count);
+extern int write(int fd, const void *buf, int count);
 extern int open(const char *pathname, int flags, int mode);
 extern int close(int fd);
 extern int waitpid(int pid, int *status, int options);
@@ -35,5 +35,8 @@ extern int pause(void);
 extern int getpid(void);
 extern int pipe(int fd[2]);
 extern int dup(int fd);
+
+void *mmap(void *addr, size_t length, int prot, int flags,
+                  int fd, off_t offset);
 
 #endif // __UNISTD_H__
