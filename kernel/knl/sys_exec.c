@@ -73,7 +73,7 @@ load_elf(IndexNode *fnode)
     }
     sizecnt = PAGE_SIZE;
     // 读取剩余文件内容
-    pde_t *pdt = (pde_t *)get_cr3();
+    pde_t *pdt = (pde_t *)get_pdt();
     while (sizecnt < filesize) {
         uint32_t pyaddr = alloc_pypage();
         void *buf = (void *)(linear + sizecnt);
@@ -87,7 +87,7 @@ load_elf(IndexNode *fnode)
         sizecnt += PAGE_SIZE;
     }
 
-    load_cr3(pdt);
+    load_pdt(pdt);
     return frameIp;*/
     return -1;
 }
@@ -136,18 +136,18 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
 static void
 _free_task_memory(Task *task)
 {
-    pde_t *cur_pdt = (pde_t *)PAGE_FLOOR(task->ts_tss.t_CR3);
+    pdt_t cur_pdt = (pdt_t)PAGE_FLOOR(task->ts_tss.t_CR3);
     for (uint32_t npde = 1; npde < (PAGE_SIZE / sizeof(pde_t)); ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
-            pte_t *pet = (pte_t *)PAGE_FLOOR(cur_pdt[npde]);
+            pt_t pt = pde2pt(cur_pdt[npde]);
             for (uint32_t npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
-                if (pet[npte] & PAGE_PRESENT) {
-                    release_pypage(PAGE_FLOOR(pet[npte]));
-                    pet[npte] = 0;  // NOTE:回收页表项
+                if (pt[npte] & PAGE_PRESENT) {
+                    release_pypage(pte2pypage(pt[npte]));
+                    pt[npte] = 0;  // NOTE:回收页表项
                 }
             }
             // NOTE:回收页表项及页表自身(与delete_task配合)
-            release_vm_page(pet);
+            release_vm_page((vm_t)pt);
             cur_pdt[npde] = 0;
         }
     }

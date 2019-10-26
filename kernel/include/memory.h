@@ -1,11 +1,7 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 #include "sys/types.h"
-
-#define PAGE_LOG_SIZE   12
-#define PAGE_SIZE     (1 << PAGE_LOG_SIZE)
-#define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
+#include "mem/linear.h"
 
 void
 init_memory(uint32_t start, uint32_t end);
@@ -39,20 +35,20 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num);
 // 0x
 // 0xFFFFE000 - 4G : 临时页表
 //=========================================
-void *
+vm_t
 alloc_vm_page();
 
 void
-release_vm_page(void *addr);
+release_vm_page(vm_t addr);
 
 void
-map_vm_page(uint32_t linaddr, uint32_t pyaddr);
+map_vm_page(vm_t linaddr, uint32_t pyaddr);
 
 void
-unmap_vm_page(uint32_t linaddr);
+unmap_vm_page(vm_t linaddr);
 
 void
-switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt);
+switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
 //====================================
 // 静态内存分配
 // 初始化时,0 - 1M已完成跟物理地址的一一映射，

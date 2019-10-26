@@ -149,7 +149,7 @@ close_pipe(void *pipeptr, void *file)
 
     if (pipe->p_rdpipe == NULL && pipe->p_wrpipe == NULL) {
         KLOG(DEBUG, "release_vm ");
-        release_vm_page(pipe);
+        release_vm_page((vm_t)pipe);
     }
     return 0;
 }

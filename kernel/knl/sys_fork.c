@@ -54,8 +54,8 @@ setup_page_tables(Task *cur_task, Task *new_task)
      * 但父任务在fork返回前会有很多写内存的操作，
      * 这不会引起写时复制，因为内核态对任何页都是可读写的.
      ******************************/
-    pde_t *cur_pdt = (pde_t *)PAGE_FLOOR(cur_task->ts_tss.t_CR3);
-    pde_t *new_pdt = (pde_t *)PAGE_FLOOR(new_task->ts_tss.t_CR3);
+    pdt_t cur_pdt = (pdt_t)PAGE_FLOOR(cur_task->ts_tss.t_CR3);
+    pdt_t new_pdt = (pdt_t)PAGE_FLOOR(new_task->ts_tss.t_CR3);
 
     // 复制4M - 4G的页表
     // Note: alloc_vm_page 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
@@ -76,7 +76,7 @@ setup_page_tables(Task *cur_task, Task *new_task)
     }
 
     /* 刷新tlb */
-    load_cr3(cur_pdt);
+    load_pdt(cur_pdt);
 }
 
 int

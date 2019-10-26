@@ -17,8 +17,11 @@ typedef uint32_t        size_t;
 typedef uint32_t        ssize_t;
 
 // mem
-typedef size_t          pde_t;
-typedef size_t          pte_t;
+typedef size_t*         pdt_t;      // 页目录表
+typedef size_t          pde_t;      // 页目录表项
+typedef pde_t*          pt_t;       // 页表
+typedef size_t          pte_t;      // 页表项
+typedef size_t          vm_t;   // 线性地址
 // fs
 typedef uint64_t        lba_t;
 typedef uint32_t        blk_t;

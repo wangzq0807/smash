@@ -39,16 +39,16 @@ _init_timer()
 static void
 _setup_pages()
 {
-    uint32_t *pdt = (uint32_t*)alloc_spage();
-    uint32_t addr = 0;
+    pdt_t pdt = (pdt_t)alloc_spage();
+    size_t addr = 0;
     // 先将0-1M一一映射到物理内存, 1M - 4M 用于动态分配
-    uint32_t *pte = (uint32_t*)alloc_spage();
-    pdt[0] = PAGE_FLOOR((uint32_t)pte) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    pt_t pt = (pt_t)alloc_spage();
+    pdt[0] = PAGE_FLOOR((size_t)pt) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     for (int i = 0; i < 256; ++i) {
-        pte[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+        pt[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
         addr += PAGE_SIZE;
     }
-    load_cr3(pdt);
+    load_pdt(pdt);
 }
 
 void

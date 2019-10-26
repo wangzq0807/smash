@@ -81,7 +81,7 @@ static inline void ljmp(uint32_t seg) {
     );
 }
 
-static inline void invlpg(void *ptr) {
+static inline void invlpg(vm_t ptr) {
     __asm__ volatile (
         "invlpg (%0) \n"
         : :"r"(ptr)
@@ -89,15 +89,15 @@ static inline void invlpg(void *ptr) {
 }
 
 // pdt : 页表的物理地址
-static inline void load_cr3(void* pdt) {
+static inline void load_pdt(pdt_t pdt) {
     __asm__(
         "movl %0, %%cr3 \n"
         : :"r"(pdt)
     );
 }
 
-static inline size_t get_cr3() {
-    register size_t ret;
+static inline pdt_t get_pdt() {
+    register pdt_t ret;
     __asm__(
         "movl %%cr3, %0 \n"
         :"=r"(ret)

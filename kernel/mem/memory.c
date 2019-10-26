@@ -210,78 +210,77 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
     unmap_vm_page(0xFFFFE000);
 }
 
-void *
+vm_t
 alloc_vm_page()
 {
-    pde_t *pdt = (pde_t *)get_cr3();
-    pte_t *cur_pte = (pte_t *)(pdt[0] & 0xFFFFF000);
-    for (int npte = 256; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+    pdt_t pdt = get_pdt();
+    pt_t cur_pte = pde2pt(pdt[0]);
+    for (int npte = 256; npte < (PAGE_SIZE / sizeof(pde_t)); ++npte) {
         if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
             uint32_t pyaddr = (npte << 12);
             cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-            int *ret = (int *)(pyaddr);
+            vm_t vmret = (vm_t)(pyaddr); // 物理地址与虚拟地址相同
+            invlpg(vmret);
+            int *words = (int *)vmret;
             // 页面清0
             for (int i = 0; i < PAGE_SIZE / sizeof(int); ++i)
-                ret[i] = 0;
-            invlpg(ret);
-            return ret;
+                words[i] = 0;
+            return vmret;
         }
     }
     return NULL;
 }
 
 void
-release_vm_page(void *addr)
+release_vm_page(vm_t addr)
 {
     uint32_t linear = (uint32_t)addr;
-    uint32_t npdt = linear >> 22;
-    uint32_t npte = (linear >> 12) & 0x3FF;
-    pde_t *pdt = (pde_t *)get_cr3();
-    pte_t *pet = (pte_t *)(pdt[npdt] & 0xFFFFF000);
-    pet[npte] = pet[npte] & ~PAGE_PRESENT;
+    pt_t pt = get_pt(linear);
+    uint32_t npte = get_pte_index(linear);
+    pt[npte] = pt[npte] & ~PAGE_PRESENT;
     invlpg(addr);
 }
 
 void
-map_vm_page(uint32_t linaddr, uint32_t pyaddr)
+map_vm_page(vm_t linaddr, uint32_t pyaddr)
 {
-    uint32_t npdt = linaddr >> 22;
-    uint32_t npte = (linaddr >> 12) & 0x3FF;
-    pde_t *pdt = (pde_t *)get_cr3();
-    if ((pdt[npdt] & PAGE_PRESENT) == 0) {
+    pdt_t pdt = get_pdt();
+    uint32_t npde = get_pde_index(linaddr);
+    if ((pdt[npde] & PAGE_PRESENT) == 0) {
         int peaddr = (int)alloc_vm_page();
-        pdt[npdt] = PAGE_FLOOR(peaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-        invlpg((void *)peaddr);
+        pdt[npde] = PAGE_FLOOR(peaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+        invlpg(peaddr);
     }
-    pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
-    pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-    invlpg((void *)linaddr);
+    pt_t pt = pde2pt(pdt[npde]);
+    uint32_t npte = get_pte_index(linaddr);
+    pt[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+    invlpg((vm_t)linaddr);
 }
 
 void
-unmap_vm_page(uint32_t linaddr)
+unmap_vm_page(vm_t linaddr)
 {
-    uint32_t npdt = linaddr >> 22;
-    uint32_t npte = (linaddr >> 12) & 0x3FF;
-    pde_t *pdt = (pde_t *)get_cr3();
-    if (pdt[npdt] & PAGE_PRESENT) {
-        pte_t *pte = (pte_t *)(pdt[npdt] & 0xFFFFF000);
-        pte[npte] = 0;
-        invlpg((void *)linaddr);
+    pdt_t pdt = get_pdt();
+    int npde = get_pde_index(linaddr);
+    if (pdt[npde] & PAGE_PRESENT) {
+        pt_t pt = pde2pt(pdt[npde]);
+        uint32_t npte = get_pte_index(linaddr);
+        pt[npte] = 0;
+        invlpg(linaddr);
     }
 }
 
 void
-switch_vm_page(pde_t *cur_pdt, pde_t *new_pdt)
+switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
 {
     // 复制内核所在的0 - 4M页表
-    pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[0]);
-    pte_t *new_pte = NULL;
+    pt_t cur_pte = pde2pt(cur_pdt[0]);
+    pt_t new_pte = NULL;
 
     if (new_pdt[0] & PAGE_PRESENT)
-        new_pte = (pte_t *)PAGE_FLOOR(new_pdt[0]);
+        new_pte = pde2pt(new_pdt[0]);
     else {
-        new_pte = (pte_t *)alloc_vm_page();
+        new_pte = (pt_t)alloc_vm_page();
     }
     new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {

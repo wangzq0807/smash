@@ -61,8 +61,8 @@ switch_task()
     } while (next != NULL && next->ts_state != TS_RUN);
 
     if (next != NULL && next != cur) {
-        pde_t *cur_pde = (pde_t *)cur->ts_tss.t_CR3;
-        pde_t *next_pde = (pde_t *)next->ts_tss.t_CR3;
+        pdt_t cur_pde = (pdt_t)cur->ts_tss.t_CR3;
+        pdt_t next_pde = (pdt_t)next->ts_tss.t_CR3;
         switch_vm_page(cur_pde, next_pde);
         switch_tss(&next->ts_tss);
     }
@@ -139,7 +139,7 @@ setup_first_task()
     task1.ts_tss.t_ESP_0 = (uint32_t)&ks_page[PAGE_SIZE];
 
     // Note: 任务切换时,CR3不会被自动保存
-    pde_t *pdt = (pde_t *)get_cr3();
+    pdt_t pdt = get_pdt();
     task1.ts_tss.t_CR3 = (uint32_t)pdt;
     task1.ts_tss.t_LDT = KNL_LDT;
 
@@ -301,16 +301,16 @@ delete_task(Task *task)
 
     unlink_task(task);
     // 回收内核堆栈, NOTE: esp要减1
-    release_vm_page((void *)PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
+    release_vm_page(PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
     // 回收pte和pdt
-    pde_t *pdt = (pde_t *)task->ts_tss.t_CR3;
-    pte_t *pte = (pte_t *)PAGE_FLOOR(pdt[0]);
-    release_vm_page(pte);
+    pdt_t pdt = (pdt_t)task->ts_tss.t_CR3;
+    pt_t pt = pde2pt(pdt[0]);
+    release_vm_page((vm_t)pt);
     // NOTE:先修改pdt[0],后释放指向pdt的页表项，否则，pdt[0]会无法访问.
     pdt[0] = 0;
-    release_vm_page(pdt);
+    release_vm_page((vm_t)pdt);
     // 回收task
-    release_vm_page(task);
+    release_vm_page((vm_t)task);
 
     return 0;
 }
