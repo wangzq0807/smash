@@ -30,6 +30,7 @@ set (KERNAL_SRCS
 	./knl/sys_fork.c
 	./knl/syscalls.c
 	./knl/sys_exec.c
+	./knl/sys_mem.c
 	./main.c
 	./arch/x86.c
 	./arch/page.c

@@ -11,7 +11,7 @@ static void
 setup_new_tss(IrqFrame *irq, Task *new_task)
 {
     // 内核态堆栈不能实现写时复制。
-    uint8_t *knl_stack = (uint8_t *)alloc_vm_page();
+    vm_t knl_stack = alloc_vm_page();
     ((uint32_t *)knl_stack)[0] = (uint32_t)new_task;
     /******************************
      * 复制父任务的上下文
@@ -60,12 +60,12 @@ setup_page_tables(Task *cur_task, Task *new_task)
     // 复制4M - 4G的页表
     // Note: alloc_vm_page 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
     // 因此1-4M的页表要最后复制
-    for (int npde = 1; npde < (PAGE_SIZE / sizeof(pde_t)); ++npde) {
+    for (int npde = 1; npde < PAGE_INT_SIZE; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pte_t *cur_pte = (pte_t *)PAGE_FLOOR(cur_pdt[npde]);
             pte_t *new_pte = (pte_t *)alloc_vm_page();
             new_pdt[npde] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-            for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+            for (int npte = 0; npte < PAGE_INT_SIZE; ++npte) {
                 if (cur_pte[npte] & PAGE_PRESENT) {
                     cur_pte[npte] &= ~PAGE_WRITE;
                     new_pte[npte] = cur_pte[npte];

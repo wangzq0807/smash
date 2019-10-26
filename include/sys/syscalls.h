@@ -46,6 +46,7 @@ SYSCALL(pause, 0)           // 19
 SYSCALL(getpid, 0)          // 20
 SYSCALL(pipe, 1)            // 21
 SYSCALL(dup, 1)             // 22
+SYSCALL(mmap, 6)            // 23
 
 SYSCALLS_END()
 

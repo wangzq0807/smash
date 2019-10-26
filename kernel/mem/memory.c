@@ -202,7 +202,7 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
 
     int *dist_page = (int *)0xFFFFF000;
     const int *src_page = (const int *)0xFFFFE000;
-    size_t len = num * PAGE_SIZE / sizeof(int);
+    size_t len = num * PAGE_INT_SIZE;
     while (--len) {
         *dist_page++ = *src_page++;
     }
@@ -215,7 +215,7 @@ alloc_vm_page()
 {
     pdt_t pdt = get_pdt();
     pt_t cur_pte = pde2pt(pdt[0]);
-    for (int npte = 256; npte < (PAGE_SIZE / sizeof(pde_t)); ++npte) {
+    for (int npte = 256; npte < PAGE_INT_SIZE; ++npte) {
         if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
             uint32_t pyaddr = (npte << 12);
             cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
@@ -223,7 +223,7 @@ alloc_vm_page()
             invlpg(vmret);
             int *words = (int *)vmret;
             // 页面清0
-            for (int i = 0; i < PAGE_SIZE / sizeof(int); ++i)
+            for (int i = 0; i < PAGE_INT_SIZE; ++i)
                 words[i] = 0;
             return vmret;
         }
@@ -254,7 +254,7 @@ map_vm_page(vm_t linaddr, uint32_t pyaddr)
     pt_t pt = pde2pt(pdt[npde]);
     uint32_t npte = get_pte_index(linaddr);
     pt[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-    invlpg((vm_t)linaddr);
+    invlpg(linaddr);
 }
 
 void
@@ -283,7 +283,7 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
         new_pte = (pt_t)alloc_vm_page();
     }
     new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    for (int npte = 0; npte < (PAGE_SIZE / sizeof(pte_t)); ++npte) {
+    for (int npte = 0; npte < PAGE_INT_SIZE; ++npte) {
         new_pte[npte] = cur_pte[npte];
     }
 }

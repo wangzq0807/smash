@@ -6,8 +6,10 @@
 
 #define PAGE_LOG_SIZE   12
 #define PAGE_SIZE     (1 << PAGE_LOG_SIZE)
+#define PAGE_INT_SIZE         (PAGE_SIZE/sizeof(int))
 #define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
 #define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
+#define PAGE_MARK(addr)         ((addr) & (PAGE_SIZE - 1))
 //====================================
 //  常用线性地址操作
 //====================================

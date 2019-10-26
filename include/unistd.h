@@ -36,7 +36,7 @@ extern int getpid(void);
 extern int pipe(int fd[2]);
 extern int dup(int fd);
 
-void *mmap(void *addr, size_t length, int prot, int flags,
+extern void *mmap(void *addr, size_t length, int prot, int flags,
                   int fd, off_t offset);
 
 #endif // __UNISTD_H__
