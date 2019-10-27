@@ -27,7 +27,7 @@ file_create(const char *pathname, int flags, int mode)
     IndexNode *dinode = name_to_dirinode(pathname, &basename);
     if (dinode == NULL) return NULL;
 
-    ino_t ino = search_file(dinode, basename, FILENAME_LEN);
+    ino_t ino = search_file(dinode, basename, strlen(basename));
     if (ino == INVALID_INODE) {
         // create new file
         ret_inode = alloc_inode(dinode->in_dev);
@@ -138,7 +138,7 @@ file_link(const char *pathname, IndexNode *inode)
     IndexNode *dinode = name_to_dirinode(pathname, &basename);
     if (dinode == NULL) return NULL;
 
-    ino_t ino = search_file(dinode, basename, FILENAME_LEN);
+    ino_t ino = search_file(dinode, basename, strlen(basename));
     if (ino == INVALID_INODE) {
         add_file_entry(dinode, basename, inode);
     }

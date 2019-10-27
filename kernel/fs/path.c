@@ -37,7 +37,8 @@ search_file(IndexNode *inode, const char *fname, int len)
         Direction dir;
         seek = _next_file(inode, seek, &dir);
         if (dir.dr_inode != INVALID_INODE &&
-            strncmp(fname, dir.dr_name, len) == 0 ) {
+            dir.dr_name[len] == 0 &&
+            strncmp(fname, dir.dr_name, len) == 0) {
             return dir.dr_inode;
         }
     }
@@ -192,7 +193,7 @@ make_dir(const char *pathname, int mode)
     IndexNode *dirnode = name_to_dirinode(pathname, &basename);
     if (dirnode == NULL)    return -1;
 
-    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    ino_t ino = search_file(dirnode, basename, strlen(basename));
     if (ino != INVALID_INODE)   return -1;
 
     IndexNode *subinode = alloc_inode(dirnode->in_dev);
@@ -214,7 +215,7 @@ rm_dir(const char *pathname)
     IndexNode *dirnode = name_to_dirinode(pathname, &basename);
     if (dirnode == NULL)    return -1;
 
-    ino_t ino = search_file(dirnode, basename, FILENAME_LEN);
+    ino_t ino = search_file(dirnode, basename, strlen(basename));
     if (ino == INVALID_INODE)   return -1;
 
     IndexNode *subinode = get_inode(dirnode->in_dev, ino);

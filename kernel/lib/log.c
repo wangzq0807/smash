@@ -1,5 +1,6 @@
 #include "log.h"
 #include "asm.h"
+#include "arch/task.h"
 
 const LogLevel log_level = KLOG_LEVEL;
 
@@ -125,7 +126,11 @@ log_write(LogLevel lv, const char *fmt, ...)
     vsprintf(printbuf, fmt, args);
     va_end(args);
 
-    const char* szlevel[4] = {"[Debug]", "[Info ]", "[Warn ]", "Error"};
-    printk("%s: %s\n", szlevel[lv], printbuf);
+    const char* szlevel[4] = {"D", "I", "W", "E"};
+    int pid = 0;
+    Task *ts = current_task();
+    if (ts != NULL)
+        pid = ts->ts_pid;
+    printk("[%s|%d] %s\n", szlevel[lv], pid, printbuf);
     return 0;
 }

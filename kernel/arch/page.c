@@ -13,7 +13,7 @@ void
 on_page_fault(IrqFrame *irq)
 {
     vm_t linear = (vm_t)PAGE_FLOOR(get_cr2());
-    KLOG(DEBUG, "%s CR2: %x ", __FUNCTION__, get_cr2());
+    KLOG(DEBUG, "%s, CR2: %x", __FUNCTION__, get_cr2());
     pt_t pt = get_pt(linear);
     int npte = get_pte_index(linear);
     if (pt[npte] & PAGE_PRESENT)

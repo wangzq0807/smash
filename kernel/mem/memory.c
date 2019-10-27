@@ -223,6 +223,7 @@ alloc_vm_page()
             vm_t vmret = (vm_t)(pyaddr); // 物理地址与虚拟地址相同
             invlpg(vmret);
             int *words = (int *)vmret;
+            KLOG(DEBUG, "%s 0x%x", __FUNCTION__, vmret);
             // 页面清0
             for (int i = 0; i < PAGE_INT_SIZE; ++i)
                 words[i] = 0;
@@ -240,6 +241,7 @@ release_vm_page(vm_t addr)
     uint32_t npte = get_pte_index(linear);
     pt[npte] = pt[npte] & ~PAGE_PRESENT;
     invlpg(addr);
+    KLOG(DEBUG, "%s 0x%x", __FUNCTION__, addr);
 }
 
 void

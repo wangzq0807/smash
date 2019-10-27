@@ -155,6 +155,7 @@ _free_task_memory(Task *task)
             cur_pdt[npde] = 0;
         }
     }
+    load_pdt(cur_pdt);
 }
 
 extern int sys_close(IrqFrame *irq, int fd);

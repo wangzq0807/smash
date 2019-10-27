@@ -25,7 +25,7 @@ log_write(LogLevel, const char *fmt, ...);
             log_write(level, format,  ##__VA_ARGS__);   \
     }
 #else
-    #define KLOG(level, format, ...)
+    #define KLOG(level, format, ...) {}
 #endif
 
 #endif
