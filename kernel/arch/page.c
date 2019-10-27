@@ -45,7 +45,7 @@ static void
 on_page_not_exist(vm_t linear, pt_t pt, int npte)
 {
     Task* ts = current_task();
-    int fd = PAGE_MARK(pt[npte]) >> 1;
+    int fd = FD_MASK(PAGE_MARK(pt[npte]) >> 1);
     int offset = PAGE_FLOOR(pt[npte]);
     VFile *vf = ts->ts_filps[fd];
     if (fd < MAX_FD && vf != NULL)

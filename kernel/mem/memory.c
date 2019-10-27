@@ -2,6 +2,7 @@
 #include "log.h"
 #include "list.h"
 #include "arch/page.h"
+#include "arch/task.h"
 #include "asm.h"
 
 typedef struct _PageNode PageNode;
@@ -288,10 +289,83 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
     }
 }
 
+pt_t
+alloc_page_table(pde_t *pde)
+{
+    vm_t addr = alloc_vm_page();
+    *pde = PAGE_FLOOR((uint32_t)addr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    return (pt_t)addr;
+}
+
 uint32_t
 alloc_spage() {
     // 640K的最后一个页面0x9F000不能用?
     static uint32_t tail = 0x9F000;
     tail -= PAGE_SIZE;
     return tail;
+}
+
+vm_t
+mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
+{
+    if (PAGE_MARK(addr) > 0)
+        return 0;
+    pdt_t pdt = get_pdt();
+    int npde = get_pde_index(addr);
+    if ((pdt[npde] & PAGE_PRESENT) == 0)
+        alloc_page_table(&pdt[npde]);
+    pt_t pt = pde2pt(pdt[npde]);
+    int npte = get_pte_index(addr);
+    if (pt[npte] & PAGE_PRESENT)
+        return 0;
+    // 所需映射的总页面数
+    const int npage = (length + PAGE_SIZE - 1) >> PAGE_LOG_SIZE;
+    // TODO: 失败后,要回收已映射的页表项
+    // 当前页表的映射 pte
+    int lessnum = PAGE_INT_SIZE - npte;
+    lessnum = npage > lessnum ? lessnum : npage;
+    for (int n = npte; n < npte + lessnum; ++n)
+    {
+        pt[n] = PAGE_FLOOR(offset) | (fd << 1);
+        offset += PAGE_SIZE;
+    }
+    if (npage <= lessnum)
+        return addr;
+    npde++;
+    // 页目录表的映射
+    const int pdenum = npde + (npage - lessnum) / PAGE_INT_SIZE;
+    for (int n = npde; n < pdenum; ++n)
+    {
+        if ((pdt[n] & PAGE_PRESENT) == 0)
+            alloc_page_table(&pdt[n]);
+
+        pt = pde2pt(pdt[n]);
+        for (int nn = 0; nn < PAGE_INT_SIZE; ++nn)
+        {
+            pt[nn] = PAGE_FLOOR(offset) | (fd << 1);
+            offset += PAGE_SIZE;
+        }
+    }
+    npde += pdenum;
+    // 剩余页表的映射 pte
+    const int morenum = npage - lessnum - (pdenum*PAGE_INT_SIZE);
+    if ((pdt[npde] & PAGE_PRESENT) == 0)
+        alloc_page_table(&pdt[npde]);
+    pt = pde2pt(pdt[npde]);
+    for (int n = 0; n < morenum; ++n)
+    {
+        pt[n] = PAGE_FLOOR(offset) | (fd << 1);
+        offset += PAGE_SIZE;
+    }
+
+    return addr;
+}
+
+size_t
+grow_user_vm(int sz)
+{
+    Task *ts = current_task();
+    size_t oldsz = ts->ts_size;
+    ts->ts_size += sz;
+    return oldsz;
 }

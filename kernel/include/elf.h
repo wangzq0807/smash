@@ -1,6 +1,7 @@
 #ifndef __ELF_H__
 #define __ELF_H__
 #include "sys/types.h"
+#include "fs/file.h"
 
 /* Type for a 16-bit quantity.  */
 typedef uint16_t Elf32_Half;
@@ -79,6 +80,6 @@ typedef struct
 
 
 uint32_t
-LoadElf(int fd);
+LoadElf(int fd, const IndexNode *inode);
 
 #endif

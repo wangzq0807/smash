@@ -112,13 +112,17 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
 
     // 释放当前进程的所有打开文件和物理内存
     Task *curtask = current_task();
-    // for (int i = 1; i < MAX_FD; ++i) {
+    // for (int i = 2; i < MAX_FD; ++i) {
     //     VFile *vf = curtask->ts_filps[i];
     //     if (vf != NULL) {
     //         // file_close(vf->f_inode);
     //         release_vfile(vf);
+    //         curtask->ts_filps[i] = NULL;
     //     }
     // }
+    VFile* vf = alloc_vfile();
+    vf->f_inode = fnode;
+    int fd = map_vfile(vf);
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = alloc_pypage();
@@ -127,7 +131,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     // 将参数拷贝到用户态堆栈中
     irqframe->if_ESP = copy_args(irqframe->if_ESP, argc, argsz);
 
-    irqframe->if_EIP = load_elf(fnode);
+    irqframe->if_EIP = LoadElf(fd, fnode);
     file_close(fnode);
 
     return 0;

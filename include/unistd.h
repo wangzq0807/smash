@@ -38,5 +38,6 @@ extern int dup(int fd);
 
 extern void *mmap(void *addr, size_t length, int prot, int flags,
                   int fd, off_t offset);
+extern void *sbrk(int increment);
 
 #endif // __UNISTD_H__

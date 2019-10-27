@@ -5,6 +5,7 @@
 #include "fs/vfile.h"
 
 #define MAX_FD      64
+#define FD_MASK(val)    ((val)&(MAX_FD-1))
 
 #define TS_RUN      1
 #define TS_ZOMBIE   2
@@ -19,6 +20,7 @@ struct _Task {
     uint32_t        ts_lock;
     time_t          ts_time;
     error_t         ts_exit;
+    size_t          ts_size;
     VFile           *ts_filps[MAX_FD];
     dev_t           ts_cdev;
     ino_t           ts_cinode;

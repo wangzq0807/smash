@@ -63,12 +63,17 @@ file_read(const IndexNode *inode, off_t seek, void *buf, size_t count)
         ret += len;
     }
     if (ret < count) {
-        blk_t blk = get_zone(inode, seek + ret);
-        BlockBuffer *blkbuf = get_block(inode->in_dev, blk);
         uint32_t len = count - ret;
-        memcpy(buf + ret, blkbuf->bf_data, len);
-        release_block(blkbuf);
-        ret += len;
+        int blknum = (len + BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
+        for (int i = 0; i < blknum; ++i)
+        {
+            blk_t blk = get_zone(inode, seek + ret);
+            BlockBuffer *blkbuf = get_block(inode->in_dev, blk);
+            
+            memcpy(buf + ret, blkbuf->bf_data, BLOCK_SIZE);
+            release_block(blkbuf);
+            ret += BLOCK_SIZE;
+        }
     }
 
     return ret;

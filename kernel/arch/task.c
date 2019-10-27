@@ -149,6 +149,7 @@ setup_first_task()
     map_vm_page(0xFFFF0000, us_addr);
     uint8_t *us_page = (uint8_t *)0xFFFF0000;
     task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
+    task1.ts_tss.t_EBP = (uint32_t)&us_page[PAGE_SIZE];
 
     task1.ts_child_new = NULL;
     task1.ts_child_old = NULL;

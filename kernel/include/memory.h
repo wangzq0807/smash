@@ -49,6 +49,10 @@ unmap_vm_page(vm_t linaddr);
 
 void
 switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
+
+// 分配页表
+pt_t
+alloc_page_table(pde_t *pde);
 //====================================
 // 静态内存分配
 // 初始化时,0 - 1M已完成跟物理地址的一一映射，
@@ -57,6 +61,14 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
 //====================================
 uint32_t
 alloc_spage();
+
+// 文件映射(分配虚拟页面,不会实际分配物理页面)
+vm_t
+mm_vfile(vm_t addr, size_t length, int fd, off_t offset);
+
+// 虚拟内存的最大限制(分配虚拟页面,不会实际分配物理页面)
+size_t
+grow_user_vm(int sz);
 
 
 #endif
