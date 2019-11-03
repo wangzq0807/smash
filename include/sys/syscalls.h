@@ -3,19 +3,23 @@
 #include "sys/types.h"
 #include "arch/irq.h"
 
-typedef struct _TrapCall TrapCall;
-
 #ifdef REGIST_SYSCALL
     #define SYSCALLS_BEGIN()        TrapCall syscalls[] = {
     #define SYSCALLS_END()          };
     #define SYSCALL(name, params)   { params, sys_##name },
+#elif defined REGIST_SYSCALL_NAME
+    #define SYSCALLS_BEGIN()        char* syscalls_name[] = {
+    #define SYSCALLS_END()          };
+    #define SYSCALL(name, params)   "sys_"#name,
 #else
+    typedef struct _TrapCall TrapCall;
     struct _TrapCall {
         int         sc_params;
         trap_func   sc_func;
     };
 
     extern TrapCall syscalls[];
+    extern char* syscalls_name[];
     #define SYSCALLS_BEGIN()
     #define SYSCALLS_END()
     #define SYSCALL(name, params)   extern int sys_##name();

@@ -1,16 +1,27 @@
 
 #include "sys/syscalls.h"
+#include "log.h"
 
-#ifdef __SYSCALLS_H__
+
+#undef __SYSCALLS_H__
+#undef SYSCALLS_BEGIN
+#undef SYSCALLS_END
+#undef SYSCALL
+// 注册系统调用
+#define REGIST_SYSCALL
+#include "sys/syscalls.h"
+
+#ifdef KLOG_ENABLE
     #undef __SYSCALLS_H__
-
     #undef SYSCALLS_BEGIN
     #undef SYSCALLS_END
     #undef SYSCALL
-    // 注册系统调用
-    #define REGIST_SYSCALL
+    #undef REGIST_SYSCALL
+    // 定义系统调用名称
+    #define REGIST_SYSCALL_NAME
     #include "sys/syscalls.h"
-#endif  // __SYSCALLS_H__
+#endif
+
 
 int sys_none(IrqFrame *irq) { return 0 ;}
 // int sys_exit(IrqFrame *irq, int code) { return 0 ;}
