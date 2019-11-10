@@ -18,8 +18,13 @@ _start:
 loop1:
     jmp loop1
 
-/* 4KB 堆栈 */
+/* 页目录表 */
 .align  4
+    .fill 1024, 4, 0
+/* 第一个页表 */
+.align 4
+    .fill 1024, 4, 0
+.align 4
     .fill 1024, 4, 0
 init_stack:
     .long init_stack

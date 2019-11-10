@@ -12,9 +12,9 @@ make_vdisk || {
     umount_vdisk
     exit 1
 }
-. $curDir/testfile.sh
-create_testfile
-umount_vdisk
+. $curDir/sysfile.sh
+create_sysfile
+#umount_vdisk
 
 objcopy -j .text -O binary $binDir/mbr/mbr $binDir/mbr.img
 objcopy -O binary $binDir/loader/loader $binDir/loader.img

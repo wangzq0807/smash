@@ -50,13 +50,14 @@ _get_inode_pos()
 IndexNode*
 get_inode(ino_t inode_index)
 {
+    KLOG(DEBUG, "get_inode: %d", inode_index);
     // 检查请求的inode是否存在.
     const uint8_t* bitmap = (uint8_t*)get_inodes_bitmap(inode_index);
     const int bytenum = (inode_index >> 3) & (BLOCK_SIZE - 1);
     const uint8_t onebyte = bitmap[bytenum];
     int bit = _get_bit(onebyte, inode_index & 7);
     if (bit == 0) {
-        KLOG(DEBUG, "get_inode : %d bit is not set", inode_index);
+        KLOG(ERROR, "get_inode : %d bit is not set", inode_index);
         return NULL;
     }
 
@@ -69,6 +70,8 @@ get_inode(ino_t inode_index)
     // 将inode的内容拷贝到IndexNode
     uint8_t *ptr = blockbuf + offset * sizeof(IndexNode);
     memcpy(&tmpinode, ptr, sizeof(IndexNode));
+
+    KLOG(DEBUG, "get_inode filesize: %d", tmpinode.in_file_size);
 
     return &tmpinode;
 }

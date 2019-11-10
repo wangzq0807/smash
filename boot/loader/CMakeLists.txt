@@ -11,13 +11,15 @@ set(CMAKE_C_LINK_EXECUTABLE
 set(CMAKE_ASM_LINK_EXECUTABLE
     "<CMAKE_LINKER> <CMAKE_ASM_LINK_FLAGS> <OBJECTS> -o <TARGET>")
 # 编译选项
-add_compile_options (-g -O2 -m32 -Wall -Werror -ffreestanding -nostdinc -fno-builtin)
+add_compile_options (-O2 -m32 -Wall -Werror -ffreestanding -nostdinc -fno-builtin)
 
 include_directories (. include)
 set(LOADERSRC
     src/head.s
     src/main.c
     src/log.c
+    src/elf.c
+    src/memory.c
     fs/disk_drv.c
     fs/superblk.c
     fs/nodes.c

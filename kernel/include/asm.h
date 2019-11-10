@@ -90,7 +90,7 @@ static inline void invlpg(vm_t ptr) {
 
 // pdt : 页表的物理地址
 static inline void load_pdt(pdt_t pdt) {
-    __asm__(
+    __asm__ volatile(
         "movl %0, %%cr3 \n"
         : :"r"(pdt)
     );
@@ -98,7 +98,7 @@ static inline void load_pdt(pdt_t pdt) {
 
 static inline pdt_t get_pdt() {
     register pdt_t ret;
-    __asm__(
+    __asm__ volatile(
         "movl %%cr3, %0 \n"
         :"=r"(ret)
     );
@@ -107,7 +107,7 @@ static inline pdt_t get_pdt() {
 
 static inline size_t get_cr2() {
     register size_t cr2;
-    __asm__(
+    __asm__ volatile(
         "movl %%cr2, %0"
         :"=r"(cr2)
     );

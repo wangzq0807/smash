@@ -68,8 +68,6 @@ file_close(IndexNode *inode)
     return 0;
 }
 
-
-
 uint32_t
 _next_file(IndexNode *inode, uint32_t next, Direction *dir)
 {
@@ -86,7 +84,7 @@ _next_file(IndexNode *inode, uint32_t next, Direction *dir)
 ino_t
 search_file(IndexNode *inode, const char *fname, int len)
 {
-    if (!S_ISDIR(inode->in_file_mode))    return -1;
+    if (!S_ISDIR(inode->in_file_mode))    return INVALID_INODE;
 
     off_t seek = 0;
     while (seek < inode->in_file_size) {
@@ -112,14 +110,17 @@ name_to_dirinode(const char *pathname, const char **basename)
     else {
         return NULL;
     }
-    KLOG(DEBUG, "name_to_dirinode %s", pathname);
 
     while (*pathname) {
         const char *next = strstr(pathname, "/");
         const int len = next - pathname;
         if (*next == '/' && *(next+1) != 0) {
-            IndexNode *inode = get_inode( work_inode);
+            IndexNode *inode = get_inode(work_inode);
             work_inode = search_file(inode, pathname, len);
+            if (work_inode == INVALID_INODE) {
+                KLOG(ERROR, "name_to_dirinode %s not found", pathname);
+                return NULL;
+            }
             pathname = next + 1;
         }
         else {

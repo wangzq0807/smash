@@ -114,15 +114,15 @@ protect_mode:
 
 gdt_table: .word 0, 0, 0, 0
     /* 代码段 */
-    .word 0xFFFF			/* 段限长2048 x 粒度(4K) = 256M */
+    .word 0xFFFF			/* 段限长 4GB */
     .word 0x0000			/* 基地址 0x0000 */
     .word 0x9a00			/* 1001 : 段存在,特权00，系统段；1011:代码段，非一致，可读可执行，已访问  */
-    .word 0x00C0			/* 粒度4K */
+    .word 0x00CF			/* 粒度4K */
     /* 数据段 */
-    .word 0xFFFF			/* 段限长64K x 粒度(4K) = 256M */
+    .word 0xFFFF			/* 段限长 4GB */
     .word 0x0000			/* 基地址 0x0000 */
     .word 0x9200			/* 数据段 */
-    .word 0x00C0			/* 粒度4K */
+    .word 0x00CF			/* 粒度4K */
 
 idt_ptr: .word 0
     .word 0, 0
