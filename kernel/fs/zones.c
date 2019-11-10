@@ -19,7 +19,7 @@ BlockBuffer *znode_map[MAX_ZMAP_NUM] = {0};
 error_t
 init_zones(dev_t dev)
 {
-    const blk_t superblk_begin = get_super_block_begin(dev);
+    const blk_t superblk_begin = get_super_block_pos(dev);
     const SuperBlock *super_block = get_super_block(dev);
     const blk_t icnt = super_block->sb_imap_blocks;
     const blk_t zcnt = super_block->sb_zmap_blocks;

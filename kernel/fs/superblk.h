@@ -19,7 +19,7 @@ struct _SuperBlock {
 
 error_t init_super_block(dev_t dev);
 
-zone_t get_super_block_begin(dev_t dev);
+zone_t get_super_block_pos(dev_t dev);
 
 const SuperBlock * get_super_block(dev_t dev);
 

@@ -15,7 +15,7 @@ static SuperBlock super_blk[4];
 #define PS 63
 // NOTE : dev unused
 zone_t
-get_super_block_begin(dev_t dev)
+get_super_block_pos(dev_t dev)
 {
     zone_t superblk_pos = 0;
     PartionEntity *entity = get_partion_entity(dev);
@@ -37,7 +37,7 @@ error_t
 init_super_block(dev_t dev)
 {
     error_t ret = 0;
-    zone_t pos = get_super_block_begin(dev);
+    zone_t pos = get_super_block_pos(dev);
     BlockBuffer *buffer = get_block(dev, pos);
     memcpy(&super_blk[0], buffer->bf_data, sizeof(super_blk));
     if (super_blk[0].sb_magic != MINIX_V2 ) {

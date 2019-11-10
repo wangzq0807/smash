@@ -8,7 +8,7 @@
 #include "partion.h"
 
 // NOTE : 这里要能整除
-#define PER_BLOCK_INODES    (BLOCK_SIZE/sizeof(PyIndexNode))
+#define INODES_OF_ONEBLOCK    (BLOCK_SIZE/sizeof(PyIndexNode))
 // 内存中inode最大数量
 #define MAX_INODE_NUM   256
 // IndexNode的hash表
@@ -25,7 +25,7 @@ BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
 error_t
 init_inodes(dev_t dev)
 {
-    const blk_t superblk_begin = get_super_block_begin(dev);
+    const blk_t superblk_begin = get_super_block_pos(dev);
     const SuperBlock *super_block = get_super_block(dev);
     const int icnt = super_block->sb_imap_blocks;
 
@@ -80,10 +80,10 @@ _clear_bitmap(BlockBuffer **node_map, blk_t cnt)
 }
 
 static inline blk_t
-_get_inode_begin(dev_t dev)
+_get_inode_pos(dev_t dev)
 {
     const SuperBlock *super_block = get_super_block(dev);
-    const blk_t superblk_begin = get_super_block_begin(dev);
+    const blk_t superblk_begin = get_super_block_pos(dev);
     const blk_t superblk_end = superblk_begin + SUPER_BLOCK_SIZE;
     return superblk_end + super_block->sb_imap_blocks + super_block->sb_zmap_blocks;
 }
@@ -202,9 +202,9 @@ get_inode(dev_t dev, ino_t inode_index)
                 _remove_hash_entity(inode);
             }
             // 读磁盘上的inode
-            const blk_t inode_begin = _get_inode_begin(dev);
-            const blk_t block_num = (inode_index - 1) / PER_BLOCK_INODES + inode_begin;
-            const ino_t offset = (inode_index - 1) % PER_BLOCK_INODES;
+            const blk_t inode_begin = _get_inode_pos(dev);
+            const blk_t block_num = (inode_index - 1) / INODES_OF_ONEBLOCK + inode_begin;
+            const ino_t offset = (inode_index - 1) % INODES_OF_ONEBLOCK;
 
             BlockBuffer *buffer = get_block(dev, block_num);
             // 将inode的内容拷贝到IndexNode
@@ -229,9 +229,9 @@ release_inode(IndexNode *inode)
     if (inode->in_refs == 0) {
         if (inode->in_status & INODE_DIRTY) {
             // 读磁盘上的inode缓冲区
-            const blk_t inode_begin = _get_inode_begin(inode->in_dev);
-            const blk_t block_num = (inode->in_inum - 1) / PER_BLOCK_INODES + inode_begin;
-            const ino_t offset = (inode->in_inum - 1) % PER_BLOCK_INODES;
+            const blk_t inode_begin = _get_inode_pos(inode->in_dev);
+            const blk_t block_num = (inode->in_inum - 1) / INODES_OF_ONEBLOCK + inode_begin;
+            const ino_t offset = (inode->in_inum - 1) % INODES_OF_ONEBLOCK;
 
             BlockBuffer *buffer = get_block(inode->in_dev, block_num);
             // 将IndexNode的内容拷贝到inode缓冲区
