@@ -4,6 +4,9 @@
 #include "fs/file.h"
 #include "fs/nodes.h"
 #include "log.h"
+#include "memory.h"
+
+#define PY_KERNEL_ADDR      0x100000    // 1M
 
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
@@ -11,15 +14,14 @@
 Elf32_Ehdr  elfHeader;
 Elf32_Phdr  progHeader[16]; // TODO: 暂定16个
 
-void *
-alloc_vm_page(){ return NULL;};
-
 int
 LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
 {
     KLOG(DEBUG, "LoadElfProg start");
     Elf32_Phdr* phdr = (Elf32_Phdr*)&progHeader[0];
     file_read(inode, offset, phdr, phnum*sizeof(Elf32_Phdr));
+    uint32_t pyaddr_adj = 0;
+    int bfirst = 1;
     for (int phi = 0; phi < phnum; ++phi)
     {
         Elf32_Phdr* cur_phdr = phdr + phi;
@@ -41,14 +43,22 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
             memsz += adjustsz;
         }
         const int readsz = cur_phdr->p_filesz + adjustsz;
-        file_read(inode, fileOff, (void *)vaddr, readsz);
         KLOG(DEBUG, "adjust %X %X %X", fileOff, vaddr, readsz);
-        
-        void *bssAddr = ((void *)vaddr) + readsz;
+        if (bfirst)
+        {
+            bfirst = 0;
+            pyaddr_adj = vaddr - PY_KERNEL_ADDR;
+        }
+        const uint32_t pyaddr = (vaddr - pyaddr_adj);
+        KLOG(DEBUG, "pyread %X %X %X", fileOff, pyaddr, readsz);
+        file_read(inode, fileOff, (void *)pyaddr, readsz);
+
+        void *bssAddr = ((void *)pyaddr) + readsz;
         const int bssSz = memsz - readsz;
         KLOG(DEBUG, "bss %X %d", bssAddr, bssSz);
         if (bssSz > 0)
             memset(bssAddr, 0, bssSz);
+        map_mem(pyaddr, vaddr, memsz);
     }
     KLOG(DEBUG, "LoadElfProg end");
     return 0;

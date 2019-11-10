@@ -24,6 +24,7 @@ loop1:
 /* 第一个页表 */
 .align 4
     .fill 1024, 4, 0
+/* 4KB 栈 */
 .align 4
     .fill 1024, 4, 0
 init_stack:

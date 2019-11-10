@@ -17,24 +17,26 @@
 #define PAGE_DIRTY          1 << 6
 
 #define PDT     (0)
-#define PT1     (PAGE_SIZE)
+#define PT1     (PDT + PAGE_SIZE)
 
 void init_memory()
 {
-    memset(PDT, 0, PAGE_SIZE);
+    memset((void *)PDT, 0, PAGE_SIZE);
     // 开启分页,映射前4M物理内存
     volatile pdt_t pdt = (pdt_t)PDT;
     volatile pt_t pt1 = (pt_t)PT1;
     size_t addr = 0;
     pdt[0] = PAGE_FLOOR((size_t)pt1) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    for (int i = 0; i < 256; ++i) {
+    for (int i = 0; i < PAGE_SIZE/sizeof(pde_t); ++i) {
         pt1[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
         addr += PAGE_SIZE;
     }
+    smash_memory();
     load_pdt(pdt);
+    enable_paging();
 }
 
-void map_mem(void *src, void *dst, int size)
+void map_mem(const uint32_t src, const uint32_t dst, uint32_t size)
 {
 
 }
