@@ -6,7 +6,7 @@
 #include "log.h"
 #include "memory.h"
 
-#define PY_KERNEL_ADDR      0x100000    // 1M
+#define PY_KERNEL_ADDR      0x100000    // 存放在1M的位置
 
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
@@ -20,7 +20,7 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
     KLOG(DEBUG, "LoadElfProg start");
     Elf32_Phdr* phdr = (Elf32_Phdr*)&progHeader[0];
     file_read(inode, offset, phdr, phnum*sizeof(Elf32_Phdr));
-    uint32_t pyaddr_adj = 0;
+    uint32_t pyvm_offset = 0;   // 虚拟地址和物理地址的差值
     int bfirst = 1;
     for (int phi = 0; phi < phnum; ++phi)
     {
@@ -43,19 +43,16 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
             memsz += adjustsz;
         }
         const int readsz = cur_phdr->p_filesz + adjustsz;
-        KLOG(DEBUG, "adjust %X %X %X", fileOff, vaddr, readsz);
         if (bfirst)
         {
             bfirst = 0;
-            pyaddr_adj = vaddr - PY_KERNEL_ADDR;
+            pyvm_offset = vaddr - PY_KERNEL_ADDR;
         }
-        const uint32_t pyaddr = (vaddr - pyaddr_adj);
-        KLOG(DEBUG, "pyread %X %X %X", fileOff, pyaddr, readsz);
+        const uint32_t pyaddr = (vaddr - pyvm_offset);
         file_read(inode, fileOff, (void *)pyaddr, readsz);
 
         void *bssAddr = ((void *)pyaddr) + readsz;
         const int bssSz = memsz - readsz;
-        KLOG(DEBUG, "bss %X %d", bssAddr, bssSz);
         if (bssSz > 0)
             memset(bssAddr, 0, bssSz);
         map_mem(pyaddr, vaddr, memsz);
@@ -64,14 +61,14 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
     return 0;
 }
 
-uint32_t
+vm_t
 LoadElf(const IndexNode *inode)
 {
     Elf32_Ehdr* ehdr = &elfHeader;
     int rdsize = file_read(inode, 0, ehdr, sizeof(Elf32_Ehdr));
     if (rdsize == 0)
         return -1;
-    const uint32_t retAddr = ehdr->e_entry;
+    const Elf32_Addr retAddr = ehdr->e_entry;
     KLOG(DEBUG, "LoadElf %X  phnum: %d", retAddr, ehdr->e_phnum);
 
     // 加载program
@@ -80,6 +77,6 @@ LoadElf(const IndexNode *inode)
         LoadElfProg(inode, ehdr->e_phoff, ehdr->e_phnum);
     }
     
-    return retAddr;
+    return (vm_t)retAddr;
 }
 

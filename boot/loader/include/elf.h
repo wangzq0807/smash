@@ -79,7 +79,7 @@ typedef struct
 } Elf32_Shdr;
 
 
-uint32_t
+vm_t
 LoadElf(const IndexNode *inode);
 
 #endif

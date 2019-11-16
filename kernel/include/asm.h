@@ -71,9 +71,9 @@ static inline void lldt(uint32_t ldt) {
     );
 }
 
-static inline void ljmp(uint32_t seg) {
+static inline void ljmp(uint32_t seg, vm_t offset) {
     struct { uint32_t o; uint32_t s; } laddr;
-    laddr.o = 0;
+    laddr.o = offset;
     laddr.s = seg;
     __asm__ volatile (
         "ljmp *%0 \n"

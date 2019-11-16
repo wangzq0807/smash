@@ -71,9 +71,9 @@ static inline void lldt(uint32_t ldt) {
     );
 }
 
-static inline void ljmp(uint32_t seg) {
+static inline void ljmp(uint32_t seg, vm_t offset) {
     struct { uint32_t o; uint32_t s; } laddr;
-    laddr.o = 0;
+    laddr.o = offset;
     laddr.s = seg;
     __asm__ volatile (
         "ljmp *%0 \n"
@@ -94,15 +94,6 @@ static inline void load_pdt(pdt_t pdt) {
         "movl %0, %%cr3 \n"
         : :"r"(pdt)
     );
-}
-
-static inline pdt_t get_pdt() {
-    register pdt_t ret;
-    __asm__ volatile (
-        "movl %%cr3, %0 \n"
-        :"=r"(ret)
-    );
-    return ret;
 }
 
 static inline size_t get_cr2() {

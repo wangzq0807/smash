@@ -5,6 +5,7 @@
 #include "log.h"
 #include "elf.h"
 #include "memory.h"
+#include "asm.h"
 
 #define SMASH_BIN   ("/boot/smash")
 int LoadKernel(char *path);
@@ -21,6 +22,8 @@ int
 LoadKernel(char *path)
 {
     IndexNode *fnode = file_open(path, 0, 0);
-    LoadElf(fnode);
+    vm_t vaddr = LoadElf(fnode);
+
+    ljmp(0x8, vaddr);
     return 0;
 }

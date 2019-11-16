@@ -15,6 +15,7 @@ w
 EOF
     # 创建minix文件系统
     sudo losetup /dev/loop0 $runDir/hd.img > /dev/zero || return 1;
+    sudo partprobe /dev/loop0 || return 1;
     sudo mkfs.minix -2 /dev/loop0p1 > /dev/zero || return 1;
     # 挂载
     sudo mkdir $mntDir > /dev/zero || return 1;

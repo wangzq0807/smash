@@ -5,7 +5,6 @@ include_directories (common include)
 add_subdirectory(boot)
 add_subdirectory(kernel)
 add_subdirectory(usr)
-#add_subdirectory(mytest)
 
 # 创建镜像
 # boot只需要代码区
