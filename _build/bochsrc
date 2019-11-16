@@ -31,9 +31,9 @@ boot: disk
 #=======================================================================
 # Debug
 #=======================================================================
-log: bochsout.txt
+#log: bochsout.txt
 logprefix: %t-%e-@%i-%d
-debugger_log: debugger.out
+#debugger_log: debugger.out
 port_e9_hack: enabled=1
 # display_library: x, options="gui_debug"
 # gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0

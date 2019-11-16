@@ -16,12 +16,21 @@ start_main()
     init_memory();
     init_file_system();
     LoadKernel(SMASH_BIN);
+    while (1)
+    {
+        smash_memory();
+    }   
 }
 
 int
 LoadKernel(char *path)
 {
     IndexNode *fnode = file_open(path, 0, 0);
+    if (fnode == NULL)
+    {
+        KLOG(ERROR, "kernel not exist !");
+        return -1;
+    }
     vm_t vaddr = LoadElf(fnode);
 
     ljmp(0x8, vaddr);

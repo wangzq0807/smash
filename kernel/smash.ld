@@ -1,10 +1,11 @@
 OUTPUT_FORMAT(elf32-i386)
-/*ENTRY(_start)*/
-/*
+
 SECTIONS
 {
-  .text.start (_start) : {
-    arch/boot/head.o( .text )
-  }
+    . = 0xFE000000;
+    .text : { *(.text) }
+    .data : { *(.data) }
+    .bss : { *(.bss) }
+    __init_array_start = .;
+    __init_array_end = .;
 }
-*/
