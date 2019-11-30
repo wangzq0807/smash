@@ -4,6 +4,10 @@
 #include "stdarg.h"
 #include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum _LogLevel {
     DEBUG,
     INFO,
@@ -26,6 +30,10 @@ log_write(LogLevel, const char *fmt, ...);
     }
 #else
     #define KLOG(level, format, ...) {}
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

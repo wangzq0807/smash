@@ -4,7 +4,7 @@
 #include "arch/task.h"
 #include "asm.h"
 #include "string.h"
-#include "log.h"
+#include "lib/log.h"
 
 #define QUEUE_LEN    1024
 

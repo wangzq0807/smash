@@ -8,13 +8,12 @@
 #define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
 #define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
 #define PAGE_MARK(addr)         ((addr) & (PAGE_SIZE - 1))
+
+extern uint32_t _PDT_;
+extern uint32_t _PT0_;
 //====================================
 //  常用线性地址操作
 //====================================
-static inline pdt_t get_pdt() {
-    return (0);
-}
-
 static inline int
 get_pde_index(vm_t linear) {
     return linear >> 22;
@@ -28,7 +27,7 @@ get_pte_index(vm_t linear) {
 static inline pde_t
 get_pde(vm_t linear) {
     uint32_t npde = linear >> 22;
-    pdt_t pdt = (pdt_t)get_pdt();
+    pdt_t pdt = (pdt_t)&_PDT_;
     return pdt[npde];
 }
 

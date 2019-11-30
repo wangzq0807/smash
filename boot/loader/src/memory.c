@@ -10,23 +10,21 @@
 #define PAGE_ACCESSED       1 << 5
 #define PAGE_DIRTY          1 << 6
 
-#define PDT     (0)
-#define PT1     (PDT + PAGE_SIZE)
-
 static int inline is_page_exist(pte_t pte) {
     return pte & PAGE_PRESENT;
 }
 
 void init_memory()
 {
+    KLOG(DEBUG, "init_memory pdt:%X pt0:%X", &_PDT_, &_PT0_);
     // 开启分页,映射前4M物理内存
-    volatile pdt_t pdt = get_pdt();
+    volatile pdt_t pdt = (pdt_t)&_PDT_;
     memset(pdt, 0, PAGE_SIZE);
-    volatile pt_t pt1 = (pt_t)PT1;
+    volatile pt_t pt0 = (pt_t)&_PT0_;
     size_t addr = 0;
-    pdt[0] = PAGE_FLOOR((uint32_t)pt1) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    pdt[0] = PAGE_FLOOR((uint32_t)pt0) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
     for (int i = 0; i < PAGE_SIZE/sizeof(pde_t); ++i) {
-        pt1[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+        pt0[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
         addr += PAGE_SIZE;
     }
     smash_memory();
@@ -45,7 +43,7 @@ void* alloc_page()
 void map_mem(const vm_t src, const vm_t dst, uint32_t bsize)
 {
     // KLOG(DEBUG, "map_mem src:%X dst:%X bsize:%d", src, dst, bsize)
-    volatile pdt_t pdt = get_pdt();
+    volatile pdt_t pdt = (pdt_t)&_PDT_;
     const int dst_pdei = get_pde_index(dst);
     const int dst_ptei = get_pte_index(dst);
     int pagenum = (bsize + PAGE_SIZE - 1) >> PAGE_LOG_SIZE;

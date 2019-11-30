@@ -1,6 +1,6 @@
 #include "arch/irq.h"
 #include "arch/task.h"
-#include "log.h"
+#include "lib/log.h"
 #include "fs/file.h"
 #include "fs/vfile.h"
 #include "fs/path.h"

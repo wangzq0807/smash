@@ -1,5 +1,5 @@
 #include "vfile.h"
-#include "list.h"
+#include "lib/list.h"
 #include "file.h"
 #include "arch/task.h"
 #include "asm.h"

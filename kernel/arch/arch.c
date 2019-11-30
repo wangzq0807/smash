@@ -1,11 +1,12 @@
 #include "arch.h"
 #include "asm.h"
-#include "log.h"
+#include "lib/log.h"
 #include "task.h"
 #include "x86.h"
 #include "memory.h"
 #include "page.h"
 #include "utc.h"
+#include "dev/char/serial.h"
 
 static void
 _init_8259A()
@@ -65,6 +66,8 @@ init_isa()
     enable_paging();
 
     init_utc();
+
+    init_serial(COM_PORT1);
     sti();
 }
 

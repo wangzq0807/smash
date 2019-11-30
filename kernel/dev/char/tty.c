@@ -1,6 +1,6 @@
 #include "tty.h"
 #include "console.h"
-#include "log.h"
+#include "lib/log.h"
 #include "arch/task.h"
 #include "asm.h"
 #include "string.h"

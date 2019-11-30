@@ -2,7 +2,7 @@
 #include "memory.h"
 #include "arch/arch.h"
 #include "hard_disk.h"
-#include "log.h"
+#include "lib/log.h"
 #include "fsdefs.h"
 
 typedef struct _DiskRequest DiskRequest;

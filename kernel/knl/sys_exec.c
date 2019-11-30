@@ -3,7 +3,7 @@
 #include "arch/page.h"
 #include "asm.h"
 #include "elf.h"
-#include "log.h"
+#include "lib/log.h"
 #include "memory.h"
 #include "fs/file.h"
 #include "fs/path.h"

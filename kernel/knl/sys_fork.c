@@ -5,7 +5,7 @@
 #include "memory.h"
 #include "asm.h"
 #include "string.h"
-#include "log.h"
+#include "lib/log.h"
 
 static void
 setup_new_tss(IrqFrame *irq, Task *new_task)
@@ -66,9 +66,9 @@ setup_page_tables(Task *cur_task, Task *new_task)
             pt_t new_pt = alloc_page_table(&new_pdt[npde]);
             for (int npte = 0; npte < PAGE_INT_SIZE; ++npte) {
                 if (cur_pt[npte] & PAGE_PRESENT) {
-                    cur_pt[npte] &= ~PAGE_WRITE;
-                    new_pt[npte] = cur_pt[npte];
-                    add_pypage_refs(cur_pt[npte] & 0xFFFFF000);
+                    //cur_pt[npte] &= ~PAGE_WRITE;
+                    new_pt[npte] = cur_pt[npte] & ~PAGE_WRITE;
+                    //add_pypage_refs(cur_pt[npte] & 0xFFFFF000);
                 }
             }
         }

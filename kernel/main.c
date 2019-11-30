@@ -1,7 +1,7 @@
 #include "sys/types.h"
 #include "arch/arch.h"
 #include "dev/char/keyboard.h"
-#include "log.h"
+#include "lib/log.h"
 #include "string.h"
 #include "memory.h"
 #include "sys/stat.h"
@@ -15,7 +15,6 @@
 #include "fs/path.h"
 #include "fs/file.h"
 #include "arch/task.h"
-#include "dev/char/serial.h"
 
 void
 init_filesystem(uint16_t dev)
@@ -33,12 +32,11 @@ init_filesystem(uint16_t dev)
 void
 start_main()
 {
-    init_serial(COM_PORT1);
-    init_memory(4*1024*1024, 8*1024*1024);
-    init_isa();
-    init_keyboard();
-    init_filesystem(ROOT_DEVICE);
-    start_task();
+    // init_isa();
+    init_memory();
+    // init_keyboard();
+    // init_filesystem(ROOT_DEVICE);
+    // start_task();
     // init_filesystem();
     // inode_ls(2);
 }

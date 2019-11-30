@@ -1,6 +1,6 @@
 #include "arch/irq.h"
 #include "asm.h"
-#include "log.h"
+#include "lib/log.h"
 #include "keyboard.h"
 #include "tty.h"
 

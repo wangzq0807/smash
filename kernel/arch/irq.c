@@ -1,7 +1,7 @@
 #include "irq.h"
 #include "task.h"
 #include "asm.h"
-#include "log.h"
+#include "lib/log.h"
 #include "sys/syscalls.h"
 #include "page.h"
 

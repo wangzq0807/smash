@@ -1,4 +1,4 @@
-#include "log.h"
+#include "lib/log.h"
 #include "asm.h"
 #include "arch/task.h"
 
@@ -14,10 +14,6 @@ const LogLevel log_level = KLOG_LEVEL;
 char *
 num2str(char *buf, int num, int flags)
 {
-    if (flags == HEX_FMT) {
-        *buf++ = '0';
-        *buf++ = 'x';
-    }
     char tmpbuf[30];
     char asciinum[] = "0123456789ABCDEF";
     int i = 0;

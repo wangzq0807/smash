@@ -2,10 +2,26 @@
 #define __MEMORY_H__
 #include "sys/types.h"
 #include "mem/linear.h"
+#include "mem/pymem.h"
 
 void
-init_memory(uint32_t start, uint32_t end);
+init_memory();
 
+vm_t
+vm_ualloc_page();
+
+vm_t
+vm_kalloc_page();
+
+int
+vm_release_page(vm_t vaddr);
+
+int
+vm_is_user(vm_t vaddr);
+
+vm_t
+alloc_pagetable();
+/*
 //============
 // 用户态物理页面管理
 // 分配1M以上(由start决定)的物理内存,允许释放.
@@ -28,6 +44,7 @@ get_free_space(void);
 
 void
 pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num);
+*/
 
 //=========================================
 // 虚拟内存管理
@@ -53,6 +70,7 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
 // 分配页表
 pt_t
 alloc_page_table(pde_t *pde);
+
 //====================================
 // 静态内存分配
 // 初始化时,0 - 1M已完成跟物理地址的一一映射，

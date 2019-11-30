@@ -1,5 +1,5 @@
 #include "task.h"
-#include "log.h"
+#include "lib/log.h"
 #include "asm.h"
 #include "lock.h"
 #include "memory.h"

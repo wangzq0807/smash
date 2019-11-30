@@ -3,7 +3,7 @@
 #include "buffer.h"
 #include "superblk.h"
 #include "partion.h"
-#include "log.h"
+#include "lib/log.h"
 
 #define PER_BLOCK_SECTORS   (BLOCK_SIZE/SECTOR_SIZE)
 // 间接索引块数

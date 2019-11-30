@@ -2,7 +2,7 @@
 #include "arch/irq.h"
 #include "arch/task.h"
 #include "arch/page.h"
-#include "log.h"
+#include "lib/log.h"
 #include "fs/file.h"
 #include "fs/vfile.h"
 

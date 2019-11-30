@@ -1,10 +1,11 @@
 #include "memory.h"
-#include "log.h"
-#include "list.h"
+#include "lib/log.h"
+#include "lib/list.h"
 #include "arch/page.h"
 #include "arch/task.h"
 #include "asm.h"
-
+#include "pymem.h"
+/*
 typedef struct _PageNode PageNode;
 struct _PageNode {
     uint32_t    pn_page : 20,
@@ -70,10 +71,6 @@ _put_hash_entity(PageNode *node)
 
     return 0;
 }
-
-void
-init_memory(uint32_t start, uint32_t end)
-{
     if ( (start >= end)
         || (size_t)(start) & (PAGE_SIZE - 1)
         || (size_t)(end) & (PAGE_SIZE - 1) ) {
@@ -84,8 +81,110 @@ init_memory(uint32_t start, uint32_t end)
     max_end = end;
     cur_start = start;
     free_memory.pl_free = NULL;
+*/
+// 一一映射内存
+uint32_t const_vm = 0;
+uint32_t const_vm_end = 0;
+// 用户内存
+uint32_t usr_vm_beg = 0;
+uint32_t usr_vm_end = 0;
+// 内核内存
+uint32_t knl_vm_beg = 0;
+uint32_t knl_vm_end = 0;
+
+void
+init_vm(uint32_t cvmend, uint32_t usrvmbeg, uint32_t knlvmbeg)
+{
+    // 虚拟内存边界要对齐到4M
+    if (cvmend & ~((1<<20) - 1))
+        KLOG(ERROR, "const_vm_end not align 4M!");
+    if (usrvmbeg & ~((1<<20) - 1))
+        KLOG(ERROR, "usr_vm_beg not align 4M!");
+    if (knlvmbeg & ~((1<<20) - 1))
+        KLOG(ERROR, "knl_vm_beg not align 4M!");
+    const_vm_end = cvmend;
+    usr_vm_beg = usrvmbeg;
+    usr_vm_end = knl_vm_beg = knlvmbeg;
+    knl_vm_end = 0xFFFFFFFF;
+
+    pdt_t pdt = get_pdt();
+    pt_t pt0 = pde2pt(pdt[0]);
+    // 只保留前12KB映射,用于栈和页表
+    for (int ipte = 3; ipte < PAGE_INT_SIZE; ++ipte)
+    {
+        pt0[ipte] = 0;
+    }
+    load_pdt(pdt);
 }
 
+void
+init_memory()
+{
+    init_pymemory();
+    // 12KB内核栈和页表
+    alloc_pyrange(0x0, 0x3000);
+    // 0xA0000 - 1M : BIOS
+    alloc_pyrange(0xA0000, 0x100000);
+    // 1M -2M : 内核代码
+    alloc_pyrange(0x100000, 0x200000);
+
+    // 0 - 0x400000 : 一一映射,存放页表
+    // 0xFE000000 - END : 存放内核代码
+    init_vm(4 << 20, 4 << 20, 0xFE000000);
+}
+
+vm_t
+alloc_pagetable()
+{
+    pdt_t pdt = get_pdt();
+    int pde_beg = get_pde_index(const_vm);
+    int pde_end = get_pde_index(const_vm_end);
+    for (int pdei = pde_beg; pdei < pde_end; ++pdei)
+    {
+        if (!is_page_exist(pdt[pdei]))
+        {
+            KLOG(ERROR, "PDE is not exist!");
+        }
+        pt_t pt = pde2pt(pdt[pdei]);
+        for (int ptei = 0; ptei < PAGE_INT_SIZE; ++ptei)
+        {
+            if (!is_page_exist(pt[ptei]))
+            {
+                vm_t vaddr = make_vmaddr(pdei, ptei);
+                pt[ptei] = vaddr | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+                return vaddr;
+            }
+        }
+    }
+    return 0;
+}
+
+vm_t
+mem_ualloc_page()
+{
+    int pde_beg = get_pde_index(usr_vm_beg);
+    int pde_end = get_pde_index(usr_vm_end);
+    for (int pdei = pde_beg; pdei < pde_end; ++pdei)
+    {
+
+    }
+
+    return 0;
+}
+
+vm_t
+mem_kalloc_page()
+{
+    return 0;
+}
+
+int
+mem_release_page(vm_t vaddr)
+{
+    return 0;
+}
+
+/*
 static void
 _new_freelist(uint32_t addr)
 {
@@ -107,7 +206,7 @@ _new_freelist(uint32_t addr)
 uint32_t
 alloc_pypage()
 {
-    /* 返回链表中第一个空闲内存页，同时把头指针指向下一个空闲内存页 */
+    // 返回链表中第一个空闲内存页，同时把头指针指向下一个空闲内存页
     PageNode *ret = free_memory.pl_free;
     if (ret != NULL) {
         free_memory.pl_free = ret->pn_next;
@@ -173,7 +272,7 @@ release_pypage(uint32_t page)
     if (node->pn_refs == 1) {
         node->pn_refs = 0;
         _remove_hash_entity(node);
-        /* 将新释放的内存页链接到链表头部 */
+        // 将新释放的内存页链接到链表头部
         node->pn_next = free_memory.pl_free;
         free_memory.pl_free = node;
     }
@@ -210,6 +309,7 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
     unmap_vm_page(0xFFFFF000);
     unmap_vm_page(0xFFFFE000);
 }
+*/
 
 vm_t
 alloc_vm_page()

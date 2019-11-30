@@ -4,7 +4,7 @@
 #include "zones.h"
 #include "sys/stat.h"
 #include "buffer.h"
-#include "log.h"
+#include "lib/log.h"
 #include "asm.h"
 #include "file.h"
 #include "asm.h"

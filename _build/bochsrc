@@ -31,7 +31,7 @@ boot: disk
 #=======================================================================
 # Debug
 #=======================================================================
-#log: bochsout.txt
+log: bochsout.txt
 logprefix: %t-%e-@%i-%d
 #debugger_log: debugger.out
 port_e9_hack: enabled=1

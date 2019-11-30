@@ -1,7 +1,7 @@
 #include "buffer.h"
 #include "hard_disk.h"
 #include "memory.h"
-#include "log.h"
+#include "lib/log.h"
 #include "asm.h"
 
 // configurable

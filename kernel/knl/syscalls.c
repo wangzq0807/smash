@@ -1,6 +1,6 @@
 
 #include "sys/syscalls.h"
-#include "log.h"
+#include "lib/log.h"
 
 
 #undef __SYSCALLS_H__

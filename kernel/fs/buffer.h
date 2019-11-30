@@ -1,7 +1,7 @@
 #ifndef __BUFFER_H__
 #define __BUFFER_H__
 #include "sys/types.h"
-#include "list.h"
+#include "lib/list.h"
 
 // 缓冲区状态
 #define BUF_FREE            0       // 空缓冲区，可以被使用

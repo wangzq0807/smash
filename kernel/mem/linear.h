@@ -3,15 +3,10 @@
 
 #include "asm.h"
 #include "sys/types.h"
+#include "arch/page.h"
 
-#define PAGE_LOG_SIZE   12
-#define PAGE_SIZE     (1 << PAGE_LOG_SIZE)
-#define PAGE_INT_SIZE         (PAGE_SIZE/sizeof(int))
-#define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
-#define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))
-#define PAGE_MARK(addr)         ((addr) & (PAGE_SIZE - 1))
 //====================================
-//  常用线性地址操作
+// 常用线性地址操作
 //====================================
 static inline int
 get_pde_index(vm_t linear) {
@@ -57,6 +52,14 @@ pde2pt(pde_t pde) {
 static inline uint32_t
 pte2pypage(pte_t pte) {
     return PAGE_FLOOR(pte); 
+}
+
+static inline int is_page_exist(pte_t pte) {
+    return pte & PAGE_PRESENT;
+}
+
+static inline uint32_t make_vmaddr(int pdei, int ptei) {
+    return (pdei<<22) + (ptei<<12);
 }
 
 #endif // __LINEAR_H__

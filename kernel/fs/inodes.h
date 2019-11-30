@@ -2,7 +2,7 @@
 #define __NODES_H__
 #include "sys/types.h"
 #include "fsdefs.h"
-#include "list.h"
+#include "lib/list.h"
 
 #define INODE_FREE          0
 #define INODE_LOCK          1

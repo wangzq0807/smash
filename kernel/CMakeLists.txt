@@ -13,11 +13,10 @@ option(KLOG_ENABLE "Enable kernel log" ON)
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
 				${CMAKE_CURRENT_SOURCE_DIR}/config.h)
 
-include_directories (. include)
+include_directories (. include ../include)
 
 set (KERNAL_SRCS
 	./main.c
-	./arch/head.S
 	./arch/intr.S
 	../usr/core/syscalls.S
 	./knl/sys_file.c
@@ -35,6 +34,7 @@ set (KERNAL_SRCS
 	./lib/lock.c
 	./lib/random.c
 	./lib/log.c
+	./lib/bitmap.c
 	./dev/char/keyboard.c
 	./dev/char/console.c
 	./dev/char/tty.c
@@ -50,6 +50,7 @@ set (KERNAL_SRCS
 	./fs/path.c
 	./fs/zones.c
 	./mem/memory.c
+	./mem/pymem.c
 	./lib/elf.c)
 # 目标kernel
 add_executable (smash

@@ -1,6 +1,6 @@
 #include "sys/types.h"
 #include "utc.h"
-#include "log.h"
+#include "lib/log.h"
 #include "asm.h"
 
 #define CMOS_CMD_PORT   0x70

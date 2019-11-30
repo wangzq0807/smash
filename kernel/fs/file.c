@@ -6,7 +6,7 @@
 #include "sys/stat.h"
 #include "string.h"
 #include "buffer.h"
-#include "log.h"
+#include "lib/log.h"
 #include "file.h"
 
 IndexNode *

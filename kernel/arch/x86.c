@@ -1,6 +1,6 @@
 #include "x86.h"
 #include "asm.h"
-#include "log.h"
+#include "lib/log.h"
 
 /* 全局描述符表 */
 X86Desc gdt_table[7] = { 0 };

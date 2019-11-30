@@ -3,7 +3,7 @@
 #include "buffer.h"
 #include "memory.h"
 #include "fsdefs.h"
-#include "log.h"
+#include "lib/log.h"
 #include "string.h"
 #include "partion.h"
 
