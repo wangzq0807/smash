@@ -59,7 +59,7 @@ int
 bm_clear_bitrange(bitmap_t bm, const int begbit, const int bitnum);
 
 void
-bm_dump(bitmap_t bm, const int begbyte, const int endbyte);
+bm_dump(bitmap_t bm, const int begbyte, const int bytenum);
 
 #ifdef __cplusplus
 }

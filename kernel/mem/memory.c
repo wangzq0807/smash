@@ -109,10 +109,15 @@ init_vm(uint32_t cvmend, uint32_t usrvmbeg, uint32_t knlvmbeg)
 
     pdt_t pdt = get_pdt();
     pt_t pt0 = pde2pt(pdt[0]);
-    // 只保留前12KB映射,用于栈和页表
+    // 只保留前3个映射,用于1栈和2页表
     for (int ipte = 3; ipte < PAGE_INT_SIZE; ++ipte)
     {
         pt0[ipte] = 0;
+    }
+    // 只保留第1个页目录项(映射页表),最后4个页目录项(映射内核代码)
+    for (int ipde = 1; ipde < PAGE_INT_SIZE - 4; ++ipde)
+    {
+        pdt[ipde] = 0;
     }
     load_pdt(pdt);
 }
@@ -121,12 +126,12 @@ void
 init_memory()
 {
     init_pymemory();
-    // 12KB内核栈和页表
-    alloc_pyrange(0x0, 0x3000);
+    // 1页内核栈和2页页表
+    alloc_pyrange(0x0, 3*PAGE_SIZE);
     // 0xA0000 - 1M : BIOS
     alloc_pyrange(0xA0000, 0x100000);
     // 1M -2M : 内核代码
-    alloc_pyrange(0x100000, 0x200000);
+    alloc_pyrange(1 << 20, 1 << 20);
 
     // 0 - 0x400000 : 一一映射,存放页表
     // 0xFE000000 - END : 存放内核代码

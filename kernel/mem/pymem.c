@@ -3,6 +3,7 @@
 #include "lib/log.h"
 #include "lib/bitmap.h"
 #include "kerrno.h"
+#include "pymem.h"
 
 #define BITMAP_SIZE 1024
 bitmap_t pybitmap;
@@ -22,6 +23,9 @@ alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 {
     const int begbit = rbeg >> PAGE_LOG_SIZE;
     const int bitnum = rsize >> PAGE_LOG_SIZE;
+    int hasbit = bm_set_bitrange(pybitmap, begbit, bitnum);
+    if (hasbit)
+        return ERR_PARAM_ILLEGAL;
     bm_set_bitrange(pybitmap, begbit, bitnum);
     return 0;
 }
@@ -60,5 +64,5 @@ is_pypage_used(uint32_t paddr)
 void
 dump_pymemory()
 {
-
+    bm_dump(pybitmap, 0, 1024);
 }

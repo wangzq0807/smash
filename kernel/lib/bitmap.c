@@ -73,12 +73,51 @@ bm_alloc_bit(bitmap_t bm)
 }
 
 int
+bm_test_bitrange(bitmap_t bm, const int begbit, const int bitnum)
+{
+    bitmap *pbitmap = (bitmap*)bm;
+    const int endbit = begbit + bitnum;
+    if (begbit >= (8*pbitmap->b_nsize) ||
+        endbit > (8*pbitmap->b_nsize) )
+        return ERR_MEM_ACCESS;
+    int *bmbuf = (int *)(pbitmap->b_bitbuf);
+    const int step = (8*sizeof(int));
+    const int begpos = begbit / step;
+    const int endpos = endbit / step;
+    if (begpos == endpos)
+    {
+        int bitmask = ((1 << (begbit % step)) - 1) ^ ((1 << (endbit % step)) - 1);
+        if (bmbuf[begpos] &= bitmask)
+            return 1;
+        else
+            return 0;
+    }
+    const int begmask = (-1) & ~ ((1 << (begbit % step)) - 1);
+    if (bmbuf[begpos] &= begmask)
+        return 1;
+
+    const int begpos_ceil = (begbit + step - 1) / step;
+    const int endpos_floor = endpos;
+    for (int i = begpos_ceil; i < endpos_floor; ++i)
+    {
+        if (bmbuf[i] &= -1)
+            return 1;
+    }
+
+    const int endmask = (1 << (endbit % step)) - 1;
+    if (bmbuf[endpos] &= endmask)
+        return 1;
+
+    return 0;
+}
+
+int
 bm_set_bitrange(bitmap_t bm, const int begbit, const int bitnum)
 {
     bitmap *pbitmap = (bitmap*)bm;
     const int endbit = begbit + bitnum;
     if (begbit >= (8*pbitmap->b_nsize) ||
-        endbit >= (8*pbitmap->b_nsize) )
+        endbit > (8*pbitmap->b_nsize) )
         return ERR_MEM_ACCESS;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     const int step = (8*sizeof(int));
@@ -106,11 +145,12 @@ bm_set_bitrange(bitmap_t bm, const int begbit, const int bitnum)
 }
 
 void
-bm_dump(bitmap_t bm, const int begbyte, const int endbyte)
+bm_dump(bitmap_t bm, const int begbyte, const int bytenum)
 {
     bitmap *pbitmap = (bitmap*)bm;
+    const int endbyte = begbyte + bytenum;
     if (begbyte >= pbitmap->b_nsize ||
-        begbyte >= pbitmap->b_nsize) {
+        endbyte > pbitmap->b_nsize) {
         KLOG(ERROR, "bm_dump error");
         return;
     }
