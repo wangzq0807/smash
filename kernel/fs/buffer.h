@@ -19,7 +19,7 @@ struct _BlockBuffer {
     uint32_t    bf_status;
     BlockBuffer     *bf_hash_prev;
     BlockBuffer     *bf_hash_next;
-    ListEntity      bf_link;
+    ListNode      bf_link;
 };
 
 error_t init_block_buffer(void);

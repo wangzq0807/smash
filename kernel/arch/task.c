@@ -1,7 +1,7 @@
 #include "task.h"
 #include "lib/log.h"
 #include "asm.h"
-#include "lock.h"
+#include "lib/lock.h"
 #include "memory.h"
 #include "page.h"
 #include "irq.h"
@@ -198,10 +198,10 @@ _get_hash_entity(pid_t pid)
 {
     pid_t hashpid = HASH(pid);
     ListHead *listhead = &tsk_hash_map[hashpid];
-    ListEntity *begin = list_get_head(listhead);
-    ListEntity *iter = begin;
+    ListNode *begin = list_get_head(listhead);
+    ListNode *iter = begin;
     while (iter != NULL) {
-        Task *tsk = TO_INSTANCE(iter, Task, ts_hash_link);
+        Task *tsk = LIST_ENTRY(iter, Task, ts_hash_link);
         if (tsk != NULL && tsk->ts_pid == pid) {
             return tsk;
         }

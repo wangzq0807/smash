@@ -35,6 +35,8 @@ set (KERNAL_SRCS
 	./lib/random.c
 	./lib/log.c
 	./lib/bitmap.c
+	./lib/list.c
+	./lib/hashmap.c
 	./dev/char/keyboard.c
 	./dev/char/console.c
 	./dev/char/tty.c

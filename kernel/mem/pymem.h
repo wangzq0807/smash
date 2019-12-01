@@ -6,7 +6,7 @@ void
 init_pymemory();
 
 // 分配一段连续内存, rbeg和rsize必须对齐到4KB
-int
+error_t
 alloc_pyrange(uint32_t rbeg, uint32_t rsize);
 
 uint32_t

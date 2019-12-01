@@ -6,34 +6,39 @@
 #include "pymem.h"
 
 #define BITMAP_SIZE 1024
-bitmap_t pybitmap;
-bitmap pybm_struct;
+
+BitMap pybitmap;
 uint8_t bitbuf[BITMAP_SIZE];
 
 void
 init_pymemory()
 {
-    pybm_struct.b_nsize = BITMAP_SIZE;
-    pybm_struct.b_bitbuf = &bitbuf;
-    pybitmap = &pybm_struct;
+    pybitmap.b_nsize = BITMAP_SIZE;
+    pybitmap.b_bitbuf = &bitbuf;
+    // 1页内核栈和2页页表
+    alloc_pyrange(0x0, 3*PAGE_SIZE);
+    // 0xA0000 - 1M : BIOS
+    alloc_pyrange(0xA0000, 0x100000);
+    // 1M -2M : 内核代码
+    alloc_pyrange(1 << 20, 1 << 20);
 }
 
-int
+error_t
 alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 {
     const int begbit = rbeg >> PAGE_LOG_SIZE;
     const int bitnum = rsize >> PAGE_LOG_SIZE;
-    int hasbit = bm_set_bitrange(pybitmap, begbit, bitnum);
+    int hasbit = bm_set_bitrange(&pybitmap, begbit, bitnum);
     if (hasbit)
         return ERR_PARAM_ILLEGAL;
-    bm_set_bitrange(pybitmap, begbit, bitnum);
-    return 0;
+    bm_set_bitrange(&pybitmap, begbit, bitnum);
+    return ERR_SUCCESS;
 }
 
 uint32_t
 alloc_pypage()
 {
-    int nbit = bm_alloc_bit(pybitmap);
+    int nbit = bm_alloc_bit(&pybitmap);
     if (nbit < 0)
     {
         KLOG(ERROR, "alloc_pypage failed!");
@@ -51,18 +56,18 @@ release_pypage(uint32_t paddr)
     KLOG(DEBUG, "release_pypage %X", paddr);
 
     int nIndex = paddr >> PAGE_LOG_SIZE;
-    bm_clear_bit(pybitmap, nIndex);
+    bm_clear_bit(&pybitmap, nIndex);
 }
 
 int
 is_pypage_used(uint32_t paddr)
 {
     int nIndex = paddr >> PAGE_LOG_SIZE;
-    return bm_test_bit(pybitmap, nIndex);
+    return bm_test_bit(&pybitmap, nIndex);
 }
 
 void
 dump_pymemory()
 {
-    bm_dump(pybitmap, 0, 1024);
+    bm_dump(&pybitmap, 0, 1024);
 }

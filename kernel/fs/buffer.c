@@ -162,8 +162,8 @@ buffer_new( )
     if (list_get_head(&free_buffers) == NULL)
         return NULL;
 
-    ListEntity *p = list_pop_front(&free_buffers);
-    BlockBuffer *ret = TO_INSTANCE(p, BlockBuffer, bf_link);
+    ListNode *p = list_pop_front(&free_buffers);
+    BlockBuffer *ret = LIST_ENTRY(p, BlockBuffer, bf_link);
     ret->bf_refs = 1;
     _remove_hash_entity(ret);
 

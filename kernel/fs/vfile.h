@@ -14,7 +14,7 @@ struct _VFile {
     int                 f_mode;
     off_t               f_seek;
     void                *f_pipe;
-    ListEntity          f_link;
+    ListNode          f_link;
 };
 
 void

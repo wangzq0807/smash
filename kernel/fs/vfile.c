@@ -20,9 +20,9 @@ init_vfiles()
 VFile *
 alloc_vfile()
 {
-    ListEntity *entity = list_pop_front(&free_files);
+    ListNode *entity = list_pop_front(&free_files);
     if (entity != NULL) {
-        VFile *file = TO_INSTANCE(entity, VFile, f_link);
+        VFile *file = LIST_ENTRY(entity, VFile, f_link);
         file->f_refs = 1;
         file->f_mode = 0;
         file->f_seek = 0;

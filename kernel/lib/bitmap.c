@@ -3,19 +3,11 @@
 #include "lib/log.h"
 
 int
-bm_get_size(bitmap_t bm)
-{
-    bitmap *pbitmap = (bitmap*)bm;
-    return pbitmap->b_nsize;
-}
-
-int
-bm_test_bit(bitmap_t bm, int nbit)
+bm_test_bit(BitMap* pbitmap, int nbit)
 {
     const int step = 8*sizeof(int);
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
-    bitmap *pbitmap = (bitmap*)bm;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     if (_get_bit(bmbuf[pos1], pos2))
         return 1;
@@ -24,34 +16,31 @@ bm_test_bit(bitmap_t bm, int nbit)
 }
 
 int
-bm_set_bit(bitmap_t bm, int nbit)
+bm_set_bit(BitMap* pbitmap, int nbit)
 {
     const int step = 8*sizeof(int);
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
-    bitmap *pbitmap = (bitmap*)bm;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     _set_bit(&bmbuf[pos1], pos2);
     return ERR_SUCCESS;
 }
 
 int
-bm_clear_bit(bitmap_t bm, int nbit)
+bm_clear_bit(BitMap* pbitmap, int nbit)
 {
     const int step = 8*sizeof(int);
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
-    bitmap *pbitmap = (bitmap*)bm;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     _clear_bit(&bmbuf[pos1], pos2);
     return ERR_SUCCESS;
 }
 
 int
-bm_alloc_bit(bitmap_t bm)
+bm_alloc_bit(BitMap* pbitmap)
 {
     int nRet = ERR_MEM_ACCESS;
-    bitmap *pbitmap = (bitmap*)bm;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     const int endpos = (pbitmap->b_nsize / sizeof(int));
     for (int i = 0; i < endpos; ++i)
@@ -73,9 +62,8 @@ bm_alloc_bit(bitmap_t bm)
 }
 
 int
-bm_test_bitrange(bitmap_t bm, const int begbit, const int bitnum)
+bm_test_bitrange(BitMap* pbitmap, const int begbit, const int bitnum)
 {
-    bitmap *pbitmap = (bitmap*)bm;
     const int endbit = begbit + bitnum;
     if (begbit >= (8*pbitmap->b_nsize) ||
         endbit > (8*pbitmap->b_nsize) )
@@ -112,9 +100,8 @@ bm_test_bitrange(bitmap_t bm, const int begbit, const int bitnum)
 }
 
 int
-bm_set_bitrange(bitmap_t bm, const int begbit, const int bitnum)
+bm_set_bitrange(BitMap* pbitmap, const int begbit, const int bitnum)
 {
-    bitmap *pbitmap = (bitmap*)bm;
     const int endbit = begbit + bitnum;
     if (begbit >= (8*pbitmap->b_nsize) ||
         endbit > (8*pbitmap->b_nsize) )
@@ -145,9 +132,8 @@ bm_set_bitrange(bitmap_t bm, const int begbit, const int bitnum)
 }
 
 void
-bm_dump(bitmap_t bm, const int begbyte, const int bytenum)
+bm_dump(BitMap* pbitmap, const int begbyte, const int bytenum)
 {
-    bitmap *pbitmap = (bitmap*)bm;
     const int endbyte = begbyte + bytenum;
     if (begbyte >= pbitmap->b_nsize ||
         endbyte > pbitmap->b_nsize) {

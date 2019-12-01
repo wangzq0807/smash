@@ -30,7 +30,7 @@ struct _Task {
     Task    *ts_child_old;      // 最旧的子进程
     Task    *ts_older;          // 较老的兄弟进程
     Task    *ts_newer;          // 较新的兄弟进程
-    ListEntity      ts_hash_link;
+    ListNode      ts_hash_link;
     Task    *ts_wait;           // 等待的父进程
 
     X86TSS  ts_tss;

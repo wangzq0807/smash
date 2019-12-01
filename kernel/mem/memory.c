@@ -5,107 +5,22 @@
 #include "arch/task.h"
 #include "asm.h"
 #include "pymem.h"
-/*
-typedef struct _PageNode PageNode;
-struct _PageNode {
-    uint32_t    pn_page : 20,
-                pn_refs : 12;
-    PageNode    *pn_next;
-    ListEntity  pn_hash_link;
-};
 
-typedef struct _PageListHead PageListHead;
-struct _PageListHead {
-    uint32_t    pl_dummyLock;   // fixme: 链表加锁
-    PageNode    *pl_free;
-};
-
-static PageListHead free_memory;
-static int cur_start;
-static int max_end;
-
-#define BUFFER_HASH_LEN 1024
-#define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
-#define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
-
-ListHead    hash_map[BUFFER_HASH_LEN];
-
-static error_t
-_remove_hash_entity(PageNode *node)
-{
-    uint32_t hash_val = HASH(node->pn_page);
-    ListHead *head = &hash_map[hash_val];
-    list_remove_entity(head, &node->pn_hash_link);
-
-    return 0;
-}
-
-static PageNode *
-_get_hash_entity(uint32_t page)
-{
-    uint32_t hash_val = HASH(page);
-    ListHead head = hash_map[hash_val];
-    ListEntity *begin = list_get_head(&head);
-    ListEntity *iter = begin;
-    while (iter != NULL) {
-        PageNode *node = TO_INSTANCE(iter, PageNode, pn_hash_link);
-        if (node != NULL && node->pn_page == page)
-            return node;
-        iter = iter->le_next;
-        if (iter == begin)
-            break;
-    }
-    return NULL;
-}
-
-static error_t
-_put_hash_entity(PageNode *node)
-{
-    PageNode *org = _get_hash_entity(node->pn_page);
-    if (org != NULL)
-        _remove_hash_entity(org);
-
-    uint32_t hash_val = HASH(node->pn_page);
-    ListHead *head = &hash_map[hash_val];
-    list_push_front(head, &node->pn_hash_link);
-
-    return 0;
-}
-    if ( (start >= end)
-        || (size_t)(start) & (PAGE_SIZE - 1)
-        || (size_t)(end) & (PAGE_SIZE - 1) ) {
-        KLOG(ERROR, "wrong memory range\n");
-        return;
-    }
-
-    max_end = end;
-    cur_start = start;
-    free_memory.pl_free = NULL;
-*/
-// 一一映射内存
-uint32_t const_vm = 0;
-uint32_t const_vm_end = 0;
 // 用户内存
 uint32_t usr_vm_beg = 0;
-uint32_t usr_vm_end = 0;
+uint32_t usr_vm_end = 0xFE000000;
 // 内核内存
-uint32_t knl_vm_beg = 0;
-uint32_t knl_vm_end = 0;
+uint32_t knl_vm_beg = 0xFE000000;
 
 void
-init_vm(uint32_t cvmend, uint32_t usrvmbeg, uint32_t knlvmbeg)
+init_vm()
 {
-    // 虚拟内存边界要对齐到4M
-    if (cvmend & ~((1<<20) - 1))
-        KLOG(ERROR, "const_vm_end not align 4M!");
-    if (usrvmbeg & ~((1<<20) - 1))
+    if (usr_vm_end > knl_vm_beg)
+        KLOG(ERROR, "usr_vm_end overflow!");
+    if (usr_vm_beg & ~((1<<20) - 1))
         KLOG(ERROR, "usr_vm_beg not align 4M!");
-    if (knlvmbeg & ~((1<<20) - 1))
+    if (knl_vm_beg & ~((1<<20) - 1))
         KLOG(ERROR, "knl_vm_beg not align 4M!");
-    const_vm_end = cvmend;
-    usr_vm_beg = usrvmbeg;
-    usr_vm_end = knl_vm_beg = knlvmbeg;
-    knl_vm_end = 0xFFFFFFFF;
 
     pdt_t pdt = get_pdt();
     pt_t pt0 = pde2pt(pdt[0]);
@@ -126,24 +41,17 @@ void
 init_memory()
 {
     init_pymemory();
-    // 1页内核栈和2页页表
-    alloc_pyrange(0x0, 3*PAGE_SIZE);
-    // 0xA0000 - 1M : BIOS
-    alloc_pyrange(0xA0000, 0x100000);
-    // 1M -2M : 内核代码
-    alloc_pyrange(1 << 20, 1 << 20);
-
-    // 0 - 0x400000 : 一一映射,存放页表
-    // 0xFE000000 - END : 存放内核代码
-    init_vm(4 << 20, 4 << 20, 0xFE000000);
+    // 0 - 0x400000 : 用户内存空间
+    // 0xFE000000 - END : 存放内核代码(一一映射)
+    init_vm();
 }
 
 vm_t
 alloc_pagetable()
 {
     pdt_t pdt = get_pdt();
-    int pde_beg = get_pde_index(const_vm);
-    int pde_end = get_pde_index(const_vm_end);
+    int pde_beg = get_pde_index(knl_vm_beg);
+    int pde_end = PAGE_INT_SIZE;
     for (int pdei = pde_beg; pdei < pde_end; ++pdei)
     {
         if (!is_page_exist(pdt[pdei]))

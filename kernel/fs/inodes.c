@@ -149,8 +149,8 @@ alloc_inode(dev_t dev)
         // TODO : error
     }
     else {
-        ListEntity *p = list_pop_front(&free_inodes);
-        inode = TO_INSTANCE(p, IndexNode, in_link);
+        ListNode *p = list_pop_front(&free_inodes);
+        inode = LIST_ENTRY(p, IndexNode, in_link);
         _remove_hash_entity(inode);
     }
     // 为新inode分配一个bit位
@@ -197,8 +197,8 @@ get_inode(dev_t dev, ino_t inode_index)
                 // TODO : error
             }
             else {
-                ListEntity *p = list_pop_front(&free_inodes);
-                inode = TO_INSTANCE(p, IndexNode, in_link);
+                ListNode *p = list_pop_front(&free_inodes);
+                inode = LIST_ENTRY(p, IndexNode, in_link);
                 _remove_hash_entity(inode);
             }
             // 读磁盘上的inode

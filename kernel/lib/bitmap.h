@@ -27,39 +27,44 @@ _get_bit(int byte, int num)
     return byte & val;
 }
 
-typedef void* bitmap_t;
+//typedef void* BitMap;
 typedef struct
 {
     int     b_nsize;
     void*   b_bitbuf;
-} bitmap;
+} BitMap;
+
+static inline int
+bm_get_size(BitMap* pbitmap) {
+    return pbitmap->b_nsize;
+}
 
 int
-bm_get_size(bitmap_t bm);
+bm_get_size(BitMap* bm);
 
 int
-bm_test_bit(bitmap_t bm, int nbit);
+bm_test_bit(BitMap* bm, int nbit);
 
 int
-bm_set_bit(bitmap_t bm, int nbit);
+bm_set_bit(BitMap* bm, int nbit);
 
 int
-bm_clear_bit(bitmap_t bm, int nbit);
+bm_clear_bit(BitMap* bm, int nbit);
 
 int
-bm_alloc_bit(bitmap_t bm);
+bm_alloc_bit(BitMap* bm);
 
 int
-bm_test_bitrange(bitmap_t bm, const int begbit, const int bitnum);
+bm_test_bitrange(BitMap* bm, const int begbit, const int bitnum);
 
 int
-bm_set_bitrange(bitmap_t bm, const int begbit, const int bitnum);
+bm_set_bitrange(BitMap* bm, const int begbit, const int bitnum);
 
 int
-bm_clear_bitrange(bitmap_t bm, const int begbit, const int bitnum);
+bm_clear_bitrange(BitMap* bm, const int begbit, const int bitnum);
 
 void
-bm_dump(bitmap_t bm, const int begbyte, const int bytenum);
+bm_dump(BitMap* bm, const int begbyte, const int bytenum);
 
 #ifdef __cplusplus
 }
