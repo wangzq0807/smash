@@ -5,9 +5,23 @@
 #include "sys/types.h"
 #include "arch/page.h"
 
+extern vm_t knl_space_begin;
+
+static inline vm_t paddr2vaddr(size_t paddr) {
+    return paddr + knl_space_begin;
+}
+
+static inline size_t vaddr2paddr(size_t paddr) {
+    return knl_space_begin - paddr;
+}
 //====================================
 // 常用线性地址操作
 //====================================
+static inline pdt_t get_pdt() {
+    size_t cr3 = get_cr3();
+    return (pdt_t)paddr2vaddr(cr3);
+}
+
 static inline int
 get_pde_index(vm_t linear) {
     return linear >> 22;
@@ -28,7 +42,7 @@ get_pde(vm_t linear) {
 static inline pt_t
 get_pt(vm_t linear) {
     pde_t pde = get_pde(linear);
-    return (pt_t)PAGE_FLOOR(pde);
+    return (pt_t)paddr2vaddr(PAGE_FLOOR(pde));
 }
 
 static inline pte_t
@@ -46,7 +60,7 @@ get_pypage(vm_t linear) {
 
 static inline pt_t
 pde2pt(pde_t pde) {
-    return (pt_t)PAGE_FLOOR(pde);
+    return (pt_t)paddr2vaddr(PAGE_FLOOR(pde));
 }
 
 static inline uint32_t
@@ -58,7 +72,7 @@ static inline int is_page_exist(pte_t pte) {
     return pte & PAGE_PRESENT;
 }
 
-static inline uint32_t make_vmaddr(int pdei, int ptei) {
+static inline uint32_t make_vaddr(int pdei, int ptei) {
     return (pdei<<22) + (ptei<<12);
 }
 

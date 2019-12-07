@@ -7,65 +7,87 @@
 #include "pymem.h"
 
 // 用户内存
-uint32_t usr_vm_beg = 0;
-uint32_t usr_vm_end = 0xFE000000;
-// 内核内存
-uint32_t knl_vm_beg = 0xFE000000;
+const uint32_t usr_vm_beg = 0;
+const uint32_t usr_vm_end = 0xFE000000;
+// 内核代码段内存
+const uint32_t knl_code_beg = 0xFE000000;
+// 物理地址与虚拟地址间的差值,内核段的开始位置
+uint32_t    knl_space_begin   = 0;
 
 void
-init_vm()
+_init_vm()
 {
-    if (usr_vm_end > knl_vm_beg)
+    if (usr_vm_end > knl_code_beg)
         KLOG(ERROR, "usr_vm_end overflow!");
-    if (usr_vm_beg & ~((1<<20) - 1))
+    if (usr_vm_beg & ((4<<20) - 1))
         KLOG(ERROR, "usr_vm_beg not align 4M!");
-    if (knl_vm_beg & ~((1<<20) - 1))
-        KLOG(ERROR, "knl_vm_beg not align 4M!");
+    if (knl_code_beg & ((4<<20) - 1))
+        KLOG(ERROR, "knl_code_beg not align 4M!");
 
-    pdt_t pdt = get_pdt();
-    pt_t pt0 = pde2pt(pdt[0]);
-    // 只保留前3个映射,用于1栈和2页表
-    for (int ipte = 3; ipte < PAGE_INT_SIZE; ++ipte)
+    // 计算vm_offset
+    size_t cr3 = get_cr3();
+    const int page_index = cr3 >> PAGE_LOG_SIZE;
+    int npti = page_index & (PAGE_INT_SIZE-1);
+    int npdi = page_index >> 10;
+    pdt_t pdt = (pdt_t)cr3;
+    pt_t pt = (pt_t)PAGE_FLOOR(pdt[npdi]);
+    pte_t pte = pt[npti];
+    
+    size_t pyaddr = PAGE_FLOOR(pte);
+    knl_space_begin = knl_code_beg - pyaddr;
+    KLOG(DEBUG, "knl_space_begin: %X", knl_space_begin);
+    // 映射内核空间地址
+
+    // 0 - 1M 映射到高位地址
+    for (int i = 0; i < (1<<20); i+=PAGE_SIZE)
     {
-        pt0[ipte] = 0;
+        if (!is_pypage_used(i))
+            continue;
+        vm_t vaddr = paddr2vaddr(i);
+        npdi = get_pde_index(vaddr);
+        //pdt[npdi]
+        //npti = get_pte_index(vaddr);
+        pt[npti] = i | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     }
-    // 只保留第1个页目录项(映射页表),最后4个页目录项(映射内核代码)
-    for (int ipde = 1; ipde < PAGE_INT_SIZE - 4; ++ipde)
-    {
-        pdt[ipde] = 0;
-    }
-    load_pdt(pdt);
+    //======================================================
+    move_esp(knl_space_begin);
+    pdt = get_pdt();
+    int pde_end = get_pde_index(knl_space_begin);
+    for (int i = 0; i < pde_end; i++)
+        pdt[i] = 0;
+    pt = pde2pt(pdt[pde_end]);
+    int pte_end = get_pte_index(knl_space_begin);
+    for (int i = 0; i < pte_end; i++)
+        pt[i] = 0;
 }
 
 void
 init_memory()
 {
     init_pymemory();
-    // 0 - 0x400000 : 用户内存空间
-    // 0xFE000000 - END : 存放内核代码(一一映射)
-    init_vm();
+    // knl_code_beg - END : 存放内核代码(一一映射)
+    _init_vm();
 }
 
-vm_t
-alloc_pagetable()
+void*
+vm_kalloc()
 {
     pdt_t pdt = get_pdt();
-    int pde_beg = get_pde_index(knl_vm_beg);
+    int pde_beg = get_pde_index(knl_code_beg);
     int pde_end = PAGE_INT_SIZE;
-    for (int pdei = pde_beg; pdei < pde_end; ++pdei)
+    for (int pdei = pde_beg; pdei < pde_end; ++pdei) 
     {
         if (!is_page_exist(pdt[pdei]))
-        {
             KLOG(ERROR, "PDE is not exist!");
-        }
         pt_t pt = pde2pt(pdt[pdei]);
         for (int ptei = 0; ptei < PAGE_INT_SIZE; ++ptei)
         {
             if (!is_page_exist(pt[ptei]))
             {
-                vm_t vaddr = make_vmaddr(pdei, ptei);
-                pt[ptei] = vaddr | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-                return vaddr;
+                vm_t vaddr = make_vaddr(pdei, ptei);
+                size_t paddr = vaddr2paddr(vaddr);
+                pt[ptei] = paddr | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+                return (void*)vaddr;
             }
         }
     }

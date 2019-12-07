@@ -7,6 +7,7 @@
 #include "page.h"
 #include "utc.h"
 #include "dev/char/serial.h"
+#include "defs.h"
 
 static void
 _init_8259A()

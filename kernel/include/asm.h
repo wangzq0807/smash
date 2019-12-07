@@ -96,8 +96,8 @@ static inline void load_pdt(pdt_t pdt) {
     );
 }
 
-static inline pdt_t get_pdt() {
-    register pdt_t ret;
+static inline size_t get_cr3() {
+    register size_t ret;
     __asm__ volatile(
         "movl %%cr3, %0 \n"
         :"=r"(ret)
@@ -229,6 +229,16 @@ static inline int call_syscall(void *irq, uint32_t cnt, uint32_t addr, void *fun
         :"ecx", "esp"
     );
     return ret;
+}
+
+static inline void move_esp(int offset) {
+    __asm__ volatile (
+        "movl %%esp, %%eax\n"
+        "addl %0, %%eax\n"
+        "movl %%eax, %%esp"
+        : : "r"(offset)
+        : "esp"
+    );
 }
 
 #endif // __IO_H__

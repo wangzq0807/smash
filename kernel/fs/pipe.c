@@ -5,6 +5,7 @@
 #include "asm.h"
 #include "string.h"
 #include "lib/log.h"
+#include "defs.h"
 
 #define QUEUE_LEN    1024
 

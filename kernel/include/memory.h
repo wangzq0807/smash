@@ -7,20 +7,18 @@
 void
 init_memory();
 
-vm_t
-vm_ualloc_page();
+void*
+vm_ualloc();
 
-vm_t
-vm_kalloc_page();
-
-int
-vm_release_page(vm_t vaddr);
+void*
+vm_kalloc();
 
 int
-vm_is_user(vm_t vaddr);
+vm_free(void*);
 
-vm_t
-alloc_pagetable();
+int
+vm_is_user_space(vm_t vaddr);
+
 /*
 //============
 // 用户态物理页面管理

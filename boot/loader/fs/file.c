@@ -6,6 +6,7 @@
 #include "log.h"
 #include "file.h"
 #include "disk_drv.h"
+#include "defs.h"
 
 IndexNode *
 name_to_dirinode(const char *pathname, const char **basename);

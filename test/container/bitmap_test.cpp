@@ -25,6 +25,18 @@ TEST(BITMAP, HandlerTrueReturn)
     int n = bm_alloc_bit(&testbitmap);
     EXPECT_EQ(n, 50);
 
+    bm_clear_bitrange(&testbitmap, 64, 32);
+    for (int i = 64; i < 96; ++i) {
+        int n = bm_test_bit(&testbitmap, i);
+        EXPECT_EQ(n, 0);
+    }
+    
+    bm_set_bitrange(&testbitmap, 60, 64);
+    for (int i = 60; i < 124; ++i) {
+        int n = bm_test_bit(&testbitmap, i);
+        EXPECT_EQ(n, 1);
+    }
+
     n = bm_test_bit(&testbitmap, 150);
     EXPECT_EQ(n, 0);
     bm_set_bit(&testbitmap, 150);
@@ -48,4 +60,5 @@ TEST(BITMAP, HandlerTrueReturn)
         n = bm_test_bit(&testbitmap, 200+i);
         EXPECT_EQ(n, 0);
     }
+
 }

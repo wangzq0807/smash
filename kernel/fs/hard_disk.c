@@ -4,6 +4,7 @@
 #include "hard_disk.h"
 #include "lib/log.h"
 #include "fsdefs.h"
+#include "defs.h"
 
 typedef struct _DiskRequest DiskRequest;
 struct _DiskRequest {

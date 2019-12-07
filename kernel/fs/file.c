@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "lib/log.h"
 #include "file.h"
+#include "defs.h"
 
 IndexNode *
 file_open(const char *pathname, int flags, int mode)

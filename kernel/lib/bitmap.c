@@ -9,7 +9,7 @@ bm_test_bit(BitMap* pbitmap, int nbit)
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
-    if (_get_bit(bmbuf[pos1], pos2))
+    if (GET_BIT(bmbuf[pos1], pos2))
         return 1;
     else
         return 0;
@@ -22,7 +22,7 @@ bm_set_bit(BitMap* pbitmap, int nbit)
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
-    _set_bit(&bmbuf[pos1], pos2);
+    SET_BIT(bmbuf[pos1], pos2);
     return ERR_SUCCESS;
 }
 
@@ -33,7 +33,7 @@ bm_clear_bit(BitMap* pbitmap, int nbit)
     const int pos1 = nbit / step;
     const int pos2 = nbit % step;
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
-    _clear_bit(&bmbuf[pos1], pos2);
+    CLEAR_BIT(bmbuf[pos1], pos2);
     return ERR_SUCCESS;
 }
 
@@ -41,79 +41,83 @@ int
 bm_alloc_bit(BitMap* pbitmap)
 {
     int nRet = ERR_MEM_ACCESS;
-    int *bmbuf = (int *)(pbitmap->b_bitbuf);
+    uint32_t *bmbuf = (uint32_t *)(pbitmap->b_bitbuf);
     const int endpos = (pbitmap->b_nsize / sizeof(int));
     for (int i = 0; i < endpos; ++i)
     {
         if (bmbuf[i] == -1)
             continue;
-        for (int bit = 0; bit < 8*sizeof(int); ++bit)
-        {
-            if (_get_bit(bmbuf[i], bit) == 0)
-            {
-                _set_bit(&(bmbuf[i]), bit);
-                nRet = i * 8 * sizeof(int) + bit;
-                break;
-            }
-        }
-        break;
+        int ret = alloc_bit32(&bmbuf[i], 0, 32);
+        if (ret >= 0)
+            return i*sizeof(uint32_t)*8 + ret;
     }
     return nRet;
 }
 
 int
-bm_test_bitrange(BitMap* pbitmap, const int begbit, const int bitnum)
+bm_alloc_bit_inrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
-    const int endbit = begbit + bitnum;
-    if (begbit >= (8*pbitmap->b_nsize) ||
-        endbit > (8*pbitmap->b_nsize) )
+    if (begbit >= (8*pbitmap->b_nsize))
         return ERR_MEM_ACCESS;
+    const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
+    uint32_t *bmbuf = (uint32_t *)(pbitmap->b_bitbuf);
+    const int step = (8*sizeof(uint32_t));
+    const int begpos = begbit / step;
+    const int endpos = endbit / step;
+    if (begpos == endpos)
+    {
+        int ret = alloc_bit32(&bmbuf[begpos], begbit%step, endbit - begbit);
+        if (ret > 0)
+            return step * begpos + ret;
+    }
+    return 0;
+}
+
+int
+bm_test_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
+{
+    if (begbit >= (8*pbitmap->b_nsize))
+        return ERR_MEM_ACCESS;
+    const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     const int step = (8*sizeof(int));
     const int begpos = begbit / step;
     const int endpos = endbit / step;
     if (begpos == endpos)
     {
-        int bitmask = ((1 << (begbit % step)) - 1) ^ ((1 << (endbit % step)) - 1);
-        if (bmbuf[begpos] &= bitmask)
-            return 1;
-        else
-            return 0;
+        return test_bit32(bmbuf[begpos], begbit % step, endbit % step);
     }
-    const int begmask = (-1) & ~ ((1 << (begbit % step)) - 1);
-    if (bmbuf[begpos] &= begmask)
+
+    if (test_bit32(bmbuf[begpos], begbit % step, step - 1))
         return 1;
 
     const int begpos_ceil = (begbit + step - 1) / step;
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
     {
-        if (bmbuf[i] &= -1)
+        if (bmbuf[i] != 0)
             return 1;
     }
 
-    const int endmask = (1 << (endbit % step)) - 1;
-    if (bmbuf[endpos] &= endmask)
+    if (test_bit32(bmbuf[endpos], 0, endbit % step))
         return 1;
 
     return 0;
 }
 
 int
-bm_set_bitrange(BitMap* pbitmap, const int begbit, const int bitnum)
+bm_set_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
-    const int endbit = begbit + bitnum;
-    if (begbit >= (8*pbitmap->b_nsize) ||
-        endbit > (8*pbitmap->b_nsize) )
+    if (begbit >= (8*pbitmap->b_nsize))
         return ERR_MEM_ACCESS;
-    int *bmbuf = (int *)(pbitmap->b_bitbuf);
-    const int step = (8*sizeof(int));
+    const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
+    uint32_t *bmbuf = (uint32_t *)(pbitmap->b_bitbuf);
+    const int step = (8*sizeof(uint32_t));
     const int begpos = begbit / step;
     const int endpos = endbit / step;
     if (begpos == endpos)
     {
-        int bitmask = ((1 << (begbit % step)) - 1) ^ ((1 << (endbit % step)) - 1);
-        bmbuf[begpos] |= bitmask;
+        set_bit32(&bmbuf[begpos], begbit % step, endbit - begbit);
         return 0;
     }
 
@@ -121,25 +125,50 @@ bm_set_bitrange(BitMap* pbitmap, const int begbit, const int bitnum)
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
     {
-        bmbuf[i] |= -1;
+        bmbuf[i] = -1;
     }
 
-    const int begmask = (-1) & ~ ((1 << (begbit % step)) - 1);
-    const int endmask = (1 << (endbit % step)) - 1;
-    bmbuf[begpos] |= begmask;
-    bmbuf[endpos] |= endmask;
+    set_bit32(&bmbuf[begpos], begbit % step, step - (begbit % step));
+    set_bit32(&bmbuf[endpos], 0, endbit % step);
     return ERR_SUCCESS;
 }
 
-void
-bm_dump(BitMap* pbitmap, const int begbyte, const int bytenum)
+int
+bm_clear_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
-    const int endbyte = begbyte + bytenum;
-    if (begbyte >= pbitmap->b_nsize ||
-        endbyte > pbitmap->b_nsize) {
+    if (begbit >= (8*pbitmap->b_nsize))
+        return ERR_MEM_ACCESS;
+    const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
+    uint32_t *bmbuf = (uint32_t *)(pbitmap->b_bitbuf);
+    const int step = (8*sizeof(uint32_t));
+    const int begpos = begbit / step;
+    const int endpos = endbit / step;
+    if (begpos == endpos)
+    {
+        clear_bit32(&bmbuf[begpos], begbit % step, endbit - begbit);
+        return 0;
+    }
+
+    const int begpos_ceil = (begbit + step - 1) / step;
+    const int endpos_floor = endpos;
+    for (int i = begpos_ceil; i < endpos_floor; ++i)
+    {
+        bmbuf[i] = 0;
+    }
+
+    clear_bit32(&bmbuf[begpos], begbit % step, step - begbit % step);
+    clear_bit32(&bmbuf[endpos], 0, endbit % step);
+    return 0;
+}
+
+void
+bm_dump(BitMap* pbitmap, const int begbyte, const uint32_t bytenum)
+{
+    if (begbyte >= pbitmap->b_nsize) {
         KLOG(ERROR, "bm_dump error");
         return;
     }
+    const int endbyte = MIN(begbyte + bytenum, pbitmap->b_nsize);
     int *bmbuf = (int *)(pbitmap->b_bitbuf);
     const int step = (sizeof(int));
     const int begpos = begbyte / (4*step) * 4;

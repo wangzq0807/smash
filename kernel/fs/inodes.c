@@ -6,6 +6,7 @@
 #include "lib/log.h"
 #include "string.h"
 #include "partion.h"
+#include "defs.h"
 
 // NOTE : 这里要能整除
 #define INODES_OF_ONEBLOCK    (BLOCK_SIZE/sizeof(PyIndexNode))

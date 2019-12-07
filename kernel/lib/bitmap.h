@@ -1,31 +1,10 @@
 #ifndef __BITMAP_H__
 #define __BITMAP_H__
-#include "sys/types.h"
-
+#include <sys/types.h>
+#include "bithelp.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-static inline void
-_set_bit(int *byte, int num)
-{
-    const int val = 1 << num;
-    *byte |= val;
-}
-
-static inline void
-_clear_bit(int *byte, int num)
-{
-    const int val = 1 << num;
-    *byte &= ~val;
-}
-
-static inline int
-_get_bit(int byte, int num)
-{
-    const int val = 1 << num;
-    return byte & val;
-}
 
 //typedef void* BitMap;
 typedef struct
@@ -55,16 +34,19 @@ int
 bm_alloc_bit(BitMap* bm);
 
 int
-bm_test_bitrange(BitMap* bm, const int begbit, const int bitnum);
+bm_alloc_bit_inrange(BitMap* bm, const int begbit, const uint32_t bitnum);
 
 int
-bm_set_bitrange(BitMap* bm, const int begbit, const int bitnum);
+bm_test_bitrange(BitMap* bm, const int begbit, const uint32_t bitnum);
 
 int
-bm_clear_bitrange(BitMap* bm, const int begbit, const int bitnum);
+bm_set_bitrange(BitMap* bm, const int begbit, const uint32_t bitnum);
+
+int
+bm_clear_bitrange(BitMap* bm, const int begbit, const uint32_t bitnum);
 
 void
-bm_dump(BitMap* bm, const int begbyte, const int bytenum);
+bm_dump(BitMap* bm, const int begbyte, const uint32_t bytenum);
 
 #ifdef __cplusplus
 }
