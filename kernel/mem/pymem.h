@@ -1,6 +1,7 @@
 #ifndef __PYMEM_H__
 #define __PYMEM_H__
 #include "sys/types.h"
+#include "defs.h"
 
 void
 init_pymemory();
@@ -10,7 +11,7 @@ error_t
 alloc_pyrange(uint32_t rbeg, uint32_t rsize);
 
 uint32_t
-alloc_pypage();
+alloc_pypage(BOOL bKnl);
 
 void
 release_pypage(uint32_t paddr);

@@ -48,7 +48,7 @@ bm_alloc_bit(BitMap* pbitmap)
         if (bmbuf[i] == -1)
             continue;
         int ret = alloc_bit32(&bmbuf[i], 0, 32);
-        if (ret >= 0)
+        if (ret != -1)
             return i*sizeof(uint32_t)*8 + ret;
     }
     return nRet;
@@ -67,10 +67,29 @@ bm_alloc_bit_inrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
     if (begpos == endpos)
     {
         int ret = alloc_bit32(&bmbuf[begpos], begbit%step, endbit - begbit);
-        if (ret > 0)
+        if (ret != -1)
             return step * begpos + ret;
     }
-    return 0;
+    else
+    {
+        int ret = alloc_bit32(&bmbuf[begpos], begbit%step, step - (begbit%step));
+        if (ret != -1)
+            return step * begpos + ret;
+
+        const int begpos_ceil = (begbit + step - 1) / step;
+        const int endpos_floor = endpos;
+        for (int i = begpos_ceil; i < endpos_floor; ++i)
+        {
+            int ret = alloc_bit32(&bmbuf[i], 0, 32);
+            if (ret != -1)
+                return i * step + ret;
+        }
+
+        ret = alloc_bit32(&bmbuf[endpos], 0, endbit%step);
+        if (ret != -1)
+            return step * endpos + ret;
+    }
+    return ERR_MEM_ACCESS;
 }
 
 int
@@ -124,9 +143,7 @@ bm_set_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
     const int begpos_ceil = (begbit + step - 1) / step;
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
-    {
         bmbuf[i] = -1;
-    }
 
     set_bit32(&bmbuf[begpos], begbit % step, step - (begbit % step));
     set_bit32(&bmbuf[endpos], 0, endbit % step);
@@ -152,9 +169,7 @@ bm_clear_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
     const int begpos_ceil = (begbit + step - 1) / step;
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
-    {
         bmbuf[i] = 0;
-    }
 
     clear_bit32(&bmbuf[begpos], begbit % step, step - begbit % step);
     clear_bit32(&bmbuf[endpos], 0, endbit % step);

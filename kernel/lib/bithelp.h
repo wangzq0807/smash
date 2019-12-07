@@ -61,11 +61,9 @@ inline int
 alloc_bit32(uint32_t *target, const int beg, const int num)
 {
     int end = MIN(beg+num, 32);
-    for (int bit = beg; bit < end; ++bit)
-    {
+    for (int bit = beg; bit < end; ++bit) {
         const uint32_t mask = 1 << bit;
-        if ((*target & mask) == 0)
-        {
+        if ((*target & mask) == 0) {
             *target |= mask;
             return bit;
         }

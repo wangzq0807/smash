@@ -52,7 +52,7 @@ on_page_not_exist(vm_t linear, pt_t pt, int npte)
     VFile *vf = ts->ts_filps[fd];
     if (fd < MAX_FD && vf != NULL)
     {
-        uint32_t pyaddr = alloc_pypage();
+        uint32_t pyaddr = alloc_pypage(TRUE);
         pt[npte] = PAGE_FLOOR((uint32_t)pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
         file_read(vf->f_inode, offset, (void *)PAGE_FLOOR(linear), PAGE_SIZE);
     }

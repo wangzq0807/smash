@@ -125,7 +125,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     int fd = map_vfile(vf);
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
-    uint32_t ustack = alloc_pypage();
+    uint32_t ustack = alloc_pypage(FALSE);
     map_vm_page(0xFFFF0000, ustack);
     irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
     // 将参数拷贝到用户态堆栈中

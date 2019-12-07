@@ -145,7 +145,7 @@ setup_first_task()
 
     // 用户态堆栈
     // TODO:堆栈操作最好抽取出来
-    int us_addr = alloc_pypage();
+    int us_addr = alloc_pypage(FALSE);
     map_vm_page(0xFFFF0000, us_addr);
     uint8_t *us_page = (uint8_t *)0xFFFF0000;
     task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
