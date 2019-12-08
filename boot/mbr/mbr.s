@@ -2,7 +2,6 @@
  * 然后跳转到0x7c00位置.
  * 1. 从内存将boot代码移动到(BOOTSEG2, 0)
  * 2. 从磁盘将第2扇区后的代码移动到(HEADSEG, 0),保留bios中断[0, HEADSEG*16]
- * 3. 从内存将(HEADSEG, 0)处代码移动到0x00
  * 4. 开启保护模式
  * 5. 跳转到虚拟地址(0x8:0x0)处开始执行
  */
@@ -84,20 +83,6 @@ read_ok:
      ***********************/
     cli						/* 关闭中断 */
     cld						/* 清rep指令方向，使源为ds:si,目的: es:di */
-    movw $HEADSEG, %ax
-    xorw %bx, %bx
-_mv_one_sector:
-    cmp $(HEADLEN<<5), %bx
-    je protect_mode
-    movw %ax, %ds			/* ds = 0x1000 */
-    movw %bx, %es			/* es = 0x0000 */
-    xorw %si, %si
-    xorw %di, %di
-    movw $256, %cx			/* 移动 256 次 */
-    rep movsw 				/* 每次2字节 */
-    add $0x20, %ax
-    add $0x20, %bx
-    jmp _mv_one_sector
 
 protect_mode:
     /* 设置gdtr和idtr */
@@ -110,7 +95,7 @@ protect_mode:
     orl  $1, %eax
     movl %eax, %cr0
     /* 设置cs和ip */
-    jmpl $8, $0				/* 8为gdt代码段，基地址为0x0000,偏移地址为0x0000 */
+    jmpl $8, $0x10000				/* 8为gdt代码段，基地址为0x0000,偏移地址为0x0000 */
 
 gdt_table: .word 0, 0, 0, 0
     /* 代码段 */

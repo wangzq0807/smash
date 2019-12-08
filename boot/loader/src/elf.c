@@ -6,8 +6,6 @@
 #include "log.h"
 #include "memory.h"
 
-#define PY_KERNEL_ADDR      0x100000    // 存放在1M的位置
-
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
 
@@ -20,8 +18,6 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
     KLOG(DEBUG, "LoadElfProg start");
     Elf32_Phdr* phdr = (Elf32_Phdr*)&progHeader[0];
     file_read(inode, offset, phdr, phnum*sizeof(Elf32_Phdr));
-    uint32_t pyvm_offset = 0;   // 虚拟地址和物理地址的差值
-    int bfirst = 1;
     for (int phi = 0; phi < phnum; ++phi)
     {
         Elf32_Phdr* cur_phdr = phdr + phi;
@@ -43,19 +39,13 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
             memsz += adjustsz;
         }
         const int readsz = cur_phdr->p_filesz + adjustsz;
-        if (bfirst)
-        {
-            bfirst = 0;
-            pyvm_offset = vaddr - PY_KERNEL_ADDR;
-        }
-        const uint32_t pyaddr = (vaddr - pyvm_offset);
+        const uint32_t pyaddr = vaddr;
         file_read(inode, fileOff, (void *)pyaddr, readsz);
 
         void *bssAddr = ((void *)pyaddr) + readsz;
         const int bssSz = memsz - readsz;
         if (bssSz > 0)
             memset(bssAddr, 0, bssSz);
-        map_mem(pyaddr, vaddr, memsz);
     }
     KLOG(DEBUG, "LoadElfProg end");
     return 0;

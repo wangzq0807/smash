@@ -19,7 +19,7 @@ start_main()
     while (1)
     {
         smash_memory();
-    }   
+    }
 }
 
 int

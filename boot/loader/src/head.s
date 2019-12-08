@@ -17,15 +17,7 @@ _start:
 
 /* 4KB 栈(方便检测栈溢出) */
 .org 4096
-.global _PDT_
-_PDT_:  /* 页目录表 */
 init_stack:
     .long init_stack
     .word DATA_SEG
-
-.org 8192
-/* 第一个页表 */
-.global _PT0_
-_PT0_:
-    .fill 1024, 4, 0
 
