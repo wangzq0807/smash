@@ -44,7 +44,7 @@ file_read(const IndexNode *inode, off_t seek, void *buf, size_t count)
     }
     if (ret < count) {
         uint32_t len = count - ret;
-        int blknum = (len + BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
+        int blknum = (len + BLOCK_SIZE - 1) >> BLOCK_SHIFT;
         for (int i = 0; i < blknum; ++i)
         {
             blk_t blk = get_zone(inode, seek + ret);

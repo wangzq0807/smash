@@ -11,7 +11,7 @@
 int LoadKernel(char *path);
 
 void
-start_main()
+start_bootloader()
 {
     init_memory();
     init_file_system();

@@ -75,7 +75,7 @@ alloc_zone(IndexNode *inode)
 
     PartionEntity *entity = get_partion_entity(inode->in_dev);
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
-    const zone_t zone_num = (inode->in_inode.in_file_size +  BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
+    const zone_t zone_num = (inode->in_inode.in_file_size +  BLOCK_SIZE - 1) >> BLOCK_SHIFT;
     // 直接索引
     if (zone_num < DIRECT_ZONE) {
         inode->in_inode.in_zones[zone_num] = block_num;
@@ -194,7 +194,7 @@ get_zone(const IndexNode *inode, off_t bytes_offset)
     const blk_t nstart = entity->pe_lba_start / PER_BLOCK_SECTORS;
     // TODO : 这里暂时假设zone和block大小相同
     blk_t block_num = 0;
-    const zone_t zone_num = bytes_offset >> BLOCK_LOG_SIZE;
+    const zone_t zone_num = bytes_offset >> BLOCK_SHIFT;
     // 直接索引
     if (zone_num < DIRECT_ZONE) {
         block_num = inode->in_inode.in_zones[zone_num];

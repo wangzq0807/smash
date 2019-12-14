@@ -1,12 +1,34 @@
 OUTPUT_FORMAT(elf32-i386)
-ENTRY(start_main)
+ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x100000;
-    .text : { *(.text) }
-    .data : { *(.data) }
-    .bss : { *(.bss) }
-    __init_array_start = .;
-    __init_array_end = .;
+    _LMA = 0x100000; /* 1M */
+    . = _LMA;
+    kernel_start = .;
+    /* boot负责将内核代码映射到高地址 */
+    .boot.text : ALIGN(0x1000) {
+        *boot*.o(.text*)
+        *boot*.o(.rodata*)
+    }
+    .boot.data : ALIGN(0x1000) { *(.data) }
+    .boot.bss : ALIGN(0x1000) { *(.bss) }
+
+    _VMA = 0xF0000000; /* last 256M */
+    . += _VMA;
+    /* 内核代码 */
+    .text : AT(ADDR(.text) - _VMA) ALIGN(0x1000) {
+        *(.text*)
+        *(.rodata*)
+    }
+    
+    .data : AT(ADDR(.data) - _VMA) ALIGN(0x1000) {
+        *(.data)
+    }
+    
+    .bss : AT(ADDR(.bss) - _VMA) ALIGN(0x1000) {
+        *(.bss)
+    }
+
+    kernel_end = . - _LMA;
 }

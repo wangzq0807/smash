@@ -6,6 +6,8 @@
 #include "asm.h"
 #include "pymem.h"
 
+extern size_t kernel_start;
+extern size_t kernel_end;
 // 用户内存
 const uint32_t usr_vm_beg = 0;
 const uint32_t usr_vm_end = 0xFE000000;
@@ -17,6 +19,7 @@ uint32_t    knl_space_begin   = 0;
 void
 _init_vm()
 {
+    KLOG(DEBUG, "kernel_start %X, kernel_end %X", &kernel_start, &kernel_end);
     if (usr_vm_end > knl_code_beg)
         KLOG(ERROR, "usr_vm_end overflow!");
     if (usr_vm_beg & ((4<<20) - 1))
@@ -26,7 +29,7 @@ _init_vm()
 
     // 计算vm_offset
     size_t cr3 = get_cr3();
-    const int page_index = cr3 >> PAGE_LOG_SIZE;
+    const int page_index = cr3 >> PAGE_SHIFT;
     int npti = page_index & (PAGE_INT_SIZE-1);
     int npdi = page_index >> 10;
     pdt_t pdt = (pdt_t)cr3;
@@ -126,16 +129,16 @@ _new_freelist(uint32_t addr)
     // 一个页面用来建立空闲页的链表(大约会新增1M的可用内存)
     PageNode *node_list = (PageNode*)alloc_spage();
     int node_num = PAGE_SIZE / sizeof(PageNode);
-    node_num = MIN(node_num, (max_end - addr) >> PAGE_LOG_SIZE);
+    node_num = MIN(node_num, (max_end - addr) >> PAGE_SHIFT);
     for (int i = 0; i < node_num; i++ ) {
-        node_list[i].pn_page = (addr >> PAGE_LOG_SIZE) + i;
+        node_list[i].pn_page = (addr >> PAGE_SHIFT) + i;
         node_list[i].pn_refs = 0;
         node_list[i].pn_next = &node_list[i+1];
     }
     node_list[node_num - 1].pn_next = NULL;
 
     free_memory.pl_free = &node_list[0];
-    cur_start = addr + (node_num << PAGE_LOG_SIZE);
+    cur_start = addr + (node_num << PAGE_SHIFT);
 }
 
 uint32_t
@@ -155,7 +158,7 @@ alloc_pypage()
     if (ret != NULL) {
         ret->pn_refs = 1;
         _put_hash_entity(ret);
-        return (ret->pn_page << PAGE_LOG_SIZE);
+        return (ret->pn_page << PAGE_SHIFT);
     }
     else {
         return NULL;
@@ -165,7 +168,7 @@ alloc_pypage()
 int
 get_pypage_refs(uint32_t page)
 {
-    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    PageNode *node = _get_hash_entity(page >> PAGE_SHIFT);
     if (node != NULL)
         return node->pn_refs;
     else
@@ -180,7 +183,7 @@ add_pypage_refs(uint32_t page)
         return -1;
     }
 
-    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    PageNode *node = _get_hash_entity(page >> PAGE_SHIFT);
     if (node != NULL) {
         node->pn_refs++;
         return node->pn_refs;
@@ -198,7 +201,7 @@ release_pypage(uint32_t page)
         return -1;
     }
 
-    PageNode *node = _get_hash_entity(page >> PAGE_LOG_SIZE);
+    PageNode *node = _get_hash_entity(page >> PAGE_SHIFT);
     if (node == NULL) {
         KLOG(ERROR, "page %x is not found", page);
         return -1;
@@ -356,7 +359,7 @@ mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
     if (pt[npte] & PAGE_PRESENT)
         return 0;
     // 所需映射的总页面数
-    const int npage = (length + PAGE_SIZE - 1) >> PAGE_LOG_SIZE;
+    const int npage = (length + PAGE_SIZE - 1) >> PAGE_SHIFT;
     // TODO: 失败后,要回收已映射的页表项
     // 当前页表的映射 pte
     int lessnum = PAGE_INT_SIZE - npte;

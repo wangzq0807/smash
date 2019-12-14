@@ -9,8 +9,8 @@
  /* lgdt/movw 标号 : 按标号地址进行寻址? */
 BOOTSEG     = 0x07C0
 BOOTSEG2    = 0x9000    /* 预留足够多的空间[64K, 576K]来读入loader */
-HEADSEG     = 0x1000
-HEADLEN     = 254		/* 254 sector = 127KB */
+HEADSEG     = 0x100
+HEADLEN     = 100		/* 100 sector = 50KB */
 .code16
 
 /*代码段*/
@@ -78,9 +78,6 @@ read_failed:
     jmp read_failed
 
 read_ok:
-    /***********************
-     * 将0x10000处代码移动到0x00
-     ***********************/
     cli						/* 关闭中断 */
     cld						/* 清rep指令方向，使源为ds:si,目的: es:di */
 
@@ -95,7 +92,7 @@ protect_mode:
     orl  $1, %eax
     movl %eax, %cr0
     /* 设置cs和ip */
-    jmpl $8, $0x10000				/* 8为gdt代码段，基地址为0x0000,偏移地址为0x0000 */
+    jmpl $8, $HEADSEG*16				/* 8为gdt代码段，基地址为0x0000,偏移地址为0x0000 */
 
 gdt_table: .word 0, 0, 0, 0
     /* 代码段 */

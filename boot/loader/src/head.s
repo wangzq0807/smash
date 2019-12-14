@@ -13,7 +13,7 @@ _start:
     movw %ax, %gs
     lss init_stack, %esp
 
-    call start_main
+    call start_bootloader
 
 /* 4KB 栈(方便检测栈溢出) */
 .org 4096

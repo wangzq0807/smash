@@ -3,8 +3,8 @@
 #include "types.h"
 
 #define SECTOR_SIZE             512         // 一个扇区大小
-#define BLOCK_LOG_SIZE          10          // 每块的log大小
-#define BLOCK_SIZE              (1 << BLOCK_LOG_SIZE)
+#define BLOCK_SHIFT          10          // 每块的log大小
+#define BLOCK_SIZE              (1 << BLOCK_SHIFT)
 
 // ATA registers(Primary Bus)
 #define ATA_REG_DATA        0x1F0

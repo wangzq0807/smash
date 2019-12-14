@@ -29,8 +29,8 @@ init_pymemory()
 error_t
 alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 {
-    const int begbit = rbeg >> PAGE_LOG_SIZE;
-    const int bitnum = rsize >> PAGE_LOG_SIZE;
+    const int begbit = rbeg >> PAGE_SHIFT;
+    const int bitnum = rsize >> PAGE_SHIFT;
     int hasbit = bm_set_bitrange(&pybitmap, begbit, bitnum);
     if (hasbit)
         return ERR_PARAM_ILLEGAL;
@@ -54,7 +54,7 @@ alloc_pypage(BOOL bKnl)
     }
     else
     {
-        return nbit << PAGE_LOG_SIZE;
+        return nbit << PAGE_SHIFT;
     }
 }
 
@@ -63,14 +63,17 @@ release_pypage(uint32_t paddr)
 {
     KLOG(DEBUG, "release_pypage %X", paddr);
 
-    int nIndex = paddr >> PAGE_LOG_SIZE;
-    bm_clear_bit(&pybitmap, nIndex);
+    int nIndex = paddr >> PAGE_SHIFT;
+    if (bm_test_bit(&pybitmap, nIndex))
+        bm_clear_bit(&pybitmap, nIndex);
+    else
+        KLOG(ERROR, "release_pypage ERROR!");
 }
 
 int
 is_pypage_used(uint32_t paddr)
 {
-    int nIndex = paddr >> PAGE_LOG_SIZE;
+    int nIndex = paddr >> PAGE_SHIFT;
     return bm_test_bit(&pybitmap, nIndex);
 }
 

@@ -3,7 +3,7 @@ enable_language (ASM)
 include(CMakeASMInformation)
 
 # 链接选项
-set (CMAKE_ASM_LINK_FLAGS "-m elf_i386 -Ttext 0x10000")
+set (CMAKE_ASM_LINK_FLAGS "-m elf_i386 -Ttext 0x1000")
 
 # 使用ld作为链接器
 set(CMAKE_C_LINK_EXECUTABLE

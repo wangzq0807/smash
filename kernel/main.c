@@ -17,17 +17,7 @@
 #include "arch/task.h"
 
 void
-init_filesystem(uint16_t dev)
-{
-    init_disk();
-    init_block_buffer();
-    init_partion(dev);
-    init_super_block(dev);
-    dump_super_block(dev);
-    init_inodes(dev);
-    init_zones(dev);
-    init_vfiles();
-}
+init_filesystem(uint16_t dev);
 
 void
 start_main()
@@ -39,4 +29,17 @@ start_main()
     // start_task();
     // init_filesystem();
     // inode_ls(2);
+}
+
+void
+init_filesystem(uint16_t dev)
+{
+    init_disk();
+    init_block_buffer();
+    init_partion(dev);
+    init_super_block(dev);
+    dump_super_block(dev);
+    init_inodes(dev);
+    init_zones(dev);
+    init_vfiles();
 }

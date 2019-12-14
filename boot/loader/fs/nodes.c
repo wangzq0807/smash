@@ -19,7 +19,7 @@ void*
 get_inodes_bitmap(ino_t inode_index)
 {
     // 如果inode位图已在内存中,则直接返回
-    const int bitmap_index = (inode_index >> BLOCK_LOG_SIZE) / 8;
+    const int bitmap_index = (inode_index >> BLOCK_SHIFT) / 8;
     if (bitmap_bufidx == bitmap_index)
         return bitmap_buf;
     // 从磁盘中去读inode位图
@@ -83,7 +83,7 @@ get_zone(const IndexNode *inode, off_t bytes_offset)
     const blk_t nstart = entity->pe_lba_start / SECTORS_OF_ONEBLOCK;
     // TODO : 这里暂时假设zone和block大小相同
     blk_t block_num = 0;
-    const zone_t zone_num = bytes_offset >> BLOCK_LOG_SIZE;
+    const zone_t zone_num = bytes_offset >> BLOCK_SHIFT;
     // 直接索引
     if (zone_num < DIRECT_ZONE) {
         block_num = inode->in_zones[zone_num];

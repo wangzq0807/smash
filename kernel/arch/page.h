@@ -1,8 +1,8 @@
 #ifndef __PAGE_H__
 #define __PAGE_H__
 
-#define PAGE_LOG_SIZE   12
-#define PAGE_SIZE     (1 << PAGE_LOG_SIZE)
+#define PAGE_SHIFT   12
+#define PAGE_SIZE     (1 << PAGE_SHIFT)
 #define PAGE_INT_SIZE         (PAGE_SIZE/sizeof(int))
 #define PAGE_CEILING(addr)    (((addr) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1))
 #define PAGE_FLOOR(addr)      ((addr) & ~(PAGE_SIZE - 1))

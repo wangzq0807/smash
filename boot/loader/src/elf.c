@@ -9,13 +9,17 @@
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
 
+// TODO: 暂定16个Program header
+#define PGH_NUM 16
 Elf32_Ehdr  elfHeader;
-Elf32_Phdr  progHeader[16]; // TODO: 暂定16个
+Elf32_Phdr  progHeader[PGH_NUM]; 
 
 int
 LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
 {
     KLOG(DEBUG, "LoadElfProg start");
+    if (phnum >= PGH_NUM)
+        KLOG(ERROR, "Program header num is more than %d", PGH_NUM);
     Elf32_Phdr* phdr = (Elf32_Phdr*)&progHeader[0];
     file_read(inode, offset, phdr, phnum*sizeof(Elf32_Phdr));
     for (int phi = 0; phi < phnum; ++phi)
@@ -24,25 +28,24 @@ LoadElfProg(const IndexNode *inode, const uint32_t offset, const uint32_t phnum)
         if (cur_phdr->p_type != PT_LOAD)
             continue; // 只读取可加载的段
 
-        if (cur_phdr->p_vaddr == 0)
+        if (cur_phdr->p_paddr == 0)
             continue;
-        Elf32_Addr vaddr = cur_phdr->p_vaddr;   // 虚拟地址
+        Elf32_Addr paddr = cur_phdr->p_paddr;   // 物理地址
         Elf32_Word memsz = cur_phdr->p_memsz;   // 占内存大小
         Elf32_Off fileOff = cur_phdr->p_offset; // 在文件中的偏移
-        KLOG(DEBUG, "phinfo %X %X %X", fileOff, vaddr, memsz);
+        KLOG(DEBUG, "phinfo %X %X %X", fileOff, paddr, memsz);
         Elf32_Word adjustsz = 0;
         if (cur_phdr->p_align > 1)
         {
-            vaddr = vaddr / cur_phdr->p_align * cur_phdr->p_align;
+            paddr = paddr / cur_phdr->p_align * cur_phdr->p_align;
             fileOff = fileOff / cur_phdr->p_align * cur_phdr->p_align;
-            adjustsz = cur_phdr->p_vaddr - vaddr;
+            adjustsz = cur_phdr->p_paddr - paddr;
             memsz += adjustsz;
         }
         const int readsz = cur_phdr->p_filesz + adjustsz;
-        const uint32_t pyaddr = vaddr;
-        file_read(inode, fileOff, (void *)pyaddr, readsz);
+        file_read(inode, fileOff, (void *)paddr, readsz);
 
-        void *bssAddr = ((void *)pyaddr) + readsz;
+        void *bssAddr = ((void *)paddr) + readsz;
         const int bssSz = memsz - readsz;
         if (bssSz > 0)
             memset(bssAddr, 0, bssSz);

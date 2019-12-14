@@ -65,7 +65,7 @@ file_read(const IndexNode *inode, off_t seek, void *buf, size_t count)
     }
     if (ret < count) {
         uint32_t len = count - ret;
-        int blknum = (len + BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
+        int blknum = (len + BLOCK_SIZE - 1) >> BLOCK_SHIFT;
         for (int i = 0; i < blknum; ++i)
         {
             blk_t blk = get_zone(inode, seek + ret);
@@ -84,8 +84,8 @@ ssize_t
 file_write(IndexNode *inode, off_t seek, const void *buf, size_t count)
 {
     ssize_t ret = 0;
-    const blk_t new_blknum = (seek + count + BLOCK_SIZE - 1) >> BLOCK_LOG_SIZE;
-    const blk_t cur_blknum = (inode->in_inode.in_file_size + BLOCK_SIZE - 1)>> BLOCK_LOG_SIZE;
+    const blk_t new_blknum = (seek + count + BLOCK_SIZE - 1) >> BLOCK_SHIFT;
+    const blk_t cur_blknum = (inode->in_inode.in_file_size + BLOCK_SIZE - 1)>> BLOCK_SHIFT;
     if (new_blknum > cur_blknum) {
         alloc_zone(inode);
     }
