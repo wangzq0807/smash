@@ -6,9 +6,9 @@
 
 #define PAGE_PRESENT        1
 #define PAGE_WRITE          2
-#define PAGE_USER           1 << 2
-#define PAGE_ACCESSED       1 << 5
-#define PAGE_DIRTY          1 << 6
+#define PAGE_USER           (1 << 2)
+#define PAGE_ACCESSED       (1 << 5)
+#define PAGE_DIRTY          (1 << 6)
 
 static int inline is_page_exist(pte_t pte) {
     return pte & PAGE_PRESENT;

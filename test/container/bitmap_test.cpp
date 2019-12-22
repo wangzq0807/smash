@@ -21,18 +21,32 @@ TEST(BITMAP, HandlerTrueReturn)
         n = bm_test_bit(&testbitmap, i+1);
         EXPECT_EQ(n, 0);
     }
-    bm_clear_bit(&testbitmap, 50);
+    bm_clear_bit(&testbitmap, 31);
+    bm_clear_bit(&testbitmap, 32);
+    bm_clear_bit(&testbitmap, 33);
+    bm_clear_bit(&testbitmap, 40);
     int n = bm_alloc_bit(&testbitmap);
-    EXPECT_EQ(n, 50);
+    EXPECT_EQ(n, 31);
+    n = bm_alloc_bit(&testbitmap);
+    EXPECT_EQ(n, 32);
+    n = bm_alloc_bit(&testbitmap);
+    EXPECT_EQ(n, 33);
+    n = bm_alloc_bit(&testbitmap);
+    EXPECT_EQ(n, 40);
 
-    bm_clear_bitrange(&testbitmap, 64, 32);
-    for (int i = 64; i < 96; ++i) {
+    int beg = 30;
+    int num = 32;
+    bm_clear_bitrange(&testbitmap, beg, num);
+    for (int i = beg; i < beg+num; ++i) {
+        // std::cout << i << std::endl;
         int n = bm_test_bit(&testbitmap, i);
         EXPECT_EQ(n, 0);
     }
     
-    bm_set_bitrange(&testbitmap, 60, 64);
-    for (int i = 60; i < 124; ++i) {
+    beg = 60;
+    num = 64;
+    bm_set_bitrange(&testbitmap, beg, num);
+    for (int i = beg; i < beg+num; ++i) {
         int n = bm_test_bit(&testbitmap, i);
         EXPECT_EQ(n, 1);
     }

@@ -20,56 +20,53 @@ extern "C" {
     val &= ~(1<<bit);           \
 }
 
-static inline void
-set_bit32(uint32_t *target, int beg, int num)
-{
-    const uint32_t begmask = (1 << (beg)) - 1;
-    const uint32_t endmask = (1 << (beg+num)) - 1;
-    uint32_t mask = endmask ^ begmask;
-    *target |= mask;
-}
+#define UNIT_SET_BIT(unit_t, target, beg, num)      \
+({\
+    const unit_t begmask = ((unit_t)1 << beg) - 1;\
+    const unit_t endmask = ((((unit_t)1<< (beg+num-1)) - 1) << 1) + 1; \
+    unit_t mask = endmask ^ begmask;                \
+    target |= mask;                                 \
+})
 
-static inline void
-clear_bit32(uint32_t *target, int beg, int num)
-{
-    const uint32_t begmask = (1 << (beg)) - 1;
-    const uint32_t endmask = (1 << (beg+num)) - 1;
-    uint32_t mask = endmask ^ begmask;
-    *target &= ~mask;
-}
+#define UNIT_CLEAR_BIT(unit_t, target, beg, num)    \
+({\
+    const unit_t begmask = ((unit_t)1 << beg) - 1;\
+    const unit_t endmask = ((((unit_t)1<< (beg+num-1)) - 1) << 1) + 1; \
+    unit_t mask = endmask ^ begmask;                \
+    target &= ~mask;                                \
+})
 
-static inline int
-get_bit32(uint32_t target, int beg, int num)
-{
-    target = target >> beg;
-    const uint32_t mask = (1 << num) - 1;
-    return target & mask;
-}
+#define UNIT_GET_BIT(unit_t, target, beg, num)  \
+({\
+    const unit_t tmp = target >> beg;           \
+    const unit_t mask = ((((unit_t)1 << (num-1)) - 1) << 1) + 1; \
+    tmp & mask;                                 \
+})
 
-static inline int
-test_bit32(uint32_t target, int beg, int num)
-{
-    target = target >> beg;
-    const uint32_t mask = (1 << num) - 1;
-    if ((target & mask) == 0)
-        return 0;
-    else
-        return 1;
-}
+#define UNIT_TEST_BIT(unit_t, target, beg, num) \
+({\
+    const unit_t tmp = target >> beg;           \
+    const unit_t mask = ((((unit_t)1<< (num-1)) - 1) << 1) + 1; \
+    int nret = 0;                               \
+    if ((tmp & mask) != 0)                   \
+        nret = 1;                               \
+    nret;                                       \
+})
 
-inline int
-alloc_bit32(uint32_t *target, const int beg, const int num)
-{
-    int end = MIN(beg+num, 32);
-    for (int bit = beg; bit < end; ++bit) {
-        const uint32_t mask = 1 << bit;
-        if ((*target & mask) == 0) {
-            *target |= mask;
-            return bit;
-        }
-    }
-    return -1;
-}
+#define UNIT_ALLOC_BIT(unit_t, target, beg, num)\
+({\
+    int nret = -1;                              \
+    int end = MIN(beg+num, 8*sizeof(unit_t));   \
+    for (int bit = beg; bit < end; ++bit) {     \
+        const unit_t mask = (unit_t)1 << bit;   \
+        if ((target & mask) == 0) {             \
+            target |= mask;                     \
+            nret = bit;                         \
+            break;                              \
+        }                                       \
+    }                                           \
+    nret;                                       \
+})
 
 #ifdef __cplusplus
 }

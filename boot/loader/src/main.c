@@ -6,6 +6,7 @@
 #include "elf.h"
 #include "memory.h"
 #include "asm.h"
+#include "multiboot.h"
 
 #define SMASH_BIN   ("/boot/smash")
 int LoadKernel(char *path);
@@ -33,6 +34,15 @@ LoadKernel(char *path)
     }
     vm_t vaddr = LoadElf(fnode);
 
-    ljmp(0x8, vaddr);
+    struct { uint32_t o; uint32_t s; } laddr;
+    laddr.o = vaddr;
+    laddr.s = 0x8;
+    __asm__ volatile (
+        "pushl %3 \n"
+        "pushl %2 \n"
+        "ljmp *%0 \n"
+        : :"m"(laddr.o), "m"(laddr.s), "r"(MULTIBOOT_HEADER_MAGIC), "r"(0)
+        : "esp"
+    );
     return 0;
 }

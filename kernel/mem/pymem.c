@@ -5,29 +5,31 @@
 #include "kerrno.h"
 #include "pymem.h"
 
-#define BITMAP_SIZE 1024
+#define BITMAP_SIZE 2048
 
 BitMap pybitmap;
-uint8_t bitbuf[BITMAP_SIZE];    // 32MB
+uint8_t bitbuf[BITMAP_SIZE];    // TODO: 最大管理64MB
 
 extern vm_t knl_space_begin;
+
+error_t
+_alloc_pyrange(uint32_t rbeg, uint32_t rsize);
 
 void
 init_pymemory()
 {
     pybitmap.b_nsize = BITMAP_SIZE;
     pybitmap.b_bitbuf = &bitbuf;
-    // 1页内核栈和2页页表
-    alloc_pyrange(0x0, 3*PAGE_SIZE);
     // 0xA0000 - 1M : BIOS
-    alloc_pyrange(0xA0000, 0x60000);
+    _alloc_pyrange(0xA0000, 0x60000);
     // 1M -2M : 内核代码
-    alloc_pyrange(1 << 20, 1 << 20);
+    _alloc_pyrange(1 << 20, 1 << 20);
     // 2M - 32M : 内核数据 + 用户空间
 }
 
+// 分配一段连续内存, rbeg和rsize必须对齐到4KB
 error_t
-alloc_pyrange(uint32_t rbeg, uint32_t rsize)
+_alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 {
     const int begbit = rbeg >> PAGE_SHIFT;
     const int bitnum = rsize >> PAGE_SHIFT;

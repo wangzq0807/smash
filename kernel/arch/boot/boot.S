@@ -32,6 +32,6 @@ _multiboot:
 
     pushl %eax
     pushl %ebx
-    call start_main
+    call boot_trap
 #endif /* __MULTIBOOT_S__ */
 

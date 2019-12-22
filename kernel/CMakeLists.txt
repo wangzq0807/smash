@@ -18,7 +18,8 @@ configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
 include_directories (. include ../include)
 
 set (KERNAL_SRCS
-	./arch/boot.S
+	./arch/boot/boot.S
+	./arch/boot/boottrap.c
 	./main.c
 	./arch/intr.S
 	../usr/core/syscalls.S

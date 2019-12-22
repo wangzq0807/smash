@@ -10,13 +10,13 @@
 
 #define PAGE_PRESENT        1
 #define PAGE_WRITE          2
-#define PAGE_USER           1 << 2
-#define PAGE_ACCESSED       1 << 5
-#define PAGE_DIRTY          1 << 6
+#define PAGE_USER           (1 << 2)
+#define PAGE_ACCESSED       (1 << 5)
+#define PAGE_DIRTY          (1 << 6)
 
 // 缺页类型
 // MAX_FD << 1
-#define PAGE_ALLOC          1 << 7
+#define PAGE_ALLOC          (1 << 7)
 
 typedef struct _IrqFrame IrqFrame;
 
