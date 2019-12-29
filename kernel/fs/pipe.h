@@ -5,10 +5,10 @@
 int
 alloc_pipe(int *rdfd, int *wrfd);
 
-int
+size_t
 pipe_read(void *pipe, void *buf, int size);
 
-int
+size_t
 pipe_write(void *pipe, const void *buf, int size);
 
 int

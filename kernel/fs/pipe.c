@@ -5,6 +5,7 @@
 #include "asm.h"
 #include "string.h"
 #include "lib/log.h"
+#include "lib/ringbuf.h"
 #include "defs.h"
 
 #define QUEUE_LEN    1024
@@ -13,15 +14,11 @@ typedef struct _Pipe Pipe;
 struct _Pipe {
     VFile   *p_rdpipe;
     VFile   *p_wrpipe;
-    int     p_head;
-    int     p_tail;
     Task*   p_rdwait;
     Task*   p_wrwait;
+    RingBuf p_ringbuf;
     char    p_buf[QUEUE_LEN];
 };
-
-static int _is_empty_queue(Pipe *pipe);
-static int _is_full_queue(Pipe *pipe);
 
 int
 alloc_pipe(int *rdfd, int *wrfd)
@@ -48,49 +45,27 @@ alloc_pipe(int *rdfd, int *wrfd)
     vfile2->f_pipe = pipe;
     pipe->p_rdpipe = vfile1;
     pipe->p_wrpipe = vfile2;
-    pipe->p_head = 0;
-    pipe->p_tail = 0;
     pipe->p_rdwait = NULL;
     pipe->p_wrwait = NULL;
+    ringbuf_init(&pipe->p_ringbuf, (uint8_t*)pipe->p_buf, QUEUE_LEN);
 
     *rdfd = fd1;
     *wrfd = fd2;
     return 0;
 }
 
-int
+size_t
 pipe_read(void *pipeptr, void *buf, int size)
 {
     int ret = 0;
     Pipe *pipe = (Pipe*)pipeptr;
-    KLOG(DEBUG, "pipe_read %x %x %x ", pipe->p_head, pipe->p_tail, size);
-    if (_is_empty_queue(pipe)) {
+    // KLOG(DEBUG, "pipe_read %x %x %x ", pipe->p_head, pipe->p_tail, size);
+    if (ringbuf_is_empty(&pipe->p_ringbuf)) {
         pipe->p_rdwait = current_task();
         sleep(pipe->p_rdwait);
     }
-    if (pipe->p_head <= pipe->p_tail) {
-        ret = pipe->p_tail - pipe->p_head;
-        ret = MIN(ret, size);
-        memcpy(buf, pipe->p_buf + pipe->p_head, ret);
-        pipe->p_head += ret;
-    }
-    else {
-        int len1 = QUEUE_LEN - pipe->p_head;
-        int len2 = pipe->p_tail;
-        if (size < len1) {
-            ret = size;
-            memcpy(buf, pipe->p_buf + pipe->p_head, ret);
-        }
-        else {
-            size -= len1;
-            memcpy(buf, pipe->p_buf + pipe->p_head, len1);
-            int more = MIN(size, len2);
-            memcpy(buf + len1, pipe->p_buf, more);
-            pipe->p_head = more;
-            ret = len1 + more;
-        }
-    }
-    KLOG(DEBUG, "rend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
+    ret = ringbuf_get(&pipe->p_ringbuf, (uint8_t*)buf, size);
+    KLOG(DEBUG, "pipe_read %x \n", ret);
 
     wakeup(pipe->p_wrwait);
     pipe->p_wrwait = NULL;
@@ -98,41 +73,14 @@ pipe_read(void *pipeptr, void *buf, int size)
     return ret;
 }
 
-int
+size_t
 pipe_write(void *pipeptr, const void *buf, int size)
 {
-    int ret = 0;
+    size_t ret = 0;
     Pipe *pipe = (Pipe*)pipeptr;
-    KLOG(DEBUG, "pipe_write %x %x %x ", pipe->p_head, pipe->p_tail, size);
-    if (_is_full_queue(pipe)) {
-        pipe->p_wrwait = current_task();
-        sleep(pipe->p_wrwait);
-    }
-    int limit = (pipe->p_head + QUEUE_LEN - 1) % QUEUE_LEN;
-    if (pipe->p_tail <= limit) {
-        ret = limit - pipe->p_tail;
-        ret = MIN(ret, size);
-        memcpy(pipe->p_buf + pipe->p_tail, buf, ret);
-        pipe->p_tail += ret;
-    }
-    else {
-        int len1 = QUEUE_LEN - pipe->p_tail;
-        int len2 = limit;
-        if (size < len1) {
-            memcpy(pipe->p_buf + pipe->p_tail, buf, size);
-            ret = size;
-            pipe->p_tail += size;
-        }
-        else {
-            size -= len1;
-            memcpy(pipe->p_buf + pipe->p_tail, buf, len1);
-            int more = MIN(size, len2);
-            memcpy(pipe->p_buf, buf+len1, more);
-            ret = len1 + more;
-            pipe->p_tail = more;
-        }
-    }
-    KLOG(DEBUG, "wend %x %x %x\n", pipe->p_head, pipe->p_tail, ret);
+    // KLOG(DEBUG, "pipe_write %x %x %x ", pipe->p_head, pipe->p_tail, size);
+    ret = ringbuf_put(&pipe->p_ringbuf, (uint8_t*)buf, size);
+    KLOG(DEBUG, "pipe_write %x \n", ret);
 
     wakeup(pipe->p_rdwait);
     pipe->p_rdwait = NULL;
@@ -155,29 +103,3 @@ close_pipe(void *pipeptr, void *file)
     return 0;
 }
 
-
-static int
-_is_empty_queue(Pipe *pipe)
-{
-    if (pipe->p_head == pipe->p_tail)
-        return 1;
-    else
-        return 0;
-}
-
-static int
-_is_full_queue(Pipe *pipe)
-{
-    if ((pipe->p_head + 1) == pipe->p_tail) {
-        return 1;
-    }
-    else if ((pipe->p_tail == 0) && (pipe->p_head == (QUEUE_LEN-1))) {
-        return 1;
-    }
-    else if ((pipe->p_head == 0) && (pipe->p_tail == (QUEUE_LEN-1))) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
