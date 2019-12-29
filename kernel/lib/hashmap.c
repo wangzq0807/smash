@@ -1,38 +1,25 @@
 #include "hashmap.h"
-
-typedef struct
-{
-    HashNode*       hl_first;
-} HashList;
-
-typedef struct
-{
-    HashList**      hm_table;
-    uint32_t        hm_bitsize;
-    uint32_t        hm_used;
-} HashMapHead;
-
-#define HASH(val, bit)  (((val)*0x9e370001UL) >> (32-bit))
+#include "log.h"
 
 HashMap*
-hash_init(uint32_t bitsize)
+hash_init(uint32_t bitsize, hash_eq_f func)
 {
     return NULL;
 }
 
-uint32_t
-hash_get_size(HashMap hmap)
-{
-    HashMapHead* phm = (HashMapHead*)hmap;
-    return phm->hm_used;
-}
-
 static HashNode*
-_hashlist_get(HashList hlist, HashKey hkey)
+_hashlist_get(HashList *hlist, hash_t hkey, void *target, hash_eq_f eqfunc)
 {
-    HashNode* iter = hlist.hl_first;
+    HashNode* iter = hlist->hl_first;
     while (iter != NULL) {
-        if (iter->hn_key == hkey)
+        int eq = 0;
+        if (iter->hn_key == hkey) {
+            if (eqfunc != NULL)
+                eq = eqfunc(iter, target);
+            else
+                eq = 1;
+        }
+        if (eq)
             return iter;
         iter = iter->hn_next;
     }
@@ -40,49 +27,47 @@ _hashlist_get(HashList hlist, HashKey hkey)
 }
 
 HashNode*
-hash_get(HashMap hmap, HashKey hkey)
+hash_get(HashMap *hmap, hash_t hkey, void* target)
 {
-    HashMapHead* phm = (HashMapHead*)hmap;
-    uint32_t bucket = HASH(hkey, phm->hm_bitsize);
-    HashList hlist = (*phm->hm_table)[bucket];
-    return _hashlist_get(hlist, hkey);
+    uint32_t bucket = hkey % hmap->hm_size;
+    HashList *hlist = &hmap->hm_table[bucket];
+    return _hashlist_get(hlist, hkey, target, hmap->hm_eqfunc);
 }
 
 HashNode*
-hash_put(HashMap hmap, HashNode* entry)
+hash_put(HashMap *hmap, HashNode* entry, void* target)
 {
-    HashMapHead* phm = (HashMapHead*)hmap;
-    uint32_t bucket = HASH(entry->hn_key, phm->hm_bitsize);
-    HashList hlist = (*phm->hm_table)[bucket];
-    HashNode* orgnode = _hashlist_get(hlist, entry->hn_key);
+    size_t bucket = entry->hn_key % hmap->hm_size;
+    HashList *hlist = &hmap->hm_table[bucket];
+    HashNode *orgnode = _hashlist_get(hlist, entry->hn_key, target, hmap->hm_eqfunc);
     if (orgnode != NULL)
         return NULL;
 
-    HashNode* oldfirst = hlist.hl_first;
-    hlist.hl_first = entry;
+    HashNode* oldfirst = hlist->hl_first;
     entry->hn_prev = NULL;
     entry->hn_next = oldfirst;
-    oldfirst->hn_prev = entry;
-    phm->hm_used++;
+    if (oldfirst != NULL)
+        oldfirst->hn_prev = entry;
+    hlist->hl_first = entry;
+    hmap->hm_used++;
     return oldfirst;
 }
 
 HashNode*
-hash_rm(HashMap hmap, HashKey hkey)
+hash_rm(HashMap *hmap, hash_t hkey, void* target)
 {
-    HashMapHead* phm = (HashMapHead*)hmap;
-    uint32_t bucket = HASH(hkey, phm->hm_bitsize);
-    HashList hlist = (*phm->hm_table)[bucket];
-    HashNode* orgnode = _hashlist_get(hlist, hkey);
-    if (orgnode != NULL)
+    uint32_t bucket = hkey % hmap->hm_size;
+    HashList *hlist = &hmap->hm_table[bucket];
+    HashNode* orgnode = _hashlist_get(hlist, hkey, target, hmap->hm_eqfunc);
+    if (orgnode == NULL)
         return NULL;
 
     if (orgnode->hn_prev == NULL)
-        (*phm->hm_table)[bucket].hl_first = orgnode->hn_next;
+        hlist->hl_first = orgnode->hn_next;
     else
         orgnode->hn_prev->hn_next = orgnode->hn_next;
     if (orgnode->hn_next != NULL)
         orgnode->hn_next->hn_prev = orgnode->hn_prev;
-    phm->hm_used--;
+    hmap->hm_used--;
     return orgnode;
 }

@@ -2,6 +2,7 @@
 #define __ASM_H__
 
 #include "sys/types.h"
+#include "stddef.h"
 
 static inline void outb(uint16_t port, uint8_t value) {
     __asm__ volatile (

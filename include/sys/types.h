@@ -44,6 +44,4 @@ typedef uint32_t        off_t;
 typedef uint16_t        mode_t;
 typedef int16_t         nlink_t;
 
-#define NULL    0
-
 #endif // __TYPES_H__

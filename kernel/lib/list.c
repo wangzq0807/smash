@@ -1,83 +1,62 @@
 #include "list.h"
 
 void
-list_push_back(ListHead *phead, ListNode *pentity)
+list_push_back(List *pList, ListNode *pentity)
 {
-    if (!phead->lh_list) {
-        phead->lh_list = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list->le_next = pentity;
-        phead->lh_size = 1;
-    }
-    else {
-        ListNode *prev = phead->lh_list->le_prev;
-        pentity->le_prev = prev;
-        pentity->le_next = phead->lh_list;
-        prev->le_next = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_size++;
-    }
+    ListNode *tail = pList->lh_list.le_next;
+    pentity->le_prev = tail;
+    pentity->le_next = NULL;
+    if (tail != NULL)
+        tail->le_next = pentity;
+    else
+        pList->lh_list.le_prev = pentity;
+    pList->lh_list.le_next = pentity;
+    pList->lh_size++;
 }
 
 void
-list_push_front(ListHead *phead, ListNode *pentity)
+list_push_front(List *pList, ListNode *pentity)
 {
-    if (!phead->lh_list) {
-        phead->lh_list = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list->le_next = pentity;
-        phead->lh_size = 1;
-    }
-    else {
-        ListNode *prev = phead->lh_list->le_prev;
-        pentity->le_prev = prev;
-        pentity->le_next = phead->lh_list;
-        prev->le_next = pentity;
-        phead->lh_list->le_prev = pentity;
-        phead->lh_list = pentity;
-        phead->lh_size++;
-    }
+    ListNode *head = pList->lh_list.le_prev;
+    pentity->le_prev = NULL;
+    pentity->le_next = head;
+    if (head != NULL)
+        head->le_prev = pentity;
+    else
+        pList->lh_list.le_next = NULL;
+    pList->lh_list.le_prev = pentity;
+    pList->lh_size++;
 }
 
 ListNode *
-list_pop_front(ListHead *phead)
+list_pop_front(List *pList)
 {
-    if (phead->lh_list == NULL)
-        return NULL;
-    ListNode *ret = phead->lh_list;
-    if (ret->le_next == ret) {
-        phead->lh_list = NULL;
-        phead->lh_size = 0;
-    }
-    else {
-        phead->lh_list = ret->le_next;
-        ret->le_prev->le_next = ret->le_next;
-        ret->le_next->le_prev = ret->le_prev;
-        phead->lh_size--;
+    ListNode *ret = pList->lh_list.le_prev;
+    if (ret != NULL) {
+        pList->lh_list.le_prev = ret->le_next;
+        if (ret->le_next != NULL)
+            ret->le_next->le_prev = NULL;
+        else
+            pList->lh_list.le_next = NULL;
+        pList->lh_size--;
     }
     return ret;
 }
 
 void
-list_remove_entity(ListHead *phead, ListNode *pentity)
+list_remove_entity(List *pList, ListNode *pentity)
 {
-    if (phead->lh_list == NULL)
-        return;
-    if (pentity->le_next == NULL || pentity->le_prev == NULL)
-        return;
     ListNode* next = pentity->le_next;
     ListNode* prev = pentity->le_prev;
-    if (next != pentity && prev != pentity) {
+    if (next != NULL)
         next->le_prev = prev;
+    else
+        pList->lh_list.le_next = prev;
+    if (prev != NULL)
         prev->le_next = next;
-        phead->lh_size--;
-        if (pentity == phead->lh_list)
-            phead->lh_list = next;
-    }
-    else {
-        phead->lh_list = NULL;
-        phead->lh_size=0;
-    }
+    else
+        pList->lh_list.le_prev = next;
+    pList->lh_size--;
     pentity->le_next = NULL;
     pentity->le_prev = NULL;
 }

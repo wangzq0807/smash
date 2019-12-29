@@ -191,23 +191,19 @@ wakeup(Task *ts)
 #define TSK_HASH_LEN    64
 #define HASH(pid)   (pid & (TSK_HASH_LEN - 1))
 
-ListHead    tsk_hash_map[TSK_HASH_LEN];
+List    tsk_hash_map[TSK_HASH_LEN];
 
 static Task *
 _get_hash_entity(pid_t pid)
 {
     pid_t hashpid = HASH(pid);
-    ListHead *listhead = &tsk_hash_map[hashpid];
-    ListNode *begin = list_get_head(listhead);
-    ListNode *iter = begin;
-    while (iter != NULL) {
+    List *listhead = &tsk_hash_map[hashpid];
+    for(ListNode *iter = listhead->lh_list.le_prev; iter != NULL; iter = iter->le_next)
+    {
         Task *tsk = LIST_ENTRY(iter, Task, ts_hash_link);
         if (tsk != NULL && tsk->ts_pid == pid) {
             return tsk;
         }
-        iter = iter->le_next;
-        if (iter == begin)
-            break;
     }
     return NULL;
 }
@@ -216,7 +212,7 @@ static int
 _remove_hash_entity(Task *task)
 {
     pid_t hashpid = HASH(task->ts_pid);
-    ListHead *listhead = &tsk_hash_map[hashpid];
+    List *listhead = &tsk_hash_map[hashpid];
     list_remove_entity(listhead, &task->ts_hash_link);
     return 0;
 }
@@ -229,7 +225,7 @@ _put_hash_entity(Task *task)
         _remove_hash_entity(org);
 
     pid_t hashpid = HASH(task->ts_pid);
-    ListHead *listhead = &tsk_hash_map[hashpid];
+    List *listhead = &tsk_hash_map[hashpid];
     list_push_front(listhead, &task->ts_hash_link);
     return 0;
 }

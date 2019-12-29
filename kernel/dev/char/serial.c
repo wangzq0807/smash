@@ -33,12 +33,12 @@ Bit 2 Length of Stop Bit
     | 0	| One Stop Bit
     | 1	| 2 Stop bits for words of length 6,7 or 8 bits or 1.5 Stop Bits for Word lengths of 5 bits.
 --------------------------------------------------------------------
-Bits 0 And 1	Bit 1	Bit 0	Word Length
+Bit 0 And Bit 1	 Word Length
 --------------------------------------------------------------------
-    | 0	| 0	| 5 | Bits
-    | 0	| 1	| 6 | Bits
-    | 1	| 0	| 7 | Bits
-    | 1	| 1	| 8 | Bits
+    | 0	| 0	| 5 Bits
+    | 0	| 1	| 6 Bits
+    | 1	| 0	| 7 Bits
+    | 1	| 1	| 8 Bits
 Line Control Register
 *-----------------------------------------------------------------*/
 
@@ -47,34 +47,35 @@ Line Control Register
 /****************
  * 状态寄存器 PORT+5
  ****************/
-enum ComStatus {
-    Data_Ready,
-    Over_Run,
-    Parity_Error
-};
+/* Line status register
+The line status register is useful to check for errors and enable polling.
+
+Bit	Name	            Meaning
+0	Data ready (DR)	    Set if there is data that can be read
+1	Overrun error (OE)	Set if there has been data lost
+2	Parity error (PE)	Set if there was an error in the transmission as detected by parity
+3	Framing error (FE)	Set if a stop bit was missing
+4	Break indicator (BI)	Set if there is a break in data input
+5	Transmitter holding register empty (THRE)	Set if the transmission buffer is empty (i.e. data can be sent)
+6	Transmitter empty (TEMT)	Set if the transmitter is not doing anything
+7	Impending Error	    Set if there is an error with a word in the input buffer
+*/
 
 int nComPort = COM_PORT1;
-
-static inline void _set_rate(ComRate rate)
-{
-    outb(nComPort + 0, rate & 0xff);
-    outb(nComPort + 1, rate >> 8);
-}
-
-static inline void _set_proto(ComDataBits dbits, ComStopBits sbits )
-{
-    outb(nComPort + 3, dbits|sbits);
-}
 
 void init_serial(int port)
 {
     nComPort = port;
     outb(nComPort+1, IF_DISABLE);
+    outb(nComPort+2, 0);            // 禁止FIFO
+    outb(nComPort+3, 3);            // 8bit数据, 无校验, 1bit停止
     {
-        outb(nComPort + 3, DLAP_BIT);           // 设置DLAP
-        _set_rate(ComR57600);                   // 设置波特率
-        outb(nComPort + 3, 0);                  // 清除DLAP
-        _set_proto(ComDataBits8, ComStopBits1); // 8bit数据, 1bit停止
+        // 设置波特率
+        outb(nComPort + 3, DLAP_BIT);   // 设置DLAP
+        //_set_rate(ComR57600);
+        outb(nComPort + 0, 1);
+        outb(nComPort + 1, 0);
+        outb(nComPort + 3, 0);          // 清除DLAP
     }
     outb(nComPort+1, IF_ENABLE);
 }
@@ -82,11 +83,18 @@ void init_serial(int port)
 void set_rate(ComRate rate)
 {
     outb(nComPort + 3, DLAP_BIT);    // 设置DLAP
-    _set_rate(rate);
+    //_set_rate(rate);
     outb(nComPort + 3, 0);           // 清除DLAP
 }
 
-void write_serial(char a)
+int is_transmit_empty()
 {
-    outb(nComPort, a);
+    return inb(nComPort+5) & 0x20;
+}
+
+void write_serial(char c)
+{
+    while (is_transmit_empty() == 0);
+    
+    outb(nComPort, c);
 }

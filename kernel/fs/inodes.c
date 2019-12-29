@@ -17,7 +17,7 @@
 #define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
-static ListHead free_inodes;
+static List free_inodes;
 static IndexNode inode_list[MAX_INODE_NUM];
 static IndexNode *ihash_map[BUFFER_HASH_LEN];
 
@@ -146,7 +146,7 @@ alloc_inode(dev_t dev)
 {
     // 申请一个新的IndexNode
     IndexNode *inode = NULL;
-    if (list_get_head(&free_inodes) == NULL) {
+    if (list_size(&free_inodes) == 0) {
         // TODO : error
     }
     else {
@@ -194,7 +194,7 @@ get_inode(dev_t dev, ino_t inode_index)
         }
         else {
             // 申请一个新的IndexNode
-            if (list_get_head(&free_inodes) == NULL) {
+            if (list_size(&free_inodes) == 0) {
                 // TODO : error
             }
             else {

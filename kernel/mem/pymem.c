@@ -24,7 +24,6 @@ init_pymemory()
     _alloc_pyrange(0xA0000, 0x60000);
     // 1M -2M : 内核代码
     _alloc_pyrange(1 << 20, 1 << 20);
-    // 2M - 32M : 内核数据 + 用户空间
 }
 
 // 分配一段连续内存, rbeg和rsize必须对齐到4KB
@@ -41,13 +40,10 @@ _alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 }
 
 uint32_t
-alloc_pypage(BOOL bKnl)
+alloc_pypage()
 {
     int nbit = -1;
-    if (bKnl)
-        nbit = bm_alloc_bit_inrange(&pybitmap, 1<<20, 32<<20);
-    else
-        nbit = bm_alloc_bit(&pybitmap);
+    nbit = bm_alloc_bit(&pybitmap);
 
     if (nbit < 0)
     {

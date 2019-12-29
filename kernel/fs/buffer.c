@@ -12,7 +12,7 @@
 #define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
 
 // 空闲双向循环链表
-static ListHead free_buffers;
+static List free_buffers;
 static BlockBuffer *hash_map[BUFFER_HASH_LEN];
 
 static BlockBuffer *buffer_new();
@@ -159,7 +159,7 @@ get_block(dev_t dev, blk_t blk)
 static BlockBuffer *
 buffer_new( )
 {
-    if (list_get_head(&free_buffers) == NULL)
+    if (list_size(&free_buffers) == 0)
         return NULL;
 
     ListNode *p = list_pop_front(&free_buffers);

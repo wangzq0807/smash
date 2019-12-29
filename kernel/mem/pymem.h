@@ -7,7 +7,7 @@ void
 init_pymemory();
 
 uint32_t
-alloc_pypage(BOOL bKnl);
+alloc_pypage();
 
 void
 release_pypage(uint32_t paddr);

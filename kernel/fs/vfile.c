@@ -7,7 +7,7 @@
 
 #define     MAX_FILES   256
 VFile  files[MAX_FILES];
-ListHead    free_files;
+List    free_files;
 
 void
 init_vfiles()
