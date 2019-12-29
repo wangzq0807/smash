@@ -2,9 +2,15 @@
 #include "log.h"
 
 HashMap*
-hash_init(uint32_t bitsize, hash_eq_f func)
+hash_init(HashMap *hmap, HashList *hlist, size_t size, hash_eq_f func)
 {
-    return NULL;
+    hmap->hm_table = hlist;
+    for (int i = 0; i < size; ++i)
+        hmap->hm_table[i].hl_first = 0;
+    hmap->hm_size = size;
+    hmap->hm_used = 0;
+    hmap->hm_eqfunc = func;
+    return hmap;
 }
 
 static HashNode*

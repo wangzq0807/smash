@@ -48,4 +48,7 @@ TEST(HASHMAP, HandlerTrueReturn)
         HashNode *node = hash_get(&hashmap, hh, &pid);
         EXPECT_EQ(node->hn_key, i);
     }
+    hash_for_each(&hashmap, iter) {
+        cout << iter->hn_key << endl;
+    }
 }

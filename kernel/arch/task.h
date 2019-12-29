@@ -3,6 +3,7 @@
 #include "sys/types.h"
 #include "x86.h"
 #include "fs/vfile.h"
+#include "lib/hashmap.h"
 
 #define MAX_FD      64
 #define FD_MASK(val)    ((val)&(MAX_FD-1))
@@ -30,7 +31,7 @@ struct _Task {
     Task    *ts_child_old;      // 最旧的子进程
     Task    *ts_older;          // 较老的兄弟进程
     Task    *ts_newer;          // 较新的兄弟进程
-    ListNode      ts_hash_link;
+    HashNode      ts_hash_link;
     Task    *ts_wait;           // 等待的父进程
 
     X86TSS  ts_tss;

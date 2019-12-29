@@ -32,12 +32,16 @@ typedef struct
 } HashMap;
 
 HashMap*
-hash_init(uint32_t bitsize, hash_eq_f func);
+hash_init(HashMap *hmap, HashList *hlist, size_t size, hash_eq_f func);
 
 static inline uint32_t
 hash_get_size(HashMap *hmap) {
     return hmap->hm_used;
 }
+
+#define hash_for_each(hmap, iter) \
+    for (int nlist = 0; nlist < (hmap)->hm_size; ++nlist) \
+        for (HashNode *(iter) = (hmap)->hm_table[nlist].hl_first; (iter) != NULL; (iter) = (iter)->hn_next)
 
 HashNode*
 hash_get(HashMap *hmap, hash_t hkey, void* target);

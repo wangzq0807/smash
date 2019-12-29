@@ -161,10 +161,25 @@ setup_first_task()
     task1.ts_cinode = ROOT_INODE;
 }
 
+#define TSK_HASH_LEN    64
+#define HASH(pid)   (pid & (TSK_HASH_LEN - 1))
+HashMap hashmap;
+HashList hashlist[TSK_HASH_LEN];
+
+int pid_eq(HashNode* node, void* pid) {
+    Task* ts = LIST_ENTRY(node, Task, ts_hash_link);
+    if (ts->ts_pid == (hash_t)pid)
+        return 1;
+    else
+        return 0;
+}
+
 void
 start_task()
 {
     init_mutex(&one_mutex);
+
+    hash_init(&hashmap, hashlist, TSK_HASH_LEN, pid_eq);
 
     /* 开始第一个进程 */
     setup_first_task();
@@ -187,23 +202,13 @@ wakeup(Task *ts)
         ts->ts_state = TS_RUN;
 }
 
-
-#define TSK_HASH_LEN    64
-#define HASH(pid)   (pid & (TSK_HASH_LEN - 1))
-
-List    tsk_hash_map[TSK_HASH_LEN];
-
 static Task *
 _get_hash_entity(pid_t pid)
 {
-    pid_t hashpid = HASH(pid);
-    List *listhead = &tsk_hash_map[hashpid];
-    for(ListNode *iter = listhead->lh_list.le_prev; iter != NULL; iter = iter->le_next)
-    {
-        Task *tsk = LIST_ENTRY(iter, Task, ts_hash_link);
-        if (tsk != NULL && tsk->ts_pid == pid) {
-            return tsk;
-        }
+    hash_t hashpid = HASH(pid);
+    HashNode* node = hash_get(&hashmap, hashpid, (size_t*)pid);
+    if (node != NULL) {
+        return LIST_ENTRY(node, Task, ts_hash_link);
     }
     return NULL;
 }
@@ -211,9 +216,8 @@ _get_hash_entity(pid_t pid)
 static int
 _remove_hash_entity(Task *task)
 {
-    pid_t hashpid = HASH(task->ts_pid);
-    List *listhead = &tsk_hash_map[hashpid];
-    list_remove_entity(listhead, &task->ts_hash_link);
+    hash_t hashpid = HASH(task->ts_pid);
+    hash_rm(&hashmap, hashpid, (size_t*)task->ts_pid);
     return 0;
 }
 
@@ -223,10 +227,7 @@ _put_hash_entity(Task *task)
     Task *org = _get_hash_entity(task->ts_pid);
     if (org != NULL)
         _remove_hash_entity(org);
-
-    pid_t hashpid = HASH(task->ts_pid);
-    List *listhead = &tsk_hash_map[hashpid];
-    list_push_front(listhead, &task->ts_hash_link);
+    hash_put(&hashmap, &org->ts_hash_link, (size_t*)org->ts_pid);
     return 0;
 }
 

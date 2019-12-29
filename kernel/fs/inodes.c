@@ -13,13 +13,23 @@
 // 内存中inode最大数量
 #define MAX_INODE_NUM   256
 // IndexNode的hash表
-#define BUFFER_HASH_LEN 100
-#define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
-#define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
+#define BUFFER_HASH_LEN 64
+#define HASH(val)    ((val)/BUFFER_HASH_LEN)
 
 static List free_inodes;
 static IndexNode inode_list[MAX_INODE_NUM];
-static IndexNode *ihash_map[BUFFER_HASH_LEN];
+
+static HashMap  ihash_map;
+static HashList ihash_list[BUFFER_HASH_LEN];
+
+int inode_eq(HashNode *node, void* target)
+{
+    IndexNode* inode = LIST_ENTRY(node, IndexNode, in_hashnode);
+    if (inode->in_inum == (size_t)target)
+        return 1;
+    else
+        return 0;
+}
 
 BlockBuffer *inode_map[MAX_IMAP_NUM] = {0};
 
@@ -43,6 +53,8 @@ init_inodes(dev_t dev)
         inode->in_inum = 0;
         list_push_back(&free_inodes, &inode->in_link);
     }
+
+    hash_init(&ihash_map, ihash_list, BUFFER_HASH_LEN, inode_eq);
 
     return 0;
 }
@@ -92,52 +104,25 @@ _get_inode_pos(dev_t dev)
 static error_t
 _remove_hash_entity(IndexNode *inode)
 {
-    int hash_val = HASH(inode->in_inum);
-    IndexNode *head = ihash_map[hash_val];
-    if (head == inode)
-        ihash_map[hash_val] = inode->in_hash_next;
-
-    IndexNode *hash_prev = inode->in_hash_prev;
-    IndexNode *hash_next = inode->in_hash_next;
-    if (hash_prev != NULL)
-        hash_prev->in_hash_next = hash_next;
-    if (hash_next != NULL)
-        hash_next->in_hash_prev = hash_prev;
-    inode->in_hash_prev = NULL;
-    inode->in_hash_next = NULL;
-
+    hash_t hashid = HASH(inode->in_inum);
+    hash_rm(&ihash_map, hashid, (size_t*)(size_t)inode->in_inum);
     return 0;
 }
 
 static IndexNode *
 _get_hash_entity(dev_t dev, ino_t idx)
 {
-    int hash_val = HASH(idx);
-    IndexNode *inode = ihash_map[hash_val];
-    while (inode != NULL) {
-        if (inode->in_dev == dev &&
-            inode->in_inum == idx)
-            return inode;
-        inode = inode->in_hash_next;
-    }
+    hash_t hashid = HASH(idx);
+    HashNode *node = hash_get(&ihash_map, hashid, (size_t*)(size_t)idx);
+    if (node != NULL)
+        return LIST_ENTRY(node, IndexNode, in_inum);
     return NULL;
 }
 
 static error_t
 _put_hash_entity(IndexNode *inode)
 {
-    IndexNode *org = _get_hash_entity(inode->in_dev, inode->in_inum);
-    if (org != NULL)
-        _remove_hash_entity(org);
-
-    int hash_val = HASH(inode->in_inum);
-    IndexNode *head = ihash_map[hash_val];
-    inode->in_hash_next = head;
-    inode->in_hash_prev = NULL;
-    if (head != NULL)
-        head->in_hash_prev = inode;
-    ihash_map[hash_val] = inode;
-
+    hash_put(&ihash_map, &inode->in_hashnode, (size_t*)(size_t)inode->in_inum);
     return 0;
 }
 
