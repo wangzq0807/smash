@@ -23,7 +23,7 @@ void
 start_main()
 {
     // init_isa();
-    init_memory();
+    vm_init();
     // init_keyboard();
     // init_filesystem(ROOT_DEVICE);
     // start_task();

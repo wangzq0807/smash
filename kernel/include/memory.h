@@ -5,7 +5,7 @@
 #include "mem/pymem.h"
 
 void
-init_memory();
+vm_init();
 
 void*
 vm_ualloc();

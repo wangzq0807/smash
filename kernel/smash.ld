@@ -11,8 +11,12 @@ SECTIONS
         *boot*.o(.text*)
         *boot*.o(.rodata*)
     }
-    .boot.data : ALIGN(0x1000) { *(.data) }
-    .boot.bss : ALIGN(0x1000) { *(.bss) }
+    .boot.data : ALIGN(0x1000) {
+        *boot*.o(.data)
+    }
+    .boot.bss : ALIGN(0x1000) {
+        *boot*.o(.bss)
+    }
 
     _VMA = 0xF0000000; /* last 256M */
     . += _VMA;
@@ -30,5 +34,5 @@ SECTIONS
         *(.bss)
     }
 
-    kernel_end = . - _LMA;
+    kernel_end = . - _VMA;
 }

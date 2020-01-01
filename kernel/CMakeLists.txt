@@ -4,7 +4,9 @@ enable_language (ASM)
 # 编译选项
 # -nostdinc: 不使用系统头文件
 # -nostdlib, -nostartfiles: 不使用系统库,标准启动文件(_start)
-set(CMAKE_C_FLAGS "-g -O2 -m32 -Wall -Werror -ffreestanding -nostdinc -nostdlib")
+# -fno-pic: 不要PIC
+# -ffreestanding: 独立环境编译
+set(CMAKE_C_FLAGS "-g -O2 -m32 -Wall -Werror -ffreestanding -fno-pic -nostdinc -nostdlib")
 set(CMAKE_C_LINK_FLAGS "-m32 -T ${CMAKE_CURRENT_SOURCE_DIR}/smash.ld")
 set(CMAKE_ASM_FLAGS "-m32")
 

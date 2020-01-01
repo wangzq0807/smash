@@ -38,11 +38,8 @@ LoadKernel(char *path)
     laddr.o = vaddr;
     laddr.s = 0x8;
     __asm__ volatile (
-        "pushl %3 \n"
-        "pushl %2 \n"
         "ljmp *%0 \n"
-        : :"m"(laddr.o), "m"(laddr.s), "r"(MULTIBOOT_HEADER_MAGIC), "r"(0)
-        : "esp"
+        : :"m"(laddr.o), "m"(laddr.s), "b"(MULTIBOOT_HEADER_MAGIC), "a"(0)
     );
     return 0;
 }

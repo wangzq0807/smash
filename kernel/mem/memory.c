@@ -65,7 +65,7 @@ _init_vm()
 }
 
 void
-init_memory()
+vm_init()
 {
     init_pymemory();
     // knl_code_beg - END : 存放内核代码(一一映射)

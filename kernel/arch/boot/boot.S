@@ -33,5 +33,9 @@ _multiboot:
     pushl %eax
     pushl %ebx
     call boot_trap
+_errorloop:
+    hlt
+    jmp _errorloop
+
 #endif /* __MULTIBOOT_S__ */
 
