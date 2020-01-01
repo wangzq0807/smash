@@ -2,6 +2,7 @@
 #define __BUFFER_H__
 #include "sys/types.h"
 #include "lib/list.h"
+#include "lib/hashmap.h"
 
 // 缓冲区状态
 #define BUF_FREE            0       // 空缓冲区，可以被使用
@@ -17,8 +18,7 @@ struct _BlockBuffer {
     dev_t       bf_dev;            // dev num
     blk_t       bf_blk;            // block num
     uint32_t    bf_status;
-    BlockBuffer     *bf_hash_prev;
-    BlockBuffer     *bf_hash_next;
+    HashNode    bf_hashnode;
     ListNode      bf_link;
 };
 

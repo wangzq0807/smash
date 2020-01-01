@@ -6,14 +6,22 @@
 
 // configurable
 #define BUFFER_LIST_LEN (PAGE_SIZE / sizeof(BlockBuffer))
-#define BUFFER_HASH_LEN 100
+#define BUFFER_HASH_LEN 128
 
-#define HASH_MAGIC   (BUFFER_HASH_LEN * 1000 / 618)
-#define HASH(val)    ((val)*HASH_MAGIC % BUFFER_HASH_LEN)
+#define HASH(val)    ((val) % BUFFER_HASH_LEN)
 
 // 空闲双向循环链表
 static List free_buffers;
-static BlockBuffer *hash_map[BUFFER_HASH_LEN];
+// Hash 表
+static HashMap  bhash_map;
+static HashList bhash_list[BUFFER_HASH_LEN];
+static int bf_eq(HashNode* node, void* blk) {
+    BlockBuffer* bf = LIST_ENTRY(node, BlockBuffer, bf_hashnode);
+    if (bf->bf_blk == (hash_t)blk)
+        return 1;
+    else
+        return 0;
+}
 
 static BlockBuffer *buffer_new();
 static void wait_for(BlockBuffer *buffer);
@@ -34,6 +42,7 @@ init_block_buffer()
         iter->bf_status = BUF_FREE;
         list_push_back(&free_buffers, &iter->bf_link);
     }
+    hash_init(&bhash_map, bhash_list, BUFFER_HASH_LEN, bf_eq);
 
     return 0;
 }
@@ -41,51 +50,25 @@ init_block_buffer()
 static error_t
 _remove_hash_entity(BlockBuffer *buf)
 {
-    uint32_t hash_val = HASH(buf->bf_blk);
-    BlockBuffer *head = hash_map[hash_val];
-    if (head == buf)
-        hash_map[hash_val] = buf->bf_hash_next;
-
-    BlockBuffer *hash_prev = buf->bf_hash_prev;
-    BlockBuffer *hash_next = buf->bf_hash_next;
-    if (hash_prev != NULL)
-        hash_prev->bf_hash_next = hash_next;
-    if (hash_next != NULL)
-        hash_next->bf_hash_prev = hash_prev;
-    buf->bf_hash_prev = NULL;
-    buf->bf_hash_next = NULL;
-
+    uint32_t hash_key = HASH(buf->bf_blk);
+    hash_rm(&bhash_map, hash_key, (size_t*)buf->bf_blk);
     return 0;
 }
 
 static BlockBuffer *
 _get_hash_entity(dev_t dev, blk_t blk)
 {
-    uint32_t hash_val = HASH(blk);
-    BlockBuffer *buf = hash_map[hash_val];
-    while (buf != NULL) {
-        if (buf->bf_dev == dev &&
-            buf->bf_blk == blk)
-            return buf;
-        buf = buf->bf_hash_next;
-    }
+    uint32_t hash_key = HASH(blk);
+    HashNode* pNode = hash_get(&bhash_map, hash_key, (size_t*)blk);
+    if (pNode != NULL)
+        return LIST_ENTRY(pNode, BlockBuffer, bf_hashnode);
     return NULL;
 }
 
 static error_t
 _put_hash_entity(BlockBuffer *buf)
 {
-    BlockBuffer *org = _get_hash_entity(buf->bf_dev, buf->bf_blk);
-    if (org != NULL)
-        _remove_hash_entity(org);
-
-    uint32_t hash_val = HASH(buf->bf_blk);
-    BlockBuffer *head = hash_map[hash_val];
-    buf->bf_hash_next = head;
-    buf->bf_hash_prev = NULL;
-    if (head != NULL)
-        head->bf_hash_prev = buf;
-    hash_map[hash_val] = buf;
+    hash_put(&bhash_map, &buf->bf_hashnode, (size_t*)buf->bf_blk);
 
     return 0;
 }
@@ -200,16 +183,13 @@ release_block(BlockBuffer *buf)
 
 void sync_dev(dev_t dev)
 {
-    for (int i = 0; i < BUFFER_HASH_LEN; ++i) {
-        BlockBuffer *buf = hash_map[i];
-        while (buf != NULL) {
-            if (buf->bf_status & BUF_DIRTY) {
-                buf->bf_status = BUF_BUSY;
-                ata_write(buf);
-                // TODO: 以异步方式写磁盘
-                wait_for(buf);
-            }
-            buf = buf->bf_hash_next;
+    hash_for_each(&bhash_map, iter) {
+        BlockBuffer *buf = LIST_ENTRY(iter, BlockBuffer, bf_hashnode);
+        if (buf->bf_status & BUF_DIRTY) {
+            buf->bf_status = BUF_BUSY;
+            ata_write(buf);
+            // TODO: 以异步方式写磁盘
+            wait_for(buf);
         }
     }
 }
