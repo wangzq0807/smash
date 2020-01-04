@@ -17,6 +17,7 @@ SECTIONS
     .boot.bss : ALIGN(0x1000) {
         *boot*.o(.bss)
     }
+    boot_end = .;
 
     _VMA = 0xF0000000; /* last 256M */
     . += _VMA;

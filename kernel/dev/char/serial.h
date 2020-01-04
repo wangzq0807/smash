@@ -28,6 +28,6 @@ typedef enum _ComStopBits
     ComStopBits2 = 4
 } ComStopBits;
 
-void init_serial(int port);
+void setup_serial(int port);
 
 void write_serial(char a);

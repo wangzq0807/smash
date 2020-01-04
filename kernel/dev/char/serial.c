@@ -63,7 +63,7 @@ Bit	Name	            Meaning
 
 int nComPort = COM_PORT1;
 
-void init_serial(int port)
+void setup_serial(int port)
 {
     nComPort = port;
     outb(nComPort+1, IF_DISABLE);

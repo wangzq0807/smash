@@ -6,6 +6,6 @@ extern int utimestamp;
 extern int uticks;
 
 void
-init_utc();
+setup_utc();
 
 #endif

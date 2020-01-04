@@ -6,8 +6,6 @@
 #include "asm.h"
 #include "pymem.h"
 
-extern size_t kernel_start;
-extern size_t kernel_end;
 // 用户内存
 const uint32_t usr_vm_beg = 0;
 const uint32_t usr_vm_end = 0xFE000000;
@@ -30,7 +28,7 @@ _init_vm()
     // 计算vm_offset
     size_t cr3 = get_cr3();
     const int page_index = cr3 >> PAGE_SHIFT;
-    int npti = page_index & (PAGE_INT_SIZE-1);
+    int npti = page_index & (PAGE_ENTRY_NUM-1);
     int npdi = page_index >> 10;
     pdt_t pdt = (pdt_t)cr3;
     pt_t pt = (pt_t)PAGE_FLOOR(pdt[npdi]);
@@ -77,13 +75,13 @@ vm_kalloc()
 {
     pdt_t pdt = get_pdt();
     int pde_beg = get_pde_index(knl_code_beg);
-    int pde_end = PAGE_INT_SIZE;
+    int pde_end = PAGE_ENTRY_NUM;
     for (int pdei = pde_beg; pdei < pde_end; ++pdei) 
     {
         if (!is_page_exist(pdt[pdei]))
             KLOG(ERROR, "PDE is not exist!");
         pt_t pt = pde2pt(pdt[pdei]);
-        for (int ptei = 0; ptei < PAGE_INT_SIZE; ++ptei)
+        for (int ptei = 0; ptei < PAGE_ENTRY_NUM; ++ptei)
         {
             if (!is_page_exist(pt[ptei]))
             {
@@ -240,7 +238,7 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
 
     int *dist_page = (int *)0xFFFFF000;
     const int *src_page = (const int *)0xFFFFE000;
-    size_t len = num * PAGE_INT_SIZE;
+    size_t len = num * PAGE_ENTRY_NUM;
     while (--len) {
         *dist_page++ = *src_page++;
     }
@@ -254,7 +252,7 @@ alloc_vm_page()
 {
     pdt_t pdt = get_pdt();
     pt_t cur_pte = pde2pt(pdt[0]);
-    for (int npte = 256; npte < PAGE_INT_SIZE; ++npte) {
+    for (int npte = 256; npte < PAGE_ENTRY_NUM; ++npte) {
         if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
             uint32_t pyaddr = (npte << 12);
             cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
@@ -263,7 +261,7 @@ alloc_vm_page()
             int *words = (int *)vmret;
             KLOG(DEBUG, "%s 0x%x", __FUNCTION__, vmret);
             // 页面清0
-            for (int i = 0; i < PAGE_INT_SIZE; ++i)
+            for (int i = 0; i < PAGE_ENTRY_NUM; ++i)
                 words[i] = 0;
             return vmret;
         }
@@ -324,7 +322,7 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
         new_pte = (pt_t)alloc_vm_page();
     }
     new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    for (int npte = 0; npte < PAGE_INT_SIZE; ++npte) {
+    for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
         new_pte[npte] = cur_pte[npte];
     }
 }
@@ -362,7 +360,7 @@ mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
     const int npage = (length + PAGE_SIZE - 1) >> PAGE_SHIFT;
     // TODO: 失败后,要回收已映射的页表项
     // 当前页表的映射 pte
-    int lessnum = PAGE_INT_SIZE - npte;
+    int lessnum = PAGE_ENTRY_NUM - npte;
     lessnum = npage > lessnum ? lessnum : npage;
     for (int n = npte; n < npte + lessnum; ++n)
     {
@@ -373,14 +371,14 @@ mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
         return addr;
     npde++;
     // 页目录表的映射
-    const int pdenum = npde + (npage - lessnum) / PAGE_INT_SIZE;
+    const int pdenum = npde + (npage - lessnum) / PAGE_ENTRY_NUM;
     for (int n = npde; n < pdenum; ++n)
     {
         if ((pdt[n] & PAGE_PRESENT) == 0)
             alloc_page_table(&pdt[n]);
 
         pt = pde2pt(pdt[n]);
-        for (int nn = 0; nn < PAGE_INT_SIZE; ++nn)
+        for (int nn = 0; nn < PAGE_ENTRY_NUM; ++nn)
         {
             pt[nn] = PAGE_FLOOR(offset) | (fd << 1);
             offset += PAGE_SIZE;
@@ -388,7 +386,7 @@ mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
     }
     npde += pdenum;
     // 剩余页表的映射 pte
-    const int morenum = npage - lessnum - (pdenum*PAGE_INT_SIZE);
+    const int morenum = npage - lessnum - (pdenum*PAGE_ENTRY_NUM);
     if ((pdt[npde] & PAGE_PRESENT) == 0)
         alloc_page_table(&pdt[npde]);
     pt = pde2pt(pdt[npde]);

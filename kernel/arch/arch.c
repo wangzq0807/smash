@@ -10,7 +10,7 @@
 #include "defs.h"
 
 static void
-_init_8259A()
+setup_apic()
 {
     /* init_ICW1: 00010001b,多片级联,使用ICW4 */
     outb(0x20, 0x11);
@@ -27,7 +27,7 @@ _init_8259A()
 }
 
 static void
-_init_timer()
+setup_time()
 {
     /* 写入控制字, 使用方式3, 计数器0 */
     outb(0x43, 0x36);
@@ -38,37 +38,33 @@ _init_timer()
     outb(0x40, high);   /* 后写高字节 */
 }
 
-static void
-_setup_pages()
-{
-    pdt_t pdt = (pdt_t)alloc_spage();
-    size_t addr = 0;
-    // 先将0-1M一一映射到物理内存, 1M - 4M 用于动态分配
-    pt_t pt = (pt_t)alloc_spage();
-    pdt[0] = PAGE_FLOOR((size_t)pt) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    for (int i = 0; i < 256; ++i) {
-        pt[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-        addr += PAGE_SIZE;
-    }
-    load_pdt(pdt);
-}
+// static void
+// _setup_pages()
+// {
+//     pdt_t pdt = (pdt_t)alloc_spage();
+//     size_t addr = 0;
+//     // 先将0-1M一一映射到物理内存, 1M - 4M 用于动态分配
+//     pt_t pt = (pt_t)alloc_spage();
+//     pdt[0] = PAGE_FLOOR((size_t)pt) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+//     for (int i = 0; i < 256; ++i) {
+//         pt[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+//         addr += PAGE_SIZE;
+//     }
+//     load_pdt(pdt);
+// }
 
 void
 init_isa()
 {
     cli();
-    setup_idt();
+    setup_serial(COM_PORT1);
     setup_gdt();
+    setup_idt();
 
-    _init_8259A();
-    _init_timer();
+    setup_apic();
 
-    _setup_pages();
-    enable_paging();
-
-    init_utc();
-
-    init_serial(COM_PORT1);
+    setup_time();
+    setup_utc();
     sti();
 }
 

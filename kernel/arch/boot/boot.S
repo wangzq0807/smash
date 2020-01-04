@@ -29,6 +29,8 @@ _start:
 _multiboot:
     pushl $0
     popf
+    movl $_tmpstack, %edx
+    movl %edx, %esp
 
     pushl %eax
     pushl %ebx
@@ -36,6 +38,11 @@ _multiboot:
 _errorloop:
     hlt
     jmp _errorloop
+    .align 4
+    .rept 32
+        .long 0
+    .endr
+_tmpstack:
 
 #endif /* __MULTIBOOT_S__ */
 

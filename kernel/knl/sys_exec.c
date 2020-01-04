@@ -141,10 +141,10 @@ static void
 _free_task_memory(Task *task)
 {
     pdt_t cur_pdt = (pdt_t)PAGE_FLOOR(task->ts_tss.t_CR3);
-    for (uint32_t npde = 1; npde < PAGE_INT_SIZE; ++npde) {
+    for (uint32_t npde = 1; npde < PAGE_ENTRY_NUM; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t pt = pde2pt(cur_pdt[npde]);
-            for (uint32_t npte = 0; npte < PAGE_INT_SIZE; ++npte) {
+            for (uint32_t npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
                 if (pt[npte] & PAGE_PRESENT) {
                     release_pypage(pte2pypage(pt[npte]));
                     pt[npte] = 0;  // NOTE:回收页表项

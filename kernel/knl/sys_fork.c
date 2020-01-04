@@ -60,11 +60,11 @@ setup_page_tables(Task *cur_task, Task *new_task)
     // 复制4M - 4G的页表
     // Note: alloc_vm_page 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
     // 因此1-4M的页表要最后复制
-    for (int npde = 1; npde < PAGE_INT_SIZE; ++npde) {
+    for (int npde = 1; npde < PAGE_ENTRY_NUM; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t cur_pt = pde2pt(cur_pdt[npde]);
             pt_t new_pt = alloc_page_table(&new_pdt[npde]);
-            for (int npte = 0; npte < PAGE_INT_SIZE; ++npte) {
+            for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
                 if (cur_pt[npte] & PAGE_PRESENT) {
                     //cur_pt[npte] &= ~PAGE_WRITE;
                     new_pt[npte] = cur_pt[npte] & ~PAGE_WRITE;

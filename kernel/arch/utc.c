@@ -25,7 +25,7 @@ struct _RTCTime {
 };
 
 void
-init_utc()
+setup_utc()
 {
 #ifdef KLOG_ENABLE
     RTCTime rtime;

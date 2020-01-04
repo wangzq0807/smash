@@ -2,51 +2,81 @@
 #include "sys/types.h"
 #include "asm.h"
 #include "arch/page.h"
-#include "mem/linear.h"
-
-static pde_t g_pdt[PAGE_INT_SIZE] __attribute__((aligned(PAGE_SIZE)));
+#include "memory.h"
+#include "arch/arch.h"
+// **************//
+//    内存布局    //
+// **************//
+// |-----------| kernel_start + _VMA
+// | boot.text |
+// |-----------|
+// | boot.bss  |
+// |-----------| boot_end + _VMA
+// | .text     |
+// |-----------|
+// | .data     |
+// |-----------|
+// | .bss      |
+// |-----------|
+// | (other)   |
+// |-----------| kernel_end + _VMA
+// |  pdt      |
+// |-----------|
+// |  pt       |
+// |-----------| kvm_end
 
 extern void start_main();
-extern char _LMA;
-extern char _VMA;
-extern char kernel_start;   // LMA
-extern char kernel_end;     // LMA
 
-void init_page_map();
+static vm_t init_page_map();
 
 void boot_trap(uint32_t magic, multiboot_info_t* binfo)
 {
     if (magic != MULTIBOOT_HEADER_MAGIC)
         return;
-    init_page_map();
-    start_main();
+    // 将内核映射到高地址:_VMA
+    vm_t pagemap_end = init_page_map();
+    // 使用boot的地址用作内核栈
+    __asm__ volatile (
+        "movl %0, %%esp \n"
+        "xorl %%eax, %%eax \n"
+        "movl %%eax, %%ebp \n"
+        : :"r"(PAGE_CEILING((vm_t)&boot_end))
+        : "eax"
+    );
+    // 设备初始化
+    init_isa();
+    start_main(pagemap_end);
 }
 
-void init_page_map()
+static vm_t init_page_map()
 {
     vm_t kernel_size = (vm_t)&kernel_end - (vm_t)&kernel_start;
-    vm_t kvm_start   = (vm_t)&_VMA;
-    vm_t kvm_end     = PAGE_CEILING(kvm_start+ kernel_size);
-    vm_t kvm_offset  = kvm_start - ((vm_t)&_LMA);   // 虚拟地址和物理地址的差值
+    vm_t kvm_start   = VMA(&kernel_start);
+    vm_t kvm_end     = PAGE_CEILING(kvm_start + kernel_size);
+    volatile pdt_t g_pdt = (pdt_t)LMA(kvm_end);
+    kvm_end += PAGE_SIZE;
 
-    int  cur_pdi = get_pde_index(kvm_start);
-    volatile pt_t cur_pt = (pt_t)(kvm_end - kvm_offset);
-    g_pdt[cur_pdi] = PAGE_FLOOR(kvm_end - kvm_offset) | PAGE_PRESENT | PAGE_WRITE;
+    int cur_pdi = get_pde_index(kvm_start);
+    int low_pdi = get_pde_index((vm_t)&kernel_start);
+    volatile pt_t cur_pt = (pt_t)LMA(kvm_end);
+    g_pdt[cur_pdi] = PAGE_ENTRY((vm_t)cur_pt);
+    g_pdt[low_pdi] = g_pdt[cur_pdi];  // 映射boot(完成自举)
     kvm_end += PAGE_SIZE;
 
     for (vm_t kaddr = kvm_start; kaddr < kvm_end; kaddr+= PAGE_SIZE) {
         int pti = get_pte_index(kaddr);
-        if (pti == (PAGE_INT_SIZE-1)) {
+        if (pti == (PAGE_ENTRY_NUM-1)) {
             cur_pdi = get_pde_index(kaddr) + 1;
-            g_pdt[cur_pdi] = PAGE_FLOOR(kvm_end - kvm_offset) | PAGE_PRESENT | PAGE_WRITE;
-            cur_pt[pti] = PAGE_FLOOR(kaddr - kvm_offset) | PAGE_PRESENT | PAGE_WRITE;
+            g_pdt[cur_pdi] = PAGE_ENTRY(LMA(kvm_end));
+            cur_pt[pti] = PAGE_ENTRY(LMA(kaddr));
             cur_pt = (pt_t)kvm_end;
             kvm_end += PAGE_SIZE;
         }
         else {
-            cur_pt[pti] = PAGE_FLOOR(kaddr - kvm_offset) | PAGE_PRESENT | PAGE_WRITE;
+            cur_pt[pti] = PAGE_ENTRY(LMA(kaddr));
         }
     }
-    load_pdt(g_pdt);
+    load_pdt((pdt_t)g_pdt);
     enable_paging();
+    return kvm_end + PAGE_SIZE;
 }

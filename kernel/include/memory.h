@@ -4,6 +4,15 @@
 #include "mem/linear.h"
 #include "mem/pymem.h"
 
+extern char _LMA;
+extern char _VMA;
+extern char kernel_start;   // LMA
+extern char boot_end;       // LMA
+extern char kernel_end;     // LMA
+
+#define VMA(val)    ((vm_t)(val) + (vm_t)&_VMA)
+#define LMA(val)    ((vm_t)(val) - (vm_t)&_VMA)
+
 void
 vm_init();
 

@@ -20,7 +20,7 @@ void
 init_filesystem(uint16_t dev);
 
 void
-start_main()
+start_main(vm_t kvm_end)
 {
     // init_isa();
     vm_init();
