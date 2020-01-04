@@ -7,6 +7,7 @@
 #include "irq.h"
 #include "sys/fcntl.h"
 #include "unistd.h"
+#include "mem/frame.h"
 
 /* 任务一 */
 Task task1;
@@ -145,7 +146,7 @@ setup_first_task()
 
     // 用户态堆栈
     // TODO:堆栈操作最好抽取出来
-    int us_addr = alloc_pypage(FALSE);
+    int us_addr = frame_alloc();
     map_vm_page(0xFFFF0000, us_addr);
     uint8_t *us_page = (uint8_t *)0xFFFF0000;
     task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];

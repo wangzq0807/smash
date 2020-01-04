@@ -9,6 +9,7 @@
 #include "fs/path.h"
 #include "sys/fcntl.h"
 #include "string.h"
+#include "mem/frame.h"
 
 #define ELF_FILE       0x40000000
 uint32_t param_buf[64];
@@ -125,7 +126,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     int fd = map_vfile(vf);
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
-    uint32_t ustack = alloc_pypage(FALSE);
+    uint32_t ustack = frame_alloc();
     map_vm_page(0xFFFF0000, ustack);
     irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
     // 将参数拷贝到用户态堆栈中
@@ -146,7 +147,7 @@ _free_task_memory(Task *task)
             pt_t pt = pde2pt(cur_pdt[npde]);
             for (uint32_t npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
                 if (pt[npte] & PAGE_PRESENT) {
-                    release_pypage(pte2pypage(pt[npte]));
+                    frame_release(pte2pypage(pt[npte]));
                     pt[npte] = 0;  // NOTE:回收页表项
                 }
             }

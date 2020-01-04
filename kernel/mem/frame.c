@@ -3,32 +3,34 @@
 #include "lib/log.h"
 #include "lib/bitmap.h"
 #include "kerrno.h"
-#include "pymem.h"
+#include "frame.h"
+#include "memory.h"
 
+// TODO: 最大管理64MB物理内存
 #define BITMAP_SIZE 2048
 
 BitMap pybitmap;
-uint8_t bitbuf[BITMAP_SIZE];    // TODO: 最大管理64MB
+uint8_t bitbuf[BITMAP_SIZE];
 
 extern vm_t knl_space_begin;
 
-error_t
-_alloc_pyrange(uint32_t rbeg, uint32_t rsize);
+static error_t
+_frame_alloc_range(uint32_t rbeg, uint32_t rsize);
 
 void
-init_pymemory()
+frame_init()
 {
     pybitmap.b_nsize = BITMAP_SIZE;
     pybitmap.b_bitbuf = &bitbuf;
     // 0xA0000 - 1M : BIOS
-    _alloc_pyrange(0xA0000, 0x60000);
+    _frame_alloc_range(0xA0000, 0x60000);
     // 1M -2M : 内核代码
-    _alloc_pyrange(1 << 20, 1 << 20);
+    _frame_alloc_range(1 << 20, 1 << 20);
 }
 
 // 分配一段连续内存, rbeg和rsize必须对齐到4KB
-error_t
-_alloc_pyrange(uint32_t rbeg, uint32_t rsize)
+static error_t
+_frame_alloc_range(uint32_t rbeg, uint32_t rsize)
 {
     const int begbit = rbeg >> PAGE_SHIFT;
     const int bitnum = rsize >> PAGE_SHIFT;
@@ -40,14 +42,14 @@ _alloc_pyrange(uint32_t rbeg, uint32_t rsize)
 }
 
 uint32_t
-alloc_pypage()
+frame_alloc()
 {
     int nbit = -1;
     nbit = bm_alloc_bit(&pybitmap);
 
     if (nbit < 0)
     {
-        KLOG(ERROR, "alloc_pypage failed!");
+        KLOG(ERROR, "frame_alloc failed!");
         return 0;
     }
     else
@@ -57,7 +59,7 @@ alloc_pypage()
 }
 
 void
-release_pypage(uint32_t paddr)
+frame_release(uint32_t paddr)
 {
     KLOG(DEBUG, "release_pypage %X", paddr);
 
@@ -69,14 +71,14 @@ release_pypage(uint32_t paddr)
 }
 
 int
-is_pypage_used(uint32_t paddr)
+frame_is_used(uint32_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
     return bm_test_bit(&pybitmap, nIndex);
 }
 
 void
-dump_pymemory()
+dump_frame_layout()
 {
     bm_dump(&pybitmap, 0, 1024);
 }

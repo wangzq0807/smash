@@ -4,18 +4,18 @@
 #include "defs.h"
 
 void
-init_pymemory();
+frame_init();
 
-uint32_t
-alloc_pypage();
+size_t
+frame_alloc();
 
 void
-release_pypage(uint32_t paddr);
+frame_release(size_t paddr);
 
 int
-is_pypage_used(uint32_t paddr);
+frame_is_used(size_t paddr);
 
 void
-dump_pymemory();
+dump_frame_layout();
 
 #endif // __PYMEM_H__

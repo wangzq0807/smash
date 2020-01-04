@@ -2,7 +2,6 @@
 #define __MEMORY_H__
 #include "sys/types.h"
 #include "mem/linear.h"
-#include "mem/pymem.h"
 
 extern char _LMA;
 extern char _VMA;

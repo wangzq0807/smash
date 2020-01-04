@@ -4,7 +4,7 @@
 #include "arch/page.h"
 #include "arch/task.h"
 #include "asm.h"
-#include "pymem.h"
+#include "mem/frame.h"
 
 // 用户内存
 const uint32_t usr_vm_beg = 0;
@@ -42,7 +42,7 @@ _init_vm()
     // 0 - 1M 映射到高位地址
     for (int i = 0; i < (1<<20); i+=PAGE_SIZE)
     {
-        if (!is_pypage_used(i))
+        if (!frame_is_used(i))
             continue;
         vm_t vaddr = paddr2vaddr(i);
         npdi = get_pde_index(vaddr);
@@ -65,7 +65,7 @@ _init_vm()
 void
 vm_init()
 {
-    init_pymemory();
+    frame_init();
     // knl_code_beg - END : 存放内核代码(一一映射)
     _init_vm();
 }

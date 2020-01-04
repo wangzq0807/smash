@@ -59,7 +59,7 @@ set (KERNAL_SRCS
 	./fs/path.c
 	./fs/zones.c
 	./mem/memory.c
-	./mem/pymem.c
+	./mem/frame.c
 	./lib/elf.c)
 # 目标kernel
 add_executable (smash

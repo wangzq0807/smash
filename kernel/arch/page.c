@@ -5,6 +5,7 @@
 #include "string.h"
 #include "lib/log.h"
 #include "fs/file.h"
+#include "mem/frame.h"
 
 static void on_page_write_protect(vm_t linear, pt_t pt, int npte);
 static void on_page_not_exist(vm_t linear, pt_t pt, int npte);
@@ -52,8 +53,8 @@ on_page_not_exist(vm_t linear, pt_t pt, int npte)
     VFile *vf = ts->ts_filps[fd];
     if (fd < MAX_FD && vf != NULL)
     {
-        uint32_t pyaddr = alloc_pypage(TRUE);
-        pt[npte] = PAGE_FLOOR((uint32_t)pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+        uint32_t pyaddr = frame_alloc();
+        pt[npte] = PAGE_ENTRY((vm_t)pyaddr) | PAGE_USER;
         file_read(vf->f_inode, offset, (void *)PAGE_FLOOR(linear), PAGE_SIZE);
     }
     else
