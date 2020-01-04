@@ -16,10 +16,7 @@ void
 vm_init();
 
 void*
-vm_ualloc();
-
-void*
-vm_kalloc();
+vm_alloc();
 
 int
 vm_free(void*);

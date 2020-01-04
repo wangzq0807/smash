@@ -10,6 +10,7 @@
 #define IF_BREAK        4   // 中断/错误
 #define IF_STATUS       8   // 状态变更
 
+// RS-232串口通信程序设计
 /*****************
  * 控制寄存器 PORT+3
  *****************/
@@ -61,40 +62,27 @@ Bit	Name	            Meaning
 7	Impending Error	    Set if there is an error with a word in the input buffer
 */
 
-int nComPort = COM_PORT1;
-
 void setup_serial(int port)
 {
-    nComPort = port;
-    outb(nComPort+1, IF_DISABLE);
-    outb(nComPort+2, 0);            // 禁止FIFO
-    outb(nComPort+3, 3);            // 8bit数据, 无校验, 1bit停止
-    {
-        // 设置波特率
-        outb(nComPort + 3, DLAP_BIT);   // 设置DLAP
-        //_set_rate(ComR57600);
-        outb(nComPort + 0, 1);
-        outb(nComPort + 1, 0);
-        outb(nComPort + 3, 0);          // 清除DLAP
-    }
-    outb(nComPort+1, IF_ENABLE);
+    outb(port + 1, 0x00);   // Disable all interrupts
+    // 设置波特率
+    outb(port + 3, 0x80);   // Enable DLAB
+    outb(port + 0, 0x01);   // 115200
+    outb(port + 1, 0x00);
+    // 8N1
+    outb(port + 3, 0x03);   // Disable DLAB
+    // 
+    outb(port + 4, 0x3);
 }
 
-void set_rate(ComRate rate)
+int is_transmit_empty(int port)
 {
-    outb(nComPort + 3, DLAP_BIT);    // 设置DLAP
-    //_set_rate(rate);
-    outb(nComPort + 3, 0);           // 清除DLAP
+    return inb(port+5) & 0x20;
 }
 
-int is_transmit_empty()
+void serial_write(int port, char c)
 {
-    return inb(nComPort+5) & 0x20;
-}
-
-void write_serial(char c)
-{
-    while (is_transmit_empty() == 0);
+    while (is_transmit_empty(port) == 0);
     
-    outb(nComPort, c);
+    outb(port, c);
 }

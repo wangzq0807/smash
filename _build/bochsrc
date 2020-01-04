@@ -33,6 +33,7 @@ boot: disk
 #=======================================================================
 log: bochsout.txt
 logprefix: %t-%e-@%i-%d
+magic_break: enabled=1
 #debugger_log: debugger.out
 port_e9_hack: enabled=1
 # display_library: x, options="gui_debug"

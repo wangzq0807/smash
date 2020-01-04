@@ -30,4 +30,4 @@ typedef enum _ComStopBits
 
 void setup_serial(int port);
 
-void write_serial(char a);
+void serial_write(int port, char a);
