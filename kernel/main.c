@@ -22,7 +22,9 @@ init_filesystem(uint16_t dev);
 void
 start_main(vm_t kvm_end)
 {
-    // init_isa();
+    // 设备初始化
+    init_isa();
+    KLOG(DEBUG, "start main!\n");
     vm_init();
     // init_keyboard();
     // init_filesystem(ROOT_DEVICE);

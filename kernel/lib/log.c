@@ -1,6 +1,7 @@
 #include "lib/log.h"
 #include "asm.h"
 #include "arch/task.h"
+#include "dev/char/serial.h"
 
 const LogLevel log_level = KLOG_LEVEL;
 
@@ -54,7 +55,7 @@ printk(const char *fmt, ...)
     int len = vsprintf(printbuf, fmt, args);
     const char* tmp = printbuf;
     while (*tmp != '\0')
-        outb(0xe9, *tmp++);
+        serial_write(COM_PORT1, *tmp++);
     va_end(args);
     return len;
 }

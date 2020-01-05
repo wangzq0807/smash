@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "arch/arch.h"
 #include "config.h"
+#include "string.h"
 // **************//
 //    内存布局    //
 // **************//
@@ -29,6 +30,7 @@
 // |  heap     |
 // |-----------| kvm_end + DIRECT_HEAP
 
+extern char _tmpstack;
 extern void start_main();
 
 static vm_t init_page_map();
@@ -40,21 +42,20 @@ void boot_trap(uint32_t magic, multiboot_info_t* binfo)
     // 将内核映射到高地址:_VMA
     vm_t pagemap_end = init_page_map();
     // 使用boot的地址用作内核栈
+    size_t *current_task = (size_t*)&kernel_start;
+    *current_task = 0;  // 还没有创建任务
     __asm__ volatile (
         "movl %0, %%esp \n"
-        "xorl %%eax, %%eax \n"
-        "movl %%eax, %%ebp \n"
+        "movl %0, %%ebp \n"
         : :"r"(PAGE_CEILING((vm_t)&boot_end))
         : "eax"
     );
-    // 设备初始化
-    init_isa();
     start_main(pagemap_end);
 }
 
 static vm_t init_page_map()
 {
-    vm_t kernel_size = (vm_t)&kernel_end - (vm_t)&kernel_start;
+    size_t kernel_size = (pym_t)&kernel_end - (pym_t)&kernel_start;
     vm_t kvm_start   = pym2vm((pym_t)&kernel_start);
     vm_t kvm_end     = PAGE_CEILING(kvm_start + kernel_size);
     volatile pdt_t g_pdt = (pdt_t)vm2pym(kvm_end);

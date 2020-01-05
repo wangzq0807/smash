@@ -8,6 +8,7 @@
 
 .text
 .global _start
+.global _tmpstack
 _start:
     jmp _multiboot
     /* multiboot_header */

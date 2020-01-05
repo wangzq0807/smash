@@ -32,7 +32,7 @@ log_write(LogLevel, const char *fmt, ...);
     #define KLOG(level, format, ...) {}
 #endif
 
-#ifdef KLOG_ENABLE
+#ifdef BOCHS_IODEBUG
 static inline void bochs_break() {
     __asm__ volatile("xchg %bx, %bx");
 }
