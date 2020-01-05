@@ -31,6 +31,9 @@ int
 bm_clear_bit(BitMap* bm, int nbit);
 
 int
+bm_find_bit(BitMap* bm);
+
+int
 bm_alloc_bit(BitMap* bm);
 
 int

@@ -61,6 +61,7 @@ set (KERNAL_SRCS
 	./fs/zones.c
 	./mem/memory.c
 	./mem/frame.c
+	./mem/buddy.c
 	./lib/elf.c)
 # 目标kernel
 add_executable (smash

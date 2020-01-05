@@ -3,6 +3,7 @@
 
 #define ERR_SUCCESS         0
 #define ERR_PARAM_ILLEGAL   -1
-#define ERR_MEM_ACCESS      -2
+#define ERR_MEM_SPACE       -2
+#define ERR_MEM_ACCESS      -3
 
 #endif

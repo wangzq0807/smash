@@ -26,3 +26,11 @@ set(LIST_SRC
 
 add_executable(list_test ${LIST_SRC})
 
+set(BUDDY_SRC
+    buddy_test.cpp
+    ../deps/log.cpp
+    ${CMAKE_SOURCE_DIR}/kernel/lib/bitmap.c
+    ${CMAKE_SOURCE_DIR}/kernel/mem/buddy.c)
+
+add_executable(buddy_test ${BUDDY_SRC})
+

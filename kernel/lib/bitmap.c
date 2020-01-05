@@ -42,18 +42,35 @@ bm_clear_bit(BitMap* pbitmap, int nbit)
 }
 
 int
-bm_alloc_bit(BitMap* pbitmap)
+bm_find_bit(BitMap* pbitmap)
 {
-    int nRet = ERR_MEM_ACCESS;
+    int nRet = ERR_MEM_SPACE;
     bm_unit_t *bmbuf = (bm_unit_t *)(pbitmap->b_bitbuf);
     const int endpos = BM_UNIT_INDEX(pbitmap->b_nsize);
     for (int i = 0; i < endpos; ++i)
     {
         if (bmbuf[i] == BM_UNIT_FULL)
             continue;
-        int ret = UNIT_ALLOC_BIT(bm_unit_t, bmbuf[i], 0, BM_UNIT_BITNUM);
-        if (ret != BM_UNIT_FULL)
-            return i*BM_UNIT_BITNUM + ret;
+        int pos = UNIT_FIND_BIT(bm_unit_t, bmbuf[i], 0, BM_UNIT_BITNUM);
+        nRet = i*BM_UNIT_BITNUM + pos;
+        break;
+    }
+    return nRet;
+}
+
+int
+bm_alloc_bit(BitMap* pbitmap)
+{
+    int nRet = ERR_MEM_SPACE;
+    bm_unit_t *bmbuf = (bm_unit_t *)(pbitmap->b_bitbuf);
+    const int endpos = BM_UNIT_INDEX(pbitmap->b_nsize);
+    for (int i = 0; i < endpos; ++i)
+    {
+        if (bmbuf[i] == BM_UNIT_FULL)
+            continue;
+        int pos = UNIT_ALLOC_BIT(bm_unit_t, bmbuf[i], 0, BM_UNIT_BITNUM);
+        nRet = i*BM_UNIT_BITNUM + pos;
+        break;
     }
     return nRet;
 }
@@ -61,8 +78,10 @@ bm_alloc_bit(BitMap* pbitmap)
 int
 bm_alloc_bit_inrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
+    if (bitnum == 0)
+        return ERR_PARAM_ILLEGAL;
     if (begbit >= (8*pbitmap->b_nsize))
-        return ERR_MEM_ACCESS;
+        return ERR_PARAM_ILLEGAL;
     const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
     bm_unit_t *bmbuf = (bm_unit_t *)(pbitmap->b_bitbuf);
     const int begpos = BM_UNIT_INDEX(begbit);
@@ -98,6 +117,8 @@ bm_alloc_bit_inrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 int
 bm_test_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
+    if (bitnum == 0)
+        return ERR_PARAM_ILLEGAL;
     if (begbit >= (8*pbitmap->b_nsize))
         return ERR_MEM_ACCESS;
     const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
@@ -129,6 +150,8 @@ bm_test_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 int
 bm_set_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
+    if (bitnum == 0)
+        return ERR_PARAM_ILLEGAL;
     if (begbit >= (8*pbitmap->b_nsize))
         return ERR_MEM_ACCESS;
     const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);
@@ -154,6 +177,8 @@ bm_set_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 int
 bm_clear_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
 {
+    if (bitnum == 0)
+        return ERR_PARAM_ILLEGAL;
     if (begbit >= (8*pbitmap->b_nsize))
         return ERR_MEM_ACCESS;
     const int endbit = MIN(begbit + bitnum, 8*pbitmap->b_nsize);

@@ -53,18 +53,25 @@ extern "C" {
     nret;                                       \
 })
 
-#define UNIT_ALLOC_BIT(unit_t, target, beg, num)\
+#define UNIT_FIND_BIT(unit_t, target, beg, num)\
 ({\
     int nret = -1;                              \
     int end = MIN(beg+num, 8*sizeof(unit_t));   \
     for (int bit = beg; bit < end; ++bit) {     \
         const unit_t mask = (unit_t)1 << bit;   \
         if ((target & mask) == 0) {             \
-            target |= mask;                     \
             nret = bit;                         \
             break;                              \
         }                                       \
     }                                           \
+    nret;                                       \
+})
+
+#define UNIT_ALLOC_BIT(unit_t, target, beg, num)\
+({\
+    int nret = UNIT_FIND_BIT(unit_t, target, beg, num);\
+    if (nret != -1)                             \
+        target |= 1 << nret;                    \
     nret;                                       \
 })
 
