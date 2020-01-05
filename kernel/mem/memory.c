@@ -44,7 +44,7 @@ _init_vm()
     {
         if (!frame_is_used(i))
             continue;
-        vm_t vaddr = paddr2vaddr(i);
+        vm_t vaddr = pym2vm(i);
         npdi = get_pde_index(vaddr);
         //pdt[npdi]
         //npti = get_pte_index(vaddr);
@@ -86,7 +86,7 @@ vm_kalloc()
             if (!is_page_exist(pt[ptei]))
             {
                 vm_t vaddr = make_vaddr(pdei, ptei);
-                size_t paddr = vaddr2paddr(vaddr);
+                pym_t paddr = vm2pym(vaddr);
                 pt[ptei] = paddr | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
                 return (void*)vaddr;
             }

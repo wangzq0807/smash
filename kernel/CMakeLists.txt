@@ -13,6 +13,7 @@ set(CMAKE_ASM_FLAGS "-m32")
 
 # 
 set(KLOG_LEVEL 0)
+set(FIXED_HEAP	8)
 option(BOCHS_IODEBUG "Enable bochs io debugger" ON)
 option(KLOG_ENABLE "Enable kernel log" ON)
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/config.h.in

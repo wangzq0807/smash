@@ -1,4 +1,4 @@
-com1: enabled=1, mode=file, dev=serial.txt
+com1: enabled=1, mode=file, dev=klog.txt
 #=======================================================================
 # MEGS
 #=======================================================================
@@ -31,11 +31,11 @@ boot: disk
 #=======================================================================
 # Debug
 #=======================================================================
-log: bochsout.txt
+#log: bochsout.txt
 logprefix: %t-%e-@%i-%d
 magic_break: enabled=1
 #debugger_log: debugger.out
-port_e9_hack: enabled=1
+#port_e9_hack: enabled=1
 # display_library: x, options="gui_debug"
 # gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
 

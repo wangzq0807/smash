@@ -5,3 +5,5 @@
 #cmakedefine KLOG_ENABLE
 // 0:debug, 1:info, 2:warn, 3:error
 #define KLOG_LEVEL  @KLOG_LEVEL@
+// 内核固定映射堆的大小   (0 - xx)M
+#define FIXED_HEAP @FIXED_HEAP@

@@ -5,21 +5,27 @@
 #include "sys/types.h"
 #include "arch/page.h"
 
-extern vm_t knl_space_begin;
+extern char _VMA;
 
-static inline vm_t paddr2vaddr(size_t paddr) {
-    return paddr + knl_space_begin;
+static inline vm_t pym2vm(pym_t paddr) {
+    return paddr + (vm_t)&_VMA;
 }
 
-static inline size_t vaddr2paddr(size_t paddr) {
-    return knl_space_begin - paddr;
+static inline pym_t vm2pym(vm_t vaddr) {
+    return vaddr - (vm_t)&_VMA;;
 }
 //====================================
 // 常用线性地址操作
 //====================================
+// static inline pdt_t to_pdt(pm_t addr) {
+//     pdt_t pdt;
+//     pdt.pde_ptr = (pde_t *)pm2vm(addr);;
+//     return pdt;
+// }
+
 static inline pdt_t get_pdt() {
     size_t cr3 = get_cr3();
-    return (pdt_t)paddr2vaddr(cr3);
+    return (pdt_t)pym2vm(cr3);
 }
 
 static inline int
@@ -42,7 +48,7 @@ get_pde(vm_t linear) {
 static inline pt_t
 get_pt(vm_t linear) {
     pde_t pde = get_pde(linear);
-    return (pt_t)paddr2vaddr(PAGE_FLOOR(pde));
+    return (pt_t)pym2vm(PAGE_FLOOR(pde));
 }
 
 static inline pte_t
@@ -60,7 +66,7 @@ get_pypage(vm_t linear) {
 
 static inline pt_t
 pde2pt(pde_t pde) {
-    return (pt_t)paddr2vaddr(PAGE_FLOOR(pde));
+    return (pt_t)pym2vm(PAGE_FLOOR(pde));
 }
 
 static inline uint32_t
