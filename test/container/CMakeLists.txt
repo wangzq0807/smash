@@ -30,7 +30,7 @@ set(BUDDY_SRC
     buddy_test.cpp
     ../deps/log.cpp
     ${CMAKE_SOURCE_DIR}/kernel/lib/bitmap.c
-    ${CMAKE_SOURCE_DIR}/kernel/mem/buddy.c)
+    ${CMAKE_SOURCE_DIR}/kernel/lib/buddy.c)
 
 add_executable(buddy_test ${BUDDY_SRC})
 

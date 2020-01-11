@@ -34,10 +34,10 @@ _frame_alloc_range(uint32_t rbeg, uint32_t rsize)
 {
     const int begbit = rbeg >> PAGE_SHIFT;
     const int bitnum = rsize >> PAGE_SHIFT;
-    int hasbit = bm_set_bitrange(&pybitmap, begbit, bitnum);
+    int hasbit = bitmap_set_bitrange(&pybitmap, begbit, bitnum);
     if (hasbit)
         return ERR_PARAM_ILLEGAL;
-    bm_set_bitrange(&pybitmap, begbit, bitnum);
+    bitmap_set_bitrange(&pybitmap, begbit, bitnum);
     return ERR_SUCCESS;
 }
 
@@ -45,7 +45,7 @@ uint32_t
 frame_alloc()
 {
     int nbit = -1;
-    nbit = bm_alloc_bit(&pybitmap);
+    nbit = bitmap_alloc_bit(&pybitmap);
 
     if (nbit < 0)
     {
@@ -64,8 +64,8 @@ frame_release(uint32_t paddr)
     KLOG(DEBUG, "release_pypage %X", paddr);
 
     int nIndex = paddr >> PAGE_SHIFT;
-    if (bm_test_bit(&pybitmap, nIndex))
-        bm_clear_bit(&pybitmap, nIndex);
+    if (bitmap_test_bit(&pybitmap, nIndex))
+        bitmap_clear_bit(&pybitmap, nIndex);
     else
         KLOG(ERROR, "release_pypage ERROR!");
 }
@@ -74,11 +74,11 @@ int
 frame_is_used(uint32_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
-    return bm_test_bit(&pybitmap, nIndex);
+    return bitmap_test_bit(&pybitmap, nIndex);
 }
 
 void
 dump_frame_layout()
 {
-    bm_dump(&pybitmap, 0, 1024);
+    bitmap_dump(&pybitmap, 0, 1024);
 }

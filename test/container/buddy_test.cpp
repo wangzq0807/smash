@@ -1,11 +1,22 @@
 #include<iostream>
 using namespace std;
 #include<gtest/gtest.h>
-#include "mem/buddy.h"
+#include "lib/buddy.h"
 
 TEST(BUDDY, HandlerTrueReturn)
 {
-    buddy_setup(4096);
+    Range r[] = {
+        { 5, 100},
+        { 0, 0}
+    };
+    buddy_setup(4096, r);
+    // EXPECT_EQ(buddy_test(0, 0), 0xfffffffe);
+    for (int i = 0; r[i].r_size != 0; ++i) {
+        for (int j = 0; j < r[i].r_size; ++j)
+            buddy_free(r[i].r_start+j, 1);
+    }
+    EXPECT_EQ(buddy_test(1, 0), 0xffffffff);
+
     EXPECT_EQ(buddy_test(8, 0), 0xffff0000);
     for (int i = 0; i < 4096; ++i) {
         int n = buddy_alloc(1);
