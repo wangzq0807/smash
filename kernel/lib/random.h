@@ -7,4 +7,4 @@ void mt_seed(uint32_t seed);
 
 uint32_t mt_rand();
 
-#endif
+#endif // __RANDOM__

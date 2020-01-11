@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 typedef enum _LogLevel {
     DEBUG,
@@ -30,7 +30,7 @@ log_write(LogLevel, const char *fmt, ...);
     }
 #else
     #define KLOG(level, format, ...) {}
-#endif
+#endif // KLOG_ENABLE
 
 #ifdef BOCHS_IODEBUG
 static inline void bochs_break() {
@@ -39,10 +39,10 @@ static inline void bochs_break() {
 #else
 static inline void bochs_break() {
 }
-#endif
+#endif // BOCHS_IODEBUG
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
-#endif
+#endif // __LOG_H__

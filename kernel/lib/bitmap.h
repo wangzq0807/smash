@@ -4,7 +4,7 @@
 #include "bithelp.h"
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 //typedef void* BitMap;
 typedef struct
@@ -53,6 +53,6 @@ bitmap_dump(BitMap* bm, const int begbyte, const uint32_t bytenum);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif // __BITMAP_H__

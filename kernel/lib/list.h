@@ -5,7 +5,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 typedef struct _ListNode {
     struct _ListNode   *le_prev;
     struct _ListNode   *le_next;
@@ -48,7 +48,7 @@ list_get(List* pList, int index) {
 }
 
 #define list_for_each(pList, itr)   \
-    for(ListNode *(itr) = listhead->lh_list.le_prev; (itr) != NULL; (itr) = (itr)->le_next)
+    for (ListNode *(itr) = listhead->lh_list.le_prev; (itr) != NULL; (itr) = (itr)->le_next)
 
 void
 list_push_back(List *pList, ListNode *pentity);
@@ -64,6 +64,6 @@ list_remove_entity(List *pList, ListNode *pentity);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif  // __LIST_H__

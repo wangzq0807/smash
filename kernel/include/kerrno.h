@@ -6,4 +6,4 @@
 #define ERR_MEM_SPACE       -2
 #define ERR_MEM_ACCESS      -3
 
-#endif
+#endif // __KERRNO_H__

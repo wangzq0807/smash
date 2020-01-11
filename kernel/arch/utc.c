@@ -37,5 +37,5 @@ setup_utc()
     rtime.rt_year = READ_CMOS(0x9);
     rtime.rt_century = READ_CMOS(0x32);
     KLOG(DEBUG, "DATE: %d%d, %d, %d", BCD2BIN(rtime.rt_century),BCD2BIN(rtime.rt_year), BCD2BIN(rtime.rt_month), BCD2BIN(rtime.rt_day));
-#endif
+#endif // KLOG_ENABLE
 }

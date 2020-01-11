@@ -23,7 +23,7 @@
     #define SYSCALLS_BEGIN()
     #define SYSCALLS_END()
     #define SYSCALL(name, params)   extern int sys_##name();
-#endif // SYSCALLS_SOURCE
+#endif // REGIST_SYSCALL
 
 SYSCALLS_BEGIN()
 SYSCALL(none, 0)            // 0
@@ -55,4 +55,4 @@ SYSCALL(sbrk, 1)            // 24
 
 SYSCALLS_END()
 
-#endif
+#endif // __SYSCALLS_H__

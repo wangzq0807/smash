@@ -5,7 +5,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 typedef size_t  hash_t;
 //#define HASH(val, bit)  (((val)*0x9e370001UL) >> (32-bit))
@@ -54,6 +54,6 @@ hash_rm(HashMap *hmap, hash_t hkey, void* target);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif // __HASHMAP_H__

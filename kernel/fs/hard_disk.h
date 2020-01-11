@@ -34,4 +34,4 @@ int ata_read(BlockBuffer *buffer);
 // 写磁盘
 int ata_write(BlockBuffer *buffer);
 
-#endif
+#endif // __HARD_DISK__

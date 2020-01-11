@@ -22,7 +22,7 @@ static inline int strlen(const char *str) {
 }
 
 static inline int strcmp(const char *s1, const char *s2) {
-    while ( *s1 && (*s1 == *s2)) {
+    while (*s1 && (*s1 == *s2)) {
         s1++;
         s2++;
     }
@@ -37,7 +37,7 @@ static inline int strcmp(const char *s1, const char *s2) {
 }
 
 static inline int strncmp(const char *s1, const char *s2, size_t n) {
-    while ( *s1 && (*s1 == *s2) && n-- > 0) {
+    while (*s1 && (*s1 == *s2) && n-- > 0) {
         s1++;
         s2++;
     }
@@ -141,4 +141,4 @@ static inline char *strcat(char *dst, const char *src) {
     return dst;
 }
 
-#endif
+#endif // __STRING_H__

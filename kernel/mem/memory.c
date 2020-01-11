@@ -128,7 +128,7 @@ _new_freelist(uint32_t addr)
     PageNode *node_list = (PageNode*)alloc_spage();
     int node_num = PAGE_SIZE / sizeof(PageNode);
     node_num = MIN(node_num, (max_end - addr) >> PAGE_SHIFT);
-    for (int i = 0; i < node_num; i++ ) {
+    for (int i = 0; i < node_num; i++) {
         node_list[i].pn_page = (addr >> PAGE_SHIFT) + i;
         node_list[i].pn_refs = 0;
         node_list[i].pn_next = &node_list[i+1];
@@ -253,7 +253,7 @@ alloc_vm_page()
     pdt_t pdt = get_pdt();
     pt_t cur_pte = pde2pt(pdt[0]);
     for (int npte = 256; npte < PAGE_ENTRY_NUM; ++npte) {
-        if ( (cur_pte[npte] & PAGE_PRESENT) == 0) {
+        if ((cur_pte[npte] & PAGE_PRESENT) == 0) {
             uint32_t pyaddr = (npte << 12);
             cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
             vm_t vmret = (vm_t)(pyaddr); // 物理地址与虚拟地址相同

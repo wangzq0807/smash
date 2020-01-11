@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __PAGE_H__
+#define __PAGE_H__
 
 #define PAGE_SHIFT   12
 #define PAGE_SIZE     (1 << PAGE_SHIFT)
@@ -22,3 +23,5 @@ typedef struct _IrqFrame IrqFrame;
 
 void
 on_page_fault(IrqFrame *);
+
+#endif  // __PAGE_H__

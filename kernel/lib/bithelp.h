@@ -5,7 +5,7 @@
 #include "defs.h"
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 #define SET_BIT(val, bit) { \
     val |= 1 << bit;        \
@@ -77,6 +77,6 @@ extern "C" {
 
 #ifdef __cplusplus
 }
-#endif
+#endif // __cplusplus
 
 #endif // __BITHELP_H__

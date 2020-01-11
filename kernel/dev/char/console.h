@@ -33,4 +33,4 @@ set_cursor(int x, int y);
 void
 get_cursor(int *x, int *y);
 
-#endif
+#endif // __CONSOLE_H__

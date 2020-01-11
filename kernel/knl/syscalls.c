@@ -20,7 +20,7 @@
     // 定义系统调用名称
     #define REGIST_SYSCALL_NAME
     #include "sys/syscalls.h"
-#endif
+#endif // KLOG_ENABLE
 
 
 int sys_none(IrqFrame *irq) { return 0 ;}

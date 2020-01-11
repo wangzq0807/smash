@@ -55,4 +55,4 @@ ringbuf_get(RingBuf *ri, uint8_t *bytes, size_t num) {
     return ret;
 }
 
-#endif
+#endif // __RING_H__

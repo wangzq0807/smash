@@ -8,4 +8,4 @@ extern int uticks;
 void
 setup_utc();
 
-#endif
+#endif // __UTC_H__

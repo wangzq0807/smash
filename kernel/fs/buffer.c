@@ -140,7 +140,7 @@ get_block(dev_t dev, blk_t blk)
 // }
 
 static BlockBuffer *
-buffer_new( )
+buffer_new()
 {
     if (list_size(&free_buffers) == 0)
         return NULL;

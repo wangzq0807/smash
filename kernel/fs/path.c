@@ -141,7 +141,7 @@ rm_file_entry(IndexNode *dinode, const char *fname)
         Direction dir;
         seek = _next_file(dinode, seek, &dir);
         if (dir.dr_inode != INVALID_INODE &&
-            strncmp(fname, dir.dr_name, FILENAME_LEN) == 0 ) {
+            strncmp(fname, dir.dr_name, FILENAME_LEN) == 0) {
 
             IndexNode *subinode = get_inode(dinode->in_dev, dir.dr_inode);
             if (subinode == NULL) return -1;
@@ -226,7 +226,7 @@ rm_dir(const char *pathname)
         seek = _next_file(subinode, seek, &dir);
         if (dir.dr_inode != INVALID_INODE &&
             strcmp(dir.dr_name, ".") != 0 &&
-            strcmp(dir.dr_name, "..") != 0 ) {
+            strcmp(dir.dr_name, "..") != 0) {
             return -1;
         }
     }

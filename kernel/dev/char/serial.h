@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __SERIAL_H__
+#define __SERIAL_H__
 
 // COM 端口号
 #define COM_PORT1   0x3F8
@@ -31,3 +32,5 @@ typedef enum _ComStopBits
 void setup_serial(int port);
 
 void serial_write(int port, char a);
+
+#endif // __SERIAL_H__

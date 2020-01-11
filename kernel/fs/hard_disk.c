@@ -109,7 +109,7 @@ ata_wait_ready()
     int cnt = 100000;
     while (--cnt) {
         const uint8_t status = inb(ATA_REG_STATUS);
-        if ( !(status &ATA_STATUS_BUSY)
+        if (!(status &ATA_STATUS_BUSY)
             && (status & ATA_STATUS_DRQ))
             return 0;
     }

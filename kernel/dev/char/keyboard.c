@@ -127,7 +127,7 @@ on_keyboard_handler(IrqFrame *irq)
         ext_code -= 1;
         return 0;
     }
-    if (code == 0xE0 ) {
+    if (code == 0xE0) {
         ext_code = 1;
         return 0;
     }

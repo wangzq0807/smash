@@ -40,7 +40,7 @@ init_super_block(dev_t dev)
     zone_t pos = get_super_block_pos(dev);
     BlockBuffer *buffer = get_block(dev, pos);
     memcpy(&super_blk[0], buffer->bf_data, sizeof(super_blk));
-    if (super_blk[0].sb_magic != MINIX_V2 ) {
+    if (super_blk[0].sb_magic != MINIX_V2) {
         KLOG(ERROR, "only minifs v2 is supported\n");
         ret = -1;
     }
@@ -68,5 +68,5 @@ dump_super_block(dev_t dev)
     KLOG(DEBUG, "sb_zmap_blocks %x", sb->sb_zmap_blocks);
     KLOG(DEBUG, "sb_first_datazone %x", sb->sb_first_datazone);
     KLOG(DEBUG, "sb_log_zone_size %x", sb->sb_log_zone_size);
-#endif
+#endif // KLOG_ENABLE
 }

@@ -13,4 +13,4 @@ int acquire_mutex(Mutex *mutex);
 
 int release_mutex(Mutex *mutex);
 
-#endif
+#endif // __LOCK__

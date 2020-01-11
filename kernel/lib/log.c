@@ -75,7 +75,7 @@ vsprintf(char *buf, const char *fmt, va_list args)
 {
     char* iter = buf;
     int mode = COPY_MODE;
-    for(; *fmt; ++fmt) {
+    for (; *fmt; ++fmt) {
         if (mode == COPY_MODE) {
             if (*fmt == '%') {
                 mode = FMT_MODE;

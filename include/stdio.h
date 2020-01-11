@@ -10,4 +10,4 @@ printf(const char *format, ...);
 int
 sprintf(char *str, const char *format, ...);
 
-#endif
+#endif // __STDIO_H__
