@@ -38,21 +38,6 @@ setup_time()
     outb(0x40, high);   /* 后写高字节 */
 }
 
-// static void
-// _setup_pages()
-// {
-//     pdt_t pdt = (pdt_t)alloc_spage();
-//     size_t addr = 0;
-//     // 先将0-1M一一映射到物理内存, 1M - 4M 用于动态分配
-//     pt_t pt = (pt_t)alloc_spage();
-//     pdt[0] = PAGE_FLOOR((size_t)pt) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-//     for (int i = 0; i < 256; ++i) {
-//         pt[i] = PAGE_FLOOR(addr) | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-//         addr += PAGE_SIZE;
-//     }
-//     load_pdt(pdt);
-// }
-
 void
 init_isa()
 {

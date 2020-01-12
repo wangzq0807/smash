@@ -11,18 +11,14 @@ static void
 setup_new_tss(IrqFrame *irq, Task *new_task)
 {
     // 内核态堆栈不能实现写时复制。
-    vm_t knl_stack = alloc_vm_page();
-    ((uint32_t *)knl_stack)[0] = (uint32_t)new_task;
+    task_init_kstack(new_task);
     /******************************
      * 复制父任务的上下文
      * NOTE: 这里复制的并不是父任务的及时上下文，而是父任务fork返回后的上下文(eax除外)
      * 这样可以保证不会弄脏堆栈
      ******************************/
     X86TSS *new_tss = &new_task->ts_tss;
-    new_tss->t_ESP_0 = (uint32_t)(knl_stack + PAGE_SIZE);
-    new_tss->t_SS_0 = KNL_DS;
-
-    new_tss->t_CR3 = (uint32_t)alloc_vm_page();
+    new_tss->t_CR3 = vm2pym((vm_t)vm_alloc());
     new_tss->t_EIP = irq->if_EIP;       // 将子任务的eip指向fork调用的下一条指令
     new_tss->t_EFLAGS = irq->if_EFLAGS;
     new_tss->t_EAX = 0;                         // 构造子任务的fork返回值
@@ -54,28 +50,35 @@ setup_page_tables(Task *cur_task, Task *new_task)
      * 但父任务在fork返回前会有很多写内存的操作，
      * 这不会引起写时复制，因为内核态对任何页都是可读写的.
      ******************************/
-    pdt_t cur_pdt = (pdt_t)PAGE_FLOOR(cur_task->ts_tss.t_CR3);
-    pdt_t new_pdt = (pdt_t)PAGE_FLOOR(new_task->ts_tss.t_CR3);
+    pdt_t cur_pdt = (pdt_t)pym2vm(PAGE_FLOOR(cur_task->ts_tss.t_CR3));
+    pdt_t new_pdt = (pdt_t)pym2vm(PAGE_FLOOR(new_task->ts_tss.t_CR3));
 
-    // 复制4M - 4G的页表
-    // Note: alloc_vm_page 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
-    // 因此1-4M的页表要最后复制
-    for (int npde = 1; npde < PAGE_ENTRY_NUM; ++npde) {
+    // 已不适用:
+    // // 复制4M - 4G的页表
+    // // Note: vm_alloc 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
+    // // 因此1-4M的页表要最后复制
+    // 不要修改内核页表
+    int knl_pde_begin = ((vm_t)&_VMA / PAGE_HUGE_SIZE);
+    for (int npde = 0; npde < knl_pde_begin; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t cur_pt = pde2pt(cur_pdt[npde]);
             pt_t new_pt = alloc_page_table(&new_pdt[npde]);
             for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
                 if (cur_pt[npte] & PAGE_PRESENT) {
-                    //cur_pt[npte] &= ~PAGE_WRITE;
-                    new_pt[npte] = cur_pt[npte] & ~PAGE_WRITE;
+                    cur_pt[npte] &= ~PAGE_WRITE;
+                    new_pt[npte] = cur_pt[npte];
                     //add_pypage_refs(cur_pt[npte] & 0xFFFFF000);
                 }
             }
         }
     }
+    // 复制内核的页目录
+    for (int npde = knl_pde_begin; npde < PAGE_ENTRY_NUM; ++npde) {
+        new_pdt[npde] = cur_pdt[npde];
+    }
 
     /* 刷新tlb */
-    load_pdt(cur_pdt);
+    load_pdt(vm2pym((vm_t)cur_pdt));
 }
 
 int

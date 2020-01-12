@@ -29,13 +29,13 @@ static void wait_for(BlockBuffer *buffer);
 error_t
 init_block_buffer()
 {
-    BlockBuffer *buf = (BlockBuffer*)alloc_vm_page();
+    BlockBuffer *buf = (BlockBuffer*)vm_alloc();
 
     BlockBuffer *iter;
 
     for (int i = 0; i < BUFFER_LIST_LEN; ++i) {
         iter = &buf[i];
-        iter->bf_data = (uint8_t*)alloc_vm_page();
+        iter->bf_data = (uint8_t*)vm_alloc();
         iter->bf_refs = 0;
         iter->bf_dev = 0;
         iter->bf_blk = 0;

@@ -10,16 +10,35 @@ extern char boot_end;       // LMA
 extern char kernel_end;     // LMA
 
 void
-vm_init();
+memory_setup();
 
 void*
 vm_alloc();
 
 int
-vm_free(void*);
+vm_free(void* addr);
 
+void
+vm_map(vm_t linaddr, pym_t pyaddr);
+
+// 文件映射(分配虚拟页面,不会实际分配物理页面)
+vm_t
+vm_map_file(vm_t addr, size_t length, int fd, off_t offset);
+
+//=========================
+// 用户态内存
+//=========================
+vm_t
+vm_alloc_stack();
+// 复制一个页面
 int
-vm_is_user_space(vm_t vaddr);
+vm_fork_page(vm_t addr);
+
+// 分配一个页面
+int
+vm_alloc_page(vm_t addr);
+
+
 
 /*
 //============
@@ -52,17 +71,6 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num);
 // 0x
 // 0xFFFFE000 - 4G : 临时页表
 //=========================================
-vm_t
-alloc_vm_page();
-
-void
-release_vm_page(vm_t addr);
-
-void
-map_vm_page(vm_t linaddr, uint32_t pyaddr);
-
-void
-unmap_vm_page(vm_t linaddr);
 
 void
 switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
@@ -71,22 +79,9 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
 pt_t
 alloc_page_table(pde_t *pde);
 
-//====================================
-// 静态内存分配
-// 初始化时,0 - 1M已完成跟物理地址的一一映射，
-// 我们要在这块内存中存放内存管理的数据结构
-// 实际可供使用的空间是end_kernel - 636K
-//====================================
-uint32_t
-alloc_spage();
-
-// 文件映射(分配虚拟页面,不会实际分配物理页面)
-vm_t
-mm_vfile(vm_t addr, size_t length, int fd, off_t offset);
-
 // 虚拟内存的最大限制(分配虚拟页面,不会实际分配物理页面)
 size_t
-grow_user_vm(int sz);
+vm_user_grow(int sz);
 
 
 #endif // __MEMORY_H__

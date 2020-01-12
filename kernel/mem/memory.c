@@ -5,105 +5,111 @@
 #include "arch/task.h"
 #include "asm.h"
 #include "mem/frame.h"
+#include "string.h"
 
-// 用户内存
-const uint32_t usr_vm_beg = 0;
-const uint32_t usr_vm_end = 0xFE000000;
-// 内核代码段内存
-const uint32_t knl_code_beg = 0xFE000000;
-// 物理地址与虚拟地址间的差值,内核段的开始位置
-uint32_t    knl_space_begin   = 0;
+vm_t   kernel_heap = 0;
+size_t kernel_heap_size = 0;
 
 void
-_init_vm()
+_vm_init()
 {
-    KLOG(DEBUG, "kernel_start %X, kernel_end %X", &kernel_start, &kernel_end);
-    if (usr_vm_end > knl_code_beg)
-        KLOG(ERROR, "usr_vm_end overflow!");
-    if (usr_vm_beg & ((4<<20) - 1))
-        KLOG(ERROR, "usr_vm_beg not align 4M!");
-    if (knl_code_beg & ((4<<20) - 1))
-        KLOG(ERROR, "knl_code_beg not align 4M!");
-
-    // 计算vm_offset
-    size_t cr3 = get_cr3();
-    const int page_index = cr3 >> PAGE_SHIFT;
-    int npti = page_index & (PAGE_ENTRY_NUM-1);
-    int npdi = page_index >> 10;
-    pdt_t pdt = (pdt_t)cr3;
-    pt_t pt = (pt_t)PAGE_FLOOR(pdt[npdi]);
-    pte_t pte = pt[npti];
-    
-    size_t pyaddr = PAGE_FLOOR(pte);
-    knl_space_begin = knl_code_beg - pyaddr;
-    KLOG(DEBUG, "knl_space_begin: %X", knl_space_begin);
-    // 映射内核空间地址
-
-    // 0 - 1M 映射到高位地址
-    for (int i = 0; i < (1<<20); i+=PAGE_SIZE)
-    {
-        if (!frame_is_used(i))
-            continue;
-        vm_t vaddr = pym2vm(i);
-        npdi = get_pde_index(vaddr);
-        //pdt[npdi]
-        //npti = get_pte_index(vaddr);
-        pt[npti] = i | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    }
-    //======================================================
-    move_esp(knl_space_begin);
-    pdt = get_pdt();
-    int pde_end = get_pde_index(knl_space_begin);
-    for (int i = 0; i < pde_end; i++)
-        pdt[i] = 0;
-    pt = pde2pt(pdt[pde_end]);
-    int pte_end = get_pte_index(knl_space_begin);
-    for (int i = 0; i < pte_end; i++)
-        pt[i] = 0;
+    KLOG(DEBUG, "heap %x, size %x", kernel_heap, kernel_heap_size);
 }
 
 void
-vm_init()
+memory_setup()
 {
     frame_init();
     // knl_code_beg - END : 存放内核代码(一一映射)
-    _init_vm();
+    _vm_init();
 }
 
 void*
-vm_kalloc()
+vm_alloc()
 {
-    pdt_t pdt = get_pdt();
-    int pde_beg = get_pde_index(knl_code_beg);
-    int pde_end = PAGE_ENTRY_NUM;
-    for (int pdei = pde_beg; pdei < pde_end; ++pdei) 
-    {
-        if (!is_page_exist(pdt[pdei]))
-            KLOG(ERROR, "PDE is not exist!");
-        pt_t pt = pde2pt(pdt[pdei]);
-        for (int ptei = 0; ptei < PAGE_ENTRY_NUM; ++ptei)
-        {
-            if (!is_page_exist(pt[ptei]))
-            {
-                vm_t vaddr = make_vaddr(pdei, ptei);
-                pym_t paddr = vm2pym(vaddr);
-                pt[ptei] = paddr | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-                return (void*)vaddr;
-            }
-        }
-    }
+    pym_t paddr = frame_alloc();
+    vm_t vaddr = pym2vm(paddr);
+    memset((void*)vaddr, 0, PAGE_SIZE);
+    return (void*)vaddr;
+    // pdt_t pdt = get_pdt();
+    // pt_t cur_pte = pde2pt(pdt[0]);
+    // for (int npte = 256; npte < PAGE_ENTRY_NUM; ++npte) {
+    //     if ((cur_pte[npte] & PAGE_PRESENT) == 0) {
+    //         uint32_t pyaddr = (npte << 12);
+    //         cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
+    //         vm_t vmret = (vm_t)(pyaddr); // 物理地址与虚拟地址相同
+    //         invlpg(vmret);
+    //         int *words = (int *)vmret;
+    //         KLOG(DEBUG, "%s 0x%x", __FUNCTION__, vmret);
+    //         // 页面清0
+    //         for (int i = 0; i < PAGE_ENTRY_NUM; ++i)
+    //             words[i] = 0;
+    //         return vmret;
+    //     }
+    // }
+}
+
+int
+vm_free(void* addr)
+{
+    pym_t paddr = vm2pym((vm_t)addr);
+    frame_release(paddr);
+    return 0;
+    // uint32_t linear = (uint32_t)addr;
+    // pt_t pt = get_pt(linear);
+    // uint32_t npte = get_pte_index(linear);
+    // pt[npte] = pt[npte] & ~PAGE_PRESENT;
+    // invlpg(addr);
+    // KLOG(DEBUG, "%s 0x%x", __FUNCTION__, addr);
+}
+
+vm_t
+vm_alloc_stack()
+{
+    pym_t paddr = frame_alloc();
+    vm_map((vm_t)(&_VMA - PAGE_SIZE), paddr);
+    return (vm_t)(&_VMA - PAGE_SIZE);
+}
+
+int
+vm_fork_page(vm_t addr)
+{
+    pym_t paddr = frame_alloc();
+    vm_t vaddr = pym2vm(paddr);
+    memcpy((void*)vaddr, (void*)addr, PAGE_SIZE);
+    vm_map(addr, paddr);
+    // //uint32_t pyaddr = pte2pypage(pt[npte]);
+    // int refs = 0;//get_pypage_refs(pyaddr);
+    // if (refs > 1) {
+    //     /*
+    //     uint32_t new_page = alloc_pypage();
+    //     pypage_copy(new_page, pyaddr, 1);
+    //     release_pypage(pyaddr); // 减引用计数
+
+    //     pt[npte] = PAGE_FLOOR((uint32_t)new_page) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+    //     */
+    // }
+    // else {
+    //     pt[npte] |= PAGE_WRITE;
+    // }
+    return 0;
+}
+
+int
+vm_alloc_page(vm_t addr)
+{
     return 0;
 }
 
 vm_t
 mem_ualloc_page()
 {
-    int pde_beg = get_pde_index(usr_vm_beg);
-    int pde_end = get_pde_index(usr_vm_end);
-    for (int pdei = pde_beg; pdei < pde_end; ++pdei)
-    {
+    // int pde_beg = get_pde_index(usr_vm_beg);
+    // int pde_end = get_pde_index(usr_vm_end);
+    // for (int pdei = pde_beg; pdei < pde_end; ++pdei)
+    // {
 
-    }
+    // }
 
     return 0;
 }
@@ -230,69 +236,23 @@ get_free_space()
     return cnt;
 }
 
-void
-pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num)
-{
-    map_vm_page(0xFFFFF000, pydst);
-    map_vm_page(0xFFFFE000, pysrc);
-
-    int *dist_page = (int *)0xFFFFF000;
-    const int *src_page = (const int *)0xFFFFE000;
-    size_t len = num * PAGE_ENTRY_NUM;
-    while (--len) {
-        *dist_page++ = *src_page++;
-    }
-    unmap_vm_page(0xFFFFF000);
-    unmap_vm_page(0xFFFFE000);
-}
 */
 
-vm_t
-alloc_vm_page()
-{
-    pdt_t pdt = get_pdt();
-    pt_t cur_pte = pde2pt(pdt[0]);
-    for (int npte = 256; npte < PAGE_ENTRY_NUM; ++npte) {
-        if ((cur_pte[npte] & PAGE_PRESENT) == 0) {
-            uint32_t pyaddr = (npte << 12);
-            cur_pte[npte] = PAGE_FLOOR(pyaddr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-            vm_t vmret = (vm_t)(pyaddr); // 物理地址与虚拟地址相同
-            invlpg(vmret);
-            int *words = (int *)vmret;
-            KLOG(DEBUG, "%s 0x%x", __FUNCTION__, vmret);
-            // 页面清0
-            for (int i = 0; i < PAGE_ENTRY_NUM; ++i)
-                words[i] = 0;
-            return vmret;
-        }
-    }
-    return NULL;
-}
 
 void
-release_vm_page(vm_t addr)
-{
-    uint32_t linear = (uint32_t)addr;
-    pt_t pt = get_pt(linear);
-    uint32_t npte = get_pte_index(linear);
-    pt[npte] = pt[npte] & ~PAGE_PRESENT;
-    invlpg(addr);
-    KLOG(DEBUG, "%s 0x%x", __FUNCTION__, addr);
-}
-
-void
-map_vm_page(vm_t linaddr, uint32_t pyaddr)
+vm_map(vm_t linaddr, uint32_t pyaddr)
 {
     pdt_t pdt = get_pdt();
     uint32_t npde = get_pde_index(linaddr);
     if ((pdt[npde] & PAGE_PRESENT) == 0) {
-        int peaddr = (int)alloc_vm_page();
-        pdt[npde] = PAGE_FLOOR(peaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+        vm_t peaddr = (vm_t)vm_alloc();
+        pdt[npde] = PAGE_ENTRY(vm2pym(peaddr));
         invlpg(peaddr);
     }
     pt_t pt = pde2pt(pdt[npde]);
     uint32_t npte = get_pte_index(linaddr);
-    pt[npte] = PAGE_FLOOR(pyaddr) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
+    pt[npte] = PAGE_ENTRY(pyaddr);
+    
     invlpg(linaddr);
 }
 
@@ -319,7 +279,7 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
     if (new_pdt[0] & PAGE_PRESENT)
         new_pte = pde2pt(new_pdt[0]);
     else {
-        new_pte = (pt_t)alloc_vm_page();
+        new_pte = (pt_t)vm_alloc();
     }
     new_pdt[0] = PAGE_FLOOR((uint32_t)new_pte) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
     for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
@@ -330,21 +290,13 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
 pt_t
 alloc_page_table(pde_t *pde)
 {
-    vm_t addr = alloc_vm_page();
-    *pde = PAGE_FLOOR((uint32_t)addr) | PAGE_WRITE | PAGE_USER | PAGE_PRESENT;
-    return (pt_t)addr;
-}
-
-uint32_t
-alloc_spage() {
-    // 640K的最后一个页面0x9F000不能用?
-    static uint32_t tail = 0x9F000;
-    tail -= PAGE_SIZE;
-    return tail;
+    pym_t paddr = frame_alloc();
+    *pde = PAGE_ENTRY(paddr);
+    return pde2pt(*pde);
 }
 
 vm_t
-mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
+vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
 {
     if (PAGE_MARK(addr) > 0)
         return 0;
@@ -400,7 +352,7 @@ mm_vfile(vm_t addr, size_t length, int fd, off_t offset)
 }
 
 size_t
-grow_user_vm(int sz)
+vm_user_grow(int sz)
 {
     Task *ts = current_task();
     size_t oldsz = ts->ts_size;

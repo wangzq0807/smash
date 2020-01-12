@@ -7,7 +7,6 @@
 #include "fs/file.h"
 #include "mem/frame.h"
 
-static void on_page_write_protect(vm_t linear, pt_t pt, int npte);
 static void on_page_not_exist(vm_t linear, pt_t pt, int npte);
 
 void
@@ -18,30 +17,11 @@ on_page_fault(IrqFrame *irq)
     pt_t pt = get_pt(linear);
     int npte = get_pte_index(linear);
     if (pt[npte] & PAGE_PRESENT)
-        on_page_write_protect(linear, pt, npte);
+        vm_fork_page(linear);
     else
         on_page_not_exist(linear, pt, npte);
     
     invlpg(linear);
-}
-
-static void
-on_page_write_protect(vm_t linear, pt_t pt, int npte)
-{
-    //uint32_t pyaddr = pte2pypage(pt[npte]);
-    int refs = 0;//get_pypage_refs(pyaddr);
-    if (refs > 1) {
-        /*
-        uint32_t new_page = alloc_pypage();
-        pypage_copy(new_page, pyaddr, 1);
-        release_pypage(pyaddr); // 减引用计数
-
-        pt[npte] = PAGE_FLOOR((uint32_t)new_page) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-        */
-    }
-    else {
-        pt[npte] |= PAGE_WRITE;
-    }
 }
 
 static void
@@ -53,12 +33,11 @@ on_page_not_exist(vm_t linear, pt_t pt, int npte)
     VFile *vf = ts->ts_filps[fd];
     if (fd < MAX_FD && vf != NULL)
     {
-        uint32_t pyaddr = frame_alloc();
-        pt[npte] = PAGE_ENTRY((vm_t)pyaddr) | PAGE_USER;
+        vm_alloc_page(linear);
         file_read(vf->f_inode, offset, (void *)PAGE_FLOOR(linear), PAGE_SIZE);
     }
     else
     {
-        KLOG(DEBUG, "page not exist error %x", pt[npte]);
+        KLOG(ERROR, "page not exist error %x", pt[npte]);
     }
 }

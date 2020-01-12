@@ -20,15 +20,15 @@ void
 init_filesystem(uint16_t dev);
 
 void
-start_main(vm_t kvm_end)
+start_main()
 {
     // 设备初始化
     init_isa();
     KLOG(DEBUG, "start main!\n");
-    vm_init();
-    // init_keyboard();
-    // init_filesystem(ROOT_DEVICE);
-    // start_task();
+    memory_setup();
+    init_keyboard();
+    init_filesystem(ROOT_DEVICE);
+    start_task();
     // init_filesystem();
     // inode_ls(2);
 }

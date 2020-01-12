@@ -35,7 +35,7 @@ ToMMapProt(Elf32_Word pflags)
 int
 LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
 {
-    Elf32_Phdr* phdr = (Elf32_Phdr*)alloc_vm_page();
+    Elf32_Phdr* phdr = (Elf32_Phdr*)vm_alloc();
     file_read(inode, offset, phdr, num*sizeof(Elf32_Phdr));
     for (int i = 0; i < num; ++i)
     {
@@ -58,7 +58,7 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
                 alignsz = cur_phdr->p_vaddr - vaddr;
                 memsz += alignsz;
             }
-            void* pmap = (void*)mm_vfile((vm_t)vaddr, memsz, fd, fileOff);
+            void* pmap = (void*)vm_map_file((vm_t)vaddr, memsz, fd, fileOff);
             if (pmap == MAP_FAILED) {
                 // printf("Error: %s\n", strerror(errno));
             }
@@ -77,7 +77,7 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
             break;
         }
     }
-    release_vm_page((vm_t)phdr);
+    vm_free(phdr);
     return 0;
 }
 
@@ -107,7 +107,7 @@ typedef void (*startFunc)();
 uint32_t
 LoadElf(int fd, const IndexNode *inode)
 {
-    Elf32_Ehdr* ehdr = (Elf32_Ehdr*)alloc_vm_page();
+    Elf32_Ehdr* ehdr = (Elf32_Ehdr*)vm_alloc();
     file_read(inode, 0, ehdr, sizeof(Elf32_Ehdr));
     /* 检查elf iednt
     if (ph->eh_magic != ELF_MAGIC) {
@@ -129,7 +129,7 @@ LoadElf(int fd, const IndexNode *inode)
         // LoadElfSect(fd, ehdr->e_shoff, ehdr->e_shnum);
     }
     uint32_t retAddr = ehdr->e_entry;
-    release_vm_page((vm_t)ehdr);
+    vm_free(ehdr);
     
     return retAddr;
 }

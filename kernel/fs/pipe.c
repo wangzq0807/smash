@@ -23,7 +23,7 @@ struct _Pipe {
 int
 alloc_pipe(int *rdfd, int *wrfd)
 {
-    Pipe *pipe = (Pipe *)alloc_vm_page();
+    Pipe *pipe = (Pipe *)vm_alloc();
     VFile *vfile1 = alloc_vfile();
     VFile *vfile2 = alloc_vfile();
 
@@ -98,7 +98,7 @@ close_pipe(void *pipeptr, void *file)
 
     if (pipe->p_rdpipe == NULL && pipe->p_wrpipe == NULL) {
         KLOG(DEBUG, "release_vm ");
-        release_vm_page((vm_t)pipe);
+        vm_free(pipe);
     }
     return 0;
 }

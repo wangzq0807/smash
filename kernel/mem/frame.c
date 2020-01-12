@@ -41,11 +41,12 @@ _frame_alloc_range(uint32_t rbeg, uint32_t rsize)
     return ERR_SUCCESS;
 }
 
-uint32_t
+pym_t
 frame_alloc()
 {
     int nbit = -1;
     nbit = bitmap_alloc_bit(&pybitmap);
+    KLOG(DEBUG, "frame_alloc %x", nbit << PAGE_SHIFT);
 
     if (nbit < 0)
     {
@@ -59,7 +60,7 @@ frame_alloc()
 }
 
 void
-frame_release(uint32_t paddr)
+frame_release(pym_t paddr)
 {
     KLOG(DEBUG, "release_pypage %X", paddr);
 
@@ -71,7 +72,7 @@ frame_release(uint32_t paddr)
 }
 
 int
-frame_is_used(uint32_t paddr)
+frame_is_used(pym_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
     return bitmap_test_bit(&pybitmap, nIndex);

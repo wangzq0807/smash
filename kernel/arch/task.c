@@ -62,9 +62,9 @@ switch_task()
     } while (next != NULL && next->ts_state != TS_RUN);
 
     if (next != NULL && next != cur) {
-        pdt_t cur_pde = (pdt_t)cur->ts_tss.t_CR3;
-        pdt_t next_pde = (pdt_t)next->ts_tss.t_CR3;
-        switch_vm_page(cur_pde, next_pde);
+        // pdt_t cur_pde = (pdt_t)pym2vm(cur->ts_tss.t_CR3);
+        // pdt_t next_pde = (pdt_t)pym2vm(next->ts_tss.t_CR3);
+        // switch_vm_page(cur_pde, next_pde);
         switch_tss(&next->ts_tss);
     }
 }
@@ -134,23 +134,14 @@ setup_first_task()
 {
     task1.ts_pid = 0;
     // 内核态堆栈
-    uint8_t *ks_page = (uint8_t *)alloc_spage();
-    ((uint32_t *)ks_page)[0] = (uint32_t)&task1;
-    task1.ts_tss.t_SS_0 = KNL_DS;
-    task1.ts_tss.t_ESP_0 = (uint32_t)&ks_page[PAGE_SIZE];
+    task_init_kstack(&task1);
+    // 用户态堆栈
+    task_init_ustack(&task1);
 
     // Note: 任务切换时,CR3不会被自动保存
     pdt_t pdt = get_pdt();
-    task1.ts_tss.t_CR3 = (uint32_t)pdt;
+    task1.ts_tss.t_CR3 = vm2pym((vm_t)pdt);
     task1.ts_tss.t_LDT = KNL_LDT;
-
-    // 用户态堆栈
-    // TODO:堆栈操作最好抽取出来
-    int us_addr = frame_alloc();
-    map_vm_page(0xFFFF0000, us_addr);
-    uint8_t *us_page = (uint8_t *)0xFFFF0000;
-    task1.ts_tss.t_ESP = (uint32_t)&us_page[PAGE_SIZE];
-    task1.ts_tss.t_EBP = (uint32_t)&us_page[PAGE_SIZE];
 
     task1.ts_child_new = NULL;
     task1.ts_child_old = NULL;
@@ -286,7 +277,7 @@ Task *
 new_task(Task *parent)
 {
     static pid_t nextpid = 1;
-    Task *new_task = (Task *)alloc_vm_page();
+    Task *new_task = (Task *)vm_alloc();
     new_task->ts_pid = nextpid++;
     setup_task_link(parent, new_task);
     return new_task;
@@ -300,16 +291,16 @@ delete_task(Task *task)
 
     unlink_task(task);
     // 回收内核堆栈, NOTE: esp要减1
-    release_vm_page(PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
+    vm_free((void *)PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
     // 回收pte和pdt
     pdt_t pdt = (pdt_t)task->ts_tss.t_CR3;
     pt_t pt = pde2pt(pdt[0]);
-    release_vm_page((vm_t)pt);
+    vm_free(pt);
     // NOTE:先修改pdt[0],后释放指向pdt的页表项，否则，pdt[0]会无法访问.
     pdt[0] = 0;
-    release_vm_page((vm_t)pdt);
+    vm_free(pdt);
     // 回收task
-    release_vm_page((vm_t)task);
+    vm_free(task);
 
     return 0;
 }
@@ -318,4 +309,24 @@ Task *
 get_task(pid_t pid)
 {
     return _get_hash_entity(pid);
+}
+
+// 内核态堆栈
+int
+task_init_kstack(Task *task) {
+    vm_t kstack = (vm_t)vm_alloc();
+    ((size_t *)kstack)[0] = (size_t)task;
+    
+    task->ts_tss.t_SS_0  = KNL_DS;
+    task->ts_tss.t_ESP_0 = kstack + PAGE_SIZE;
+    return 0;
+}
+
+// 用户态堆栈
+int
+task_init_ustack(Task *task) {
+    vm_t ustack = (vm_t)vm_alloc_stack();
+    task->ts_tss.t_ESP = ustack + PAGE_SIZE;
+    task->ts_tss.t_EBP = ustack + PAGE_SIZE;
+    return 0;
 }

@@ -10,11 +10,11 @@ vm_t
 sys_mmap(IrqFrame *irq, vm_t addr, size_t length, int prot, int flags,
                   int fd, off_t offset)
 {
-    return mm_vfile(addr, length, fd, offset);
+    return vm_map_file(addr, length, fd, offset);
 }
 
 vm_t
 sys_sbrk(IrqFrame *irq, int sz)
 {
-    return grow_user_vm(sz);
+    return vm_user_grow(sz);
 }

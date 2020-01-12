@@ -6,14 +6,14 @@
 void
 frame_init();
 
-size_t
+pym_t
 frame_alloc();
 
 void
-frame_release(size_t paddr);
+frame_release(pym_t paddr);
 
 int
-frame_is_used(size_t paddr);
+frame_is_used(pym_t paddr);
 
 void
 dump_frame_layout();

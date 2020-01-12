@@ -58,7 +58,7 @@ load_elf(IndexNode *fnode)
     // 读取elfheader
     uint32_t pyheader = alloc_pypage();
     void *headbuf = (void *)(ELF_FILE);
-    map_vm_page(ELF_FILE, pyheader);
+    vm_map(ELF_FILE, pyheader);
     for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
         file_read(fnode, n * BLOCK_SIZE , headbuf + n * BLOCK_SIZE, BLOCK_SIZE);
     }
@@ -66,9 +66,9 @@ load_elf(IndexNode *fnode)
     ElfHeader *elfheader = (ElfHeader *)(ELF_FILE);
     int frameIp = elfheader->eh_entry;
     uint32_t linear = PAGE_FLOOR(elfheader->eh_entry);
-    map_vm_page(linear, pyheader);  // TODO:假设entry和elfheader在同一个页面
+    vm_map(linear, pyheader);  // TODO:假设entry和elfheader在同一个页面
     if (linear != ELF_FILE) {
-        release_vm_page(headbuf);
+        vm_free(headbuf);
         // NOTE: 此时elfheader的指针将失效
         elfheader = NULL;
     }
@@ -78,7 +78,7 @@ load_elf(IndexNode *fnode)
     while (sizecnt < filesize) {
         uint32_t pyaddr = alloc_pypage();
         void *buf = (void *)(linear + sizecnt);
-        map_vm_page(linear + sizecnt, pyaddr);
+        vm_map(linear + sizecnt, pyaddr);
         for (int n = 0; n < PAGE_SIZE / BLOCK_SIZE; ++n) {
             file_read(  fnode,
                         sizecnt + n * BLOCK_SIZE,
@@ -127,7 +127,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = frame_alloc();
-    map_vm_page(0xFFFF0000, ustack);
+    vm_map(0xFFFF0000, ustack);
     irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
     // 将参数拷贝到用户态堆栈中
     irqframe->if_ESP = copy_args(irqframe->if_ESP, argc, argsz);
@@ -141,7 +141,7 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
 static void
 _free_task_memory(Task *task)
 {
-    pdt_t cur_pdt = (pdt_t)PAGE_FLOOR(task->ts_tss.t_CR3);
+    pdt_t cur_pdt = (pdt_t)pym2vm(PAGE_FLOOR(task->ts_tss.t_CR3));
     for (uint32_t npde = 1; npde < PAGE_ENTRY_NUM; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t pt = pde2pt(cur_pdt[npde]);
@@ -152,11 +152,11 @@ _free_task_memory(Task *task)
                 }
             }
             // NOTE:回收页表项及页表自身(与delete_task配合)
-            release_vm_page((vm_t)pt);
+            vm_free(pt);
             cur_pdt[npde] = 0;
         }
     }
-    load_pdt(cur_pdt);
+    load_pdt(vm2pym((vm_t)cur_pdt));
 }
 
 extern int sys_close(IrqFrame *irq, int fd);

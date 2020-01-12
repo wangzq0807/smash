@@ -58,4 +58,10 @@ delete_task(Task *task);
 Task *
 get_task(pid_t pid);
 
+int
+task_init_kstack(Task *task);
+
+int
+task_init_ustack(Task *task);
+
 #endif // __TASK_H__

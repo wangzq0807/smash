@@ -51,7 +51,6 @@ switch_tss(X86TSS *tss)
     if (current_tss == 1) {
         setup_tss_desc(&gdt_table[KNL_TSS2>>3], (uint32_t)tss, TSS_LIMIT);
         current_tss = 2;
-        // TODO:我想用 KNL_TSS2 替代0x20，但不知道该怎么做
         ljmp(KNL_TSS2, 0);
     }
     else {
