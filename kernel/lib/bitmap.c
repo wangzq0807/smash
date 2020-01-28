@@ -168,9 +168,11 @@ bitmap_set_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
         bmbuf[i] = BM_UNIT_FULL;
-
-    UNIT_SET_BIT(bm_unit_t, bmbuf[begpos], BM_BIT_INDEX(begbit), BM_UNIT_BITNUM - BM_BIT_INDEX(begbit));
-    UNIT_SET_BIT(bm_unit_t, bmbuf[endpos], 0, BM_BIT_INDEX(endbit));
+    if (begpos < begpos_ceil)
+        UNIT_SET_BIT(bm_unit_t, bmbuf[begpos], BM_BIT_INDEX(begbit), BM_UNIT_BITNUM - BM_BIT_INDEX(begbit));
+    const int endpos_ceil = BM_UNIT_INDEX(endbit + BM_UNIT_BITNUM - 1);
+    if (endpos < endpos_ceil)
+        UNIT_SET_BIT(bm_unit_t, bmbuf[endpos], 0, BM_BIT_INDEX(endbit));
     return ERR_SUCCESS;
 }
 
@@ -195,9 +197,11 @@ bitmap_clear_bitrange(BitMap* pbitmap, const int begbit, const uint32_t bitnum)
     const int endpos_floor = endpos;
     for (int i = begpos_ceil; i < endpos_floor; ++i)
         bmbuf[i] = 0;
-
-    UNIT_CLEAR_BIT(bm_unit_t, bmbuf[begpos], BM_BIT_INDEX(begbit), BM_UNIT_BITNUM - BM_BIT_INDEX(begbit));
-    UNIT_CLEAR_BIT(bm_unit_t, bmbuf[endpos], 0, BM_BIT_INDEX(endbit));
+    if (begpos < begpos_ceil)
+        UNIT_CLEAR_BIT(bm_unit_t, bmbuf[begpos], BM_BIT_INDEX(begbit), BM_UNIT_BITNUM - BM_BIT_INDEX(begbit));
+    const int endpos_ceil = BM_UNIT_INDEX(endbit + BM_UNIT_BITNUM - 1);
+    if (endpos < endpos_ceil)
+        UNIT_CLEAR_BIT(bm_unit_t, bmbuf[endpos], 0, BM_BIT_INDEX(endbit));
     return 0;
 }
 

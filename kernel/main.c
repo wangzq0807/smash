@@ -22,6 +22,8 @@ init_filesystem(uint16_t dev);
 void
 start_main()
 {
+    pdt_t pdt = get_pdt();
+    pdt[0] = 0;
     // 设备初始化
     init_isa();
     KLOG(DEBUG, "start main!\n");

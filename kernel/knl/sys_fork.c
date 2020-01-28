@@ -53,29 +53,7 @@ setup_page_tables(Task *cur_task, Task *new_task)
     pdt_t cur_pdt = (pdt_t)pym2vm(PAGE_FLOOR(cur_task->ts_tss.t_CR3));
     pdt_t new_pdt = (pdt_t)pym2vm(PAGE_FLOOR(new_task->ts_tss.t_CR3));
 
-    // 已不适用:
-    // // 复制4M - 4G的页表
-    // // Note: vm_alloc 会在1 - 4M空间分配页表，导致1-4M的页表在页表复制过程中改变
-    // // 因此1-4M的页表要最后复制
-    // 不要修改内核页表
-    int knl_pde_begin = ((vm_t)&_VMA / PAGE_HUGE_SIZE);
-    for (int npde = 0; npde < knl_pde_begin; ++npde) {
-        if (cur_pdt[npde] & PAGE_PRESENT) {
-            pt_t cur_pt = pde2pt(cur_pdt[npde]);
-            pt_t new_pt = alloc_page_table(&new_pdt[npde]);
-            for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
-                if (cur_pt[npte] & PAGE_PRESENT) {
-                    cur_pt[npte] &= ~PAGE_WRITE;
-                    new_pt[npte] = cur_pt[npte];
-                    //add_pypage_refs(cur_pt[npte] & 0xFFFFF000);
-                }
-            }
-        }
-    }
-    // 复制内核的页目录
-    for (int npde = knl_pde_begin; npde < PAGE_ENTRY_NUM; ++npde) {
-        new_pdt[npde] = cur_pdt[npde];
-    }
+    vm_copy_pagetable(cur_pdt, new_pdt);
 
     /* 刷新tlb */
     load_pdt(vm2pym((vm_t)cur_pdt));

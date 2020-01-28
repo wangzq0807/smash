@@ -1,7 +1,7 @@
 
 enable_language (ASM)
 
-set(CMAKE_BUILD_TYPE "Debug")
+#set(CMAKE_BUILD_TYPE "Debug")
 # 编译选项
 # -nostdinc: 不使用系统头文件
 # -nostdlib, -nostartfiles: 不使用系统库,标准启动文件(_start)

@@ -14,7 +14,7 @@
 #define MAX_INODE_NUM   256
 // IndexNode的hash表
 #define BUFFER_HASH_LEN 64
-#define HASH(val)    ((val)/BUFFER_HASH_LEN)
+#define HASH(val)    ((val)%BUFFER_HASH_LEN)
 
 static List free_inodes;
 static IndexNode inode_list[MAX_INODE_NUM];
@@ -104,6 +104,8 @@ _get_inode_pos(dev_t dev)
 static error_t
 _remove_hash_entity(IndexNode *inode)
 {
+    if (inode->in_inum == 0)
+        return 0;
     hash_t hashid = HASH(inode->in_inum);
     hash_rm(&ihash_map, hashid, (size_t*)(size_t)inode->in_inum);
     return 0;
@@ -122,6 +124,7 @@ _get_hash_entity(dev_t dev, ino_t idx)
 static error_t
 _put_hash_entity(IndexNode *inode)
 {
+    inode->in_hashnode.hn_key = HASH(inode->in_inum);
     hash_put(&ihash_map, &inode->in_hashnode, (size_t*)(size_t)inode->in_inum);
     return 0;
 }
@@ -163,6 +166,11 @@ delete_inode(IndexNode *inode)
 IndexNode *
 get_inode(dev_t dev, ino_t inode_index)
 {
+    KLOG(DEBUG, "get_inode %d", inode_index);
+    hash_for_each(&ihash_map, iter) {
+        KLOG(DEBUG, "%d", iter->hn_key);
+    }
+    KLOG(DEBUG, "get_inode end");
     IndexNode *inode = NULL;
     while (inode == NULL) {
         inode = _get_hash_entity(dev, inode_index);
@@ -181,6 +189,7 @@ get_inode(dev_t dev, ino_t inode_index)
             // 申请一个新的IndexNode
             if (list_size(&free_inodes) == 0) {
                 // TODO : error
+                KLOG(ERROR, "no free inodes!!!");
             }
             else {
                 ListNode *p = list_pop_front(&free_inodes);

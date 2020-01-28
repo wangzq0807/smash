@@ -68,6 +68,7 @@ _get_hash_entity(dev_t dev, blk_t blk)
 static error_t
 _put_hash_entity(BlockBuffer *buf)
 {
+    buf->bf_hashnode.hn_key = HASH(buf->bf_blk);
     hash_put(&bhash_map, &buf->bf_hashnode, (size_t*)buf->bf_blk);
 
     return 0;

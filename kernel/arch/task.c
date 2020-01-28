@@ -219,7 +219,8 @@ _put_hash_entity(Task *task)
     Task *org = _get_hash_entity(task->ts_pid);
     if (org != NULL)
         _remove_hash_entity(org);
-    hash_put(&hashmap, &org->ts_hash_link, (size_t*)org->ts_pid);
+    task->ts_hash_link.hn_key = HASH(task->ts_pid);
+    hash_put(&hashmap, &task->ts_hash_link, (size_t*)task->ts_pid);
     return 0;
 }
 

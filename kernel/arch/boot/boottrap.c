@@ -28,10 +28,9 @@
 // |  pt       |
 // |-----------| kvm_end
 // |  heap     |
-// |-----------| (kvm_end + FIXED_HEAP) align to 4M
+// |-----------| kvm_end + FIXED_HEAP
 
-extern char _tmpstack;
-extern vm_t   kernel_heap;
+extern vm_t   kernel_heap_beg;
 extern size_t kernel_heap_size;
 extern void start_main();
 
@@ -49,7 +48,7 @@ void boot_trap(uint32_t magic, multiboot_info_t* binfo)
     __asm__ volatile (
         "movl %0, %%esp \n"
         "movl %0, %%ebp \n"
-        : :"r"(PAGE_CEILING((vm_t)&boot_end))
+        : :"r"(PAGE_CEILING(pym2vm((pym_t)&boot_end)))
         : "eax"
     );
     start_main();
@@ -62,18 +61,17 @@ static void init_page_map()
     // 计算直接映射空间总大小
     const size_t fixedheap = FIXED_HEAP << 20;
     size_t map_size = PAGE_CEILING(kernel_size + fixedheap + PAGE_SIZE); // kernel+heap+gdt
-    map_size += PAGE_CEILING(map_size / PAGE_SIZE * PAGE_ENTRY_SIZE);   // + pt
-    map_size = PAGE_HUGE_CEILING(map_size);
+    map_size += PAGE_CEILING(map_size / PAGE_SIZE * PAGE_ENTRY_SIZE);    // + pt
     // 修改 gdt
     vm_t kvm_start = pym2vm(0);
     int pdi_beg = get_pde_index(kvm_start);
     volatile pdt_t pdt = (pdt_t)cur_end;  // alloc pdt
     cur_end += PAGE_SIZE; // + gdt
-    int numpde = (map_size + PAGE_ENTRY_NUM*PAGE_SIZE - 1) / (PAGE_ENTRY_NUM*PAGE_SIZE);
+    int numpde = PAGE_HUGE_CEILING(map_size) / PAGE_HUGE_SIZE;
     for (int i = 0; i < numpde; ++i) {
         pdt[i + pdi_beg] = PAGE_ENTRY(cur_end + i*PAGE_SIZE);
     }
-    // 映射boot(假定boot)
+    // 映射boot(假定boot_end小于4M)
     pdt[0] = pdt[pdi_beg];
     // 修改pt
     int numpte = map_size / PAGE_SIZE;
@@ -86,6 +84,6 @@ static void init_page_map()
     enable_paging();
     // 传递参数
     pym_t pt_end = cur_end + numpde*PAGE_SIZE;
-    kernel_heap = pym2vm(pt_end);
-    kernel_heap_size = map_size - pt_end;
+    kernel_heap_beg = pym2vm(pt_end);
+    kernel_heap_size = fixedheap;
 }

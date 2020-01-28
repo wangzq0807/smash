@@ -7,13 +7,16 @@
 #include "mem/frame.h"
 #include "string.h"
 
-vm_t   kernel_heap = 0;
+vm_t   kernel_heap_beg = 0;
 size_t kernel_heap_size = 0;
 
 void
 _vm_init()
 {
-    KLOG(DEBUG, "heap %x, size %x", kernel_heap, kernel_heap_size);
+    KLOG(DEBUG, "heap %x, size %x", kernel_heap_beg, kernel_heap_size);
+    // 清除boot的映射
+    // pdt_t pdt = get_pdt();
+    // pdt[0] = 0;
 }
 
 void
@@ -27,6 +30,7 @@ memory_setup()
 void*
 vm_alloc()
 {
+    KLOG(DEBUG, "vm_alloc");
     pym_t paddr = frame_alloc();
     vm_t vaddr = pym2vm(paddr);
     memset((void*)vaddr, 0, PAGE_SIZE);
@@ -66,18 +70,54 @@ vm_free(void* addr)
 vm_t
 vm_alloc_stack()
 {
+    KLOG(DEBUG, "vm_alloc_stack");
     pym_t paddr = frame_alloc();
     vm_map((vm_t)(&_VMA - PAGE_SIZE), paddr);
     return (vm_t)(&_VMA - PAGE_SIZE);
 }
 
 int
+vm_copy_pagetable(pdt_t cur_pdt, pdt_t new_pdt)
+{
+    // 复制页表(NOTE:不要修改内核页表)
+    int knl_pde_begin = ((vm_t)&_VMA / PAGE_HUGE_SIZE);
+    for (int npde = 0; npde < knl_pde_begin; ++npde) {
+        if (cur_pdt[npde] & PAGE_PRESENT) {
+            pt_t cur_pt = pde2pt(cur_pdt[npde]);
+            pt_t new_pt = alloc_page_table(&new_pdt[npde]);
+            for (int npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
+                if (cur_pt[npte] & PAGE_PRESENT) {
+                    cur_pt[npte] &= ~PAGE_WRITE;
+                    new_pt[npte] = cur_pt[npte];
+                    frame_add_ref(PAGE_FLOOR(cur_pt[npte]));
+                }
+            }
+        }
+    }
+    // 复制内核的页目录
+    for (int npde = knl_pde_begin; npde < PAGE_ENTRY_NUM; ++npde) {
+        new_pdt[npde] = cur_pdt[npde];
+    }
+    return 0;
+}
+
+int
 vm_fork_page(vm_t addr)
 {
+    pt_t pt = get_pt(addr);
+    int npte = get_pte_index(addr);
+    int nref = frame_get_ref(PAGE_FLOOR(pt[npte]));
+    KLOG(DEBUG, "fork_page addr:%x ref:%d", addr, nref);
+    if (nref == 1) {
+        pt[npte] |= PAGE_WRITE;
+        return 0;
+    }
+
     pym_t paddr = frame_alloc();
     vm_t vaddr = pym2vm(paddr);
     memcpy((void*)vaddr, (void*)addr, PAGE_SIZE);
     vm_map(addr, paddr);
+    frame_release(PAGE_FLOOR(pt[npte]));
     // //uint32_t pyaddr = pte2pypage(pt[npte]);
     // int refs = 0;//get_pypage_refs(pyaddr);
     // if (refs > 1) {
@@ -290,6 +330,7 @@ switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt)
 pt_t
 alloc_page_table(pde_t *pde)
 {
+    KLOG(DEBUG, "alloc_page_table");
     pym_t paddr = frame_alloc();
     *pde = PAGE_ENTRY(paddr);
     return pde2pt(*pde);
@@ -332,7 +373,11 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
         pt = pde2pt(pdt[n]);
         for (int nn = 0; nn < PAGE_ENTRY_NUM; ++nn)
         {
-            pt[nn] = PAGE_FLOOR(offset) | (fd << 1);
+            FrameMapDesc desc;
+            desc.fm_magic = FRAME_MAGIC;
+            desc.fm_fd = fd;
+            desc.fm_offset = offset >> PAGE_SHIFT;
+            pt[nn] = *((size_t*)&desc);
             offset += PAGE_SIZE;
         }
     }

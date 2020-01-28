@@ -78,7 +78,7 @@ static inline int is_page_exist(pte_t pte) {
     return pte & PAGE_PRESENT;
 }
 
-static inline uint32_t make_vaddr(int pdei, int ptei) {
+static inline vm_t make_vaddr(int pdei, int ptei) {
     return (pdei<<22) + (ptei<<12);
 }
 

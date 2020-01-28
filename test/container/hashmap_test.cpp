@@ -28,26 +28,33 @@ int hash_eq(HashNode* node, void* target)
 TEST(HASHMAP, HandlerTrueReturn)
 {
     HashMap hashmap;
-    hashmap.hm_table = new HashList[1024];
-    for (int i = 0; i < 1024; ++i)
+    const int listlen = 100;
+    hashmap.hm_table = new HashList[listlen];
+    for (int i = 0; i < listlen; ++i)
         hashmap.hm_table[i].hl_first = 0;
-    hashmap.hm_size = 1024;
+    hashmap.hm_size = listlen;
     hashmap.hm_used = 0;
     hashmap.hm_eqfunc = hash_eq;
 
-    Task ts[2048] = {0};
+    const int tsklen = 205;
+    Task ts[tsklen] = {0};
 
-    for (int i = 0; i < 2048; ++i) {
+    for (int i = 0; i < tsklen; ++i) {
         ts[i].t_pid = i;
         ts[i].t_hash.hn_key = ts[i].t_pid;
         hash_put(&hashmap, &ts[i].t_hash, &ts[i].t_pid);
     }
-    for (int i = 0; i < 2048; ++i) {
+    for (int i = 0; i < tsklen; ++i) {
         int pid = i;
         hash_t hh = pid;
         HashNode *node = hash_get(&hashmap, hh, &pid);
         EXPECT_EQ(node->hn_key, i);
     }
+    int pid = 5;
+    HashNode *node = hash_rm(&hashmap, pid, &pid);
+    EXPECT_EQ(node->hn_key, pid);
+    node = hash_rm(&hashmap, pid, &pid);
+    EXPECT_EQ(node, nullptr);
     hash_for_each(&hashmap, iter) {
         cout << iter->hn_key << endl;
     }

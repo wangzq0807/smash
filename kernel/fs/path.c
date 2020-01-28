@@ -30,7 +30,7 @@ _next_file(IndexNode *inode, uint32_t next, Direction *dir)
 ino_t
 search_file(IndexNode *inode, const char *fname, int len)
 {
-    if (!S_ISDIR(inode->in_inode.in_file_mode))    return -1;
+    if (!S_ISDIR(inode->in_inode.in_file_mode))    return INVALID_INODE;
 
     off_t seek = 0;
     while (seek < inode->in_inode.in_file_size) {

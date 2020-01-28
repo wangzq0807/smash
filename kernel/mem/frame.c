@@ -5,47 +5,36 @@
 #include "kerrno.h"
 #include "frame.h"
 #include "memory.h"
+#include "lib/buddy.h"
 
-// TODO: 最大管理64MB物理内存
-#define BITMAP_SIZE 2048
+// TODO: 最大管理16MB物理内存
+#define TOTAL_MEM   (16<<20)
 
-BitMap pybitmap;
-uint8_t bitbuf[BITMAP_SIZE];
+typedef struct {
+    size_t      fd_addr : 24;
+    size_t      fd_ref  : 8;
+} FrameDesc;
 
-extern vm_t knl_space_begin;
-
-static error_t
-_frame_alloc_range(uint32_t rbeg, uint32_t rsize);
+FrameDesc   frame_nodes[4096];
+extern size_t kernel_heap_beg;
 
 void
 frame_init()
 {
-    pybitmap.b_nsize = BITMAP_SIZE;
-    pybitmap.b_bitbuf = &bitbuf;
-    // 0xA0000 - 1M : BIOS
-    _frame_alloc_range(0xA0000, 0x60000);
-    // 1M -2M : 内核代码
-    _frame_alloc_range(1 << 20, 1 << 20);
-}
-
-// 分配一段连续内存, rbeg和rsize必须对齐到4KB
-static error_t
-_frame_alloc_range(uint32_t rbeg, uint32_t rsize)
-{
-    const int begbit = rbeg >> PAGE_SHIFT;
-    const int bitnum = rsize >> PAGE_SHIFT;
-    int hasbit = bitmap_set_bitrange(&pybitmap, begbit, bitnum);
-    if (hasbit)
-        return ERR_PARAM_ILLEGAL;
-    bitmap_set_bitrange(&pybitmap, begbit, bitnum);
-    return ERR_SUCCESS;
+    Range hole[]= {
+        { 0xA0000/PAGE_SIZE, 0x100000/PAGE_SIZE }, // 0xA0000 - 1M : BIOS
+        { 0, 0 }
+    };
+    // 挖掉内核代码所占空间
+    // hole[0].r_size = kernel_heap_beg/PAGE_SIZE - 0xA0000/PAGE_SIZE;
+    buddy_setup(TOTAL_MEM, hole);
 }
 
 pym_t
 frame_alloc()
 {
     int nbit = -1;
-    nbit = bitmap_alloc_bit(&pybitmap);
+    nbit = buddy_alloc(1);
     KLOG(DEBUG, "frame_alloc %x", nbit << PAGE_SHIFT);
 
     if (nbit < 0)
@@ -55,6 +44,7 @@ frame_alloc()
     }
     else
     {
+        frame_nodes[nbit].fd_ref = 1;
         return nbit << PAGE_SHIFT;
     }
 }
@@ -62,24 +52,32 @@ frame_alloc()
 void
 frame_release(pym_t paddr)
 {
-    KLOG(DEBUG, "release_pypage %X", paddr);
-
     int nIndex = paddr >> PAGE_SHIFT;
-    if (bitmap_test_bit(&pybitmap, nIndex))
-        bitmap_clear_bit(&pybitmap, nIndex);
-    else
-        KLOG(ERROR, "release_pypage ERROR!");
+    KLOG(DEBUG, "release_pypage %X ref %d", paddr, frame_nodes[nIndex].fd_ref);
+    frame_nodes[nIndex].fd_ref--;
+    if (frame_nodes[nIndex].fd_ref == 0)
+        buddy_free(nIndex, 1);
 }
 
 int
-frame_is_used(pym_t paddr)
+frame_add_ref(pym_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
-    return bitmap_test_bit(&pybitmap, nIndex);
+    KLOG(DEBUG, "frame_add_ref %x %d", paddr, frame_nodes[nIndex].fd_ref);
+    if (paddr == 0x54000)
+        bochs_break();
+    frame_nodes[nIndex].fd_ref++;
+    return 0;
+}
+
+int
+frame_get_ref(pym_t paddr)
+{
+    int nIndex = paddr >> PAGE_SHIFT;
+    return frame_nodes[nIndex].fd_ref;
 }
 
 void
 dump_frame_layout()
 {
-    bitmap_dump(&pybitmap, 0, 1024);
 }

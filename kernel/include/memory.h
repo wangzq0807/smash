@@ -30,6 +30,11 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset);
 //=========================
 vm_t
 vm_alloc_stack();
+
+// 复制页表
+int
+vm_copy_pagetable(pdt_t cur_pdt, pdt_t new_pdt);
+
 // 复制一个页面
 int
 vm_fork_page(vm_t addr);
@@ -39,24 +44,7 @@ int
 vm_alloc_page(vm_t addr);
 
 
-
 /*
-//============
-// 用户态物理页面管理
-// 分配1M以上(由start决定)的物理内存,允许释放.
-// 内核数据结构应该放在640K以下,永不释放
-//============
-uint32_t
-alloc_pypage(void);
-
-int
-get_pypage_refs(uint32_t page);
-
-int
-add_pypage_refs(uint32_t page);
-
-int
-release_pypage(uint32_t page);
 
 uint32_t
 get_free_space(void);
@@ -71,9 +59,6 @@ pypage_copy(uint32_t pydst, uint32_t pysrc, size_t num);
 // 0x
 // 0xFFFFE000 - 4G : 临时页表
 //=========================================
-
-void
-switch_vm_page(pdt_t cur_pdt, pdt_t new_pdt);
 
 // 分配页表
 pt_t
