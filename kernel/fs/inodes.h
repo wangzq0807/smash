@@ -29,7 +29,7 @@ struct _IndexNode {
     uint32_t            in_status;      // 状态
     ino_t               in_inum;        // inode编号
     uint16_t            in_refs;        // 引用计数
-    ListNode   in_link;
+    ListNode            in_link;
     HashNode            in_hashnode;  // hash表
 };
 

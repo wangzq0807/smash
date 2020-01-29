@@ -293,13 +293,7 @@ delete_task(Task *task)
     unlink_task(task);
     // 回收内核堆栈, NOTE: esp要减1
     vm_free((void *)PAGE_FLOOR(task->ts_tss.t_ESP_0 - 1));
-    // 回收pte和pdt
-    pdt_t pdt = (pdt_t)task->ts_tss.t_CR3;
-    pt_t pt = pde2pt(pdt[0]);
-    vm_free(pt);
-    // NOTE:先修改pdt[0],后释放指向pdt的页表项，否则，pdt[0]会无法访问.
-    pdt[0] = 0;
-    vm_free(pdt);
+    // TODO: 回收内存
     // 回收task
     vm_free(task);
 

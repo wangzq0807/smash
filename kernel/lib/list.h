@@ -48,7 +48,7 @@ list_get(List* pList, int index) {
 }
 
 #define list_for_each(pList, itr)   \
-    for (ListNode *(itr) = listhead->lh_list.le_prev; (itr) != NULL; (itr) = (itr)->le_next)
+    for (ListNode *(itr) = (pList)->lh_list.le_prev; (itr) != NULL; (itr) = (itr)->le_next)
 
 void
 list_push_back(List *pList, ListNode *pentity);

@@ -104,34 +104,38 @@ _get_inode_pos(dev_t dev)
 static error_t
 _remove_hash_entity(IndexNode *inode)
 {
-    if (inode->in_inum == 0)
+    size_t inum = (size_t)inode->in_inum;
+    if (inum == 0)
         return 0;
-    hash_t hashid = HASH(inode->in_inum);
-    hash_rm(&ihash_map, hashid, (size_t*)(size_t)inode->in_inum);
+    hash_t hashid = HASH(inum);
+    hash_rm(&ihash_map, hashid, (void*)inum);
     return 0;
 }
 
 static IndexNode *
 _get_hash_entity(dev_t dev, ino_t idx)
 {
-    hash_t hashid = HASH(idx);
-    HashNode *node = hash_get(&ihash_map, hashid, (size_t*)(size_t)idx);
+    size_t inum = (size_t)idx;
+    hash_t hashid = HASH(inum);
+    HashNode *node = hash_get(&ihash_map, hashid, (void*)inum);
     if (node != NULL)
-        return LIST_ENTRY(node, IndexNode, in_inum);
+        return LIST_ENTRY(node, IndexNode, in_hashnode);
     return NULL;
 }
 
 static error_t
 _put_hash_entity(IndexNode *inode)
 {
-    inode->in_hashnode.hn_key = HASH(inode->in_inum);
-    hash_put(&ihash_map, &inode->in_hashnode, (size_t*)(size_t)inode->in_inum);
+    size_t inum = (size_t)inode->in_inum;
+    inode->in_hashnode.hn_key = HASH(inum);
+    hash_put(&ihash_map, &inode->in_hashnode, (void*)inum);
     return 0;
 }
 
 IndexNode *
 alloc_inode(dev_t dev)
 {
+    KLOG(DEBUG, "alloc_inode");
     // 申请一个新的IndexNode
     IndexNode *inode = NULL;
     if (list_size(&free_inodes) == 0) {
@@ -139,6 +143,8 @@ alloc_inode(dev_t dev)
     }
     else {
         ListNode *p = list_pop_front(&free_inodes);
+        if (p == NULL)
+            KLOG(ERROR, "buffer_new, no free buffer!");
         inode = LIST_ENTRY(p, IndexNode, in_link);
         _remove_hash_entity(inode);
     }
@@ -193,6 +199,8 @@ get_inode(dev_t dev, ino_t inode_index)
             }
             else {
                 ListNode *p = list_pop_front(&free_inodes);
+                if (p == NULL)
+                    KLOG(ERROR, "buffer_new, no free buffer!");
                 inode = LIST_ENTRY(p, IndexNode, in_link);
                 _remove_hash_entity(inode);
             }
@@ -236,7 +244,7 @@ release_inode(IndexNode *inode)
             release_block(buffer);
         }
         inode->in_status = INODE_FREE;
-        // 将inode放入空闲列表
+        // 将inode放入空闲列表(NOTE:仍然存在于hash表中)
         list_push_back(&free_inodes, &inode->in_link);
     }
     inode->in_status = 0;

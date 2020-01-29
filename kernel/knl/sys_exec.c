@@ -127,8 +127,8 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     _free_task_memory(curtask);
     // 重新创建用户态堆栈
     uint32_t ustack = frame_alloc();
-    vm_map(0xFFFF0000, ustack);
-    irqframe->if_ESP = 0xFFFF0000 + PAGE_SIZE;
+    vm_map(0xEFFFF000, ustack);
+    irqframe->if_ESP = 0xEFFFF000 + PAGE_SIZE;
     // 将参数拷贝到用户态堆栈中
     irqframe->if_ESP = copy_args(irqframe->if_ESP, argc, argsz);
 
@@ -142,7 +142,9 @@ static void
 _free_task_memory(Task *task)
 {
     pdt_t cur_pdt = (pdt_t)pym2vm(PAGE_FLOOR(task->ts_tss.t_CR3));
-    for (uint32_t npde = 1; npde < PAGE_ENTRY_NUM; ++npde) {
+    int max_pde = (size_t)&_VMA / PAGE_HUGE_SIZE;
+    KLOG(DEBUG, "_free_task_memory pid:%d, cr3: %x", task->ts_pid, task->ts_tss.t_CR3);
+    for (uint32_t npde = 1; npde < max_pde; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t pt = pde2pt(cur_pdt[npde]);
             for (uint32_t npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {
@@ -152,7 +154,7 @@ _free_task_memory(Task *task)
                 }
             }
             // NOTE:回收页表项及页表自身(与delete_task配合)
-            vm_free(pt);
+            frame_release(pte2pypage(cur_pdt[npde]));
             cur_pdt[npde] = 0;
         }
     }

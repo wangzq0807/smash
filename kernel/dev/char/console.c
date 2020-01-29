@@ -1,6 +1,7 @@
 #include "console.h"
 #include "asm.h"
 #include "string.h"
+#include "memory.h"
 
 uint32_t cursor_pos = 0;
 uint8_t bk_color = COL_BLACK;
@@ -22,7 +23,7 @@ static void _scroll_down(int nline);
 #define LINES_PER_PAGE      25          /* 一页的行数 */
 #define ONE_PAGE    (CHARS_PER_LINE * LINES_PER_PAGE)
 
-#define VGA_ROM()   ((VgaChar *)(SCREEN_ADR))
+#define VGA_ROM()   ((VgaChar *)(pym2vm(SCREEN_ADR)))
 #define CUR_COLOR() (bk_color << 4 | fg_color)
 
 void

@@ -35,7 +35,6 @@ frame_alloc()
 {
     int nbit = -1;
     nbit = buddy_alloc(1);
-    KLOG(DEBUG, "frame_alloc %x", nbit << PAGE_SHIFT);
 
     if (nbit < 0)
     {
@@ -53,9 +52,11 @@ void
 frame_release(pym_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
-    KLOG(DEBUG, "release_pypage %X ref %d", paddr, frame_nodes[nIndex].fd_ref);
-    frame_nodes[nIndex].fd_ref--;
-    if (frame_nodes[nIndex].fd_ref == 0)
+    int nref = frame_nodes[nIndex].fd_ref;
+    if (nref == 0)
+        return;
+    frame_nodes[nIndex].fd_ref = nref - 1;
+    if (nref == 1)
         buddy_free(nIndex, 1);
 }
 
@@ -64,8 +65,6 @@ frame_add_ref(pym_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
     KLOG(DEBUG, "frame_add_ref %x %d", paddr, frame_nodes[nIndex].fd_ref);
-    if (paddr == 0x54000)
-        bochs_break();
     frame_nodes[nIndex].fd_ref++;
     return 0;
 }

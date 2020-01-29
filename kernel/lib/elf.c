@@ -4,6 +4,7 @@
 #include "string.h"
 #include "memory.h"
 #include "fs/file.h"
+#include "lib/log.h"
 
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
@@ -35,6 +36,7 @@ ToMMapProt(Elf32_Word pflags)
 int
 LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
 {
+    KLOG(DEBUG, "LoadElfProg beg ");
     Elf32_Phdr* phdr = (Elf32_Phdr*)vm_alloc();
     file_read(inode, offset, phdr, num*sizeof(Elf32_Phdr));
     for (int i = 0; i < num; ++i)
@@ -60,10 +62,12 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
             }
             void* pmap = (void*)vm_map_file((vm_t)vaddr, memsz, fd, fileOff);
             if (pmap == MAP_FAILED) {
+                KLOG(ERROR, "file map failed!");
                 // printf("Error: %s\n", strerror(errno));
             }
-            //int bsssize = cur_phdr->p_memsz - cur_phdr->p_filesz;
-            //memset((void *)pmap + alignsz + cur_phdr->p_filesz, 0, bsssize);
+            int bsssize = cur_phdr->p_memsz - cur_phdr->p_filesz;
+            KLOG(DEBUG, "bss %d", bsssize);
+            memset((void *)pmap + alignsz + cur_phdr->p_filesz, 0, bsssize);
         }
             break;
         case PT_INTERP:
@@ -77,7 +81,7 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
             break;
         }
     }
-    vm_free(phdr);
+    KLOG(DEBUG, "LoadElfProg end");
     return 0;
 }
 
@@ -109,14 +113,14 @@ LoadElf(int fd, const IndexNode *inode)
 {
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)vm_alloc();
     file_read(inode, 0, ehdr, sizeof(Elf32_Ehdr));
-    /* 检查elf iednt
-    if (ph->eh_magic != ELF_MAGIC) {
-        ElfLog(1, "elf magic error.");
-    }
+    // 检查elf iednt
+    // if (ehdr->e_ident != ELF_MAGIC) {
+    //     KLOG(ERROR, "elf magic error.");
+    // }
 
-    if (ph->e_type != ET_EXEC) {
-        ElfLog(1, "elf not exe");
-    }*/
+    if (ehdr->e_type != ET_EXEC) {
+        KLOG(ERROR, "elf not exe");
+    }
 
     // 加载program
     if (ehdr->e_phoff != 0)

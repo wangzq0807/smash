@@ -30,9 +30,9 @@ memory_setup()
 void*
 vm_alloc()
 {
-    KLOG(DEBUG, "vm_alloc");
     pym_t paddr = frame_alloc();
     vm_t vaddr = pym2vm(paddr);
+    KLOG(DEBUG, "vm_alloc %x", vaddr);
     memset((void*)vaddr, 0, PAGE_SIZE);
     return (void*)vaddr;
     // pdt_t pdt = get_pdt();
@@ -112,12 +112,12 @@ vm_fork_page(vm_t addr)
         pt[npte] |= PAGE_WRITE;
         return 0;
     }
+    frame_release(PAGE_FLOOR(pt[npte]));
 
     pym_t paddr = frame_alloc();
     vm_t vaddr = pym2vm(paddr);
     memcpy((void*)vaddr, (void*)addr, PAGE_SIZE);
     vm_map(addr, paddr);
-    frame_release(PAGE_FLOOR(pt[npte]));
     // //uint32_t pyaddr = pte2pypage(pt[npte]);
     // int refs = 0;//get_pypage_refs(pyaddr);
     // if (refs > 1) {
@@ -138,6 +138,13 @@ vm_fork_page(vm_t addr)
 int
 vm_alloc_page(vm_t addr)
 {
+    pde_t pde = get_pde(addr);
+    if ((pde & PAGE_PRESENT) == 0) {
+        KLOG(ERROR, "addr:%x is invalid!", addr);
+        return -1;
+    }
+    pym_t pyaddr = frame_alloc();
+    vm_map(addr, pyaddr);
     return 0;
 }
 
@@ -333,12 +340,15 @@ alloc_page_table(pde_t *pde)
     KLOG(DEBUG, "alloc_page_table");
     pym_t paddr = frame_alloc();
     *pde = PAGE_ENTRY(paddr);
-    return pde2pt(*pde);
+    pt_t pt = pde2pt(*pde);
+    memset(pt, 0, PAGE_SIZE);
+    return pt;
 }
 
 vm_t
 vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
 {
+    KLOG(DEBUG, "vm_map_file %x %d", addr, offset);
     if (PAGE_MARK(addr) > 0)
         return 0;
     pdt_t pdt = get_pdt();
@@ -350,13 +360,12 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
     if (pt[npte] & PAGE_PRESENT)
         return 0;
     // 所需映射的总页面数
-    const int npage = (length + PAGE_SIZE - 1) >> PAGE_SHIFT;
+    const int npage = PAGE_CEILING(length) >> PAGE_SHIFT;
     // TODO: 失败后,要回收已映射的页表项
     // 当前页表的映射 pte
     int lessnum = PAGE_ENTRY_NUM - npte;
     lessnum = npage > lessnum ? lessnum : npage;
-    for (int n = npte; n < npte + lessnum; ++n)
-    {
+    for (int n = npte; n < npte + lessnum; ++n) {
         pt[n] = PAGE_FLOOR(offset) | (fd << 1);
         offset += PAGE_SIZE;
     }
@@ -365,19 +374,12 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
     npde++;
     // 页目录表的映射
     const int pdenum = npde + (npage - lessnum) / PAGE_ENTRY_NUM;
-    for (int n = npde; n < pdenum; ++n)
-    {
+    for (int n = npde; n < pdenum; ++n) {
         if ((pdt[n] & PAGE_PRESENT) == 0)
             alloc_page_table(&pdt[n]);
-
         pt = pde2pt(pdt[n]);
-        for (int nn = 0; nn < PAGE_ENTRY_NUM; ++nn)
-        {
-            FrameMapDesc desc;
-            desc.fm_magic = FRAME_MAGIC;
-            desc.fm_fd = fd;
-            desc.fm_offset = offset >> PAGE_SHIFT;
-            pt[nn] = *((size_t*)&desc);
+        for (int nn = 0; nn < PAGE_ENTRY_NUM; ++nn) {
+            pt[nn] = PAGE_FLOOR(offset) | (fd << 1);
             offset += PAGE_SIZE;
         }
     }
@@ -387,8 +389,7 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
     if ((pdt[npde] & PAGE_PRESENT) == 0)
         alloc_page_table(&pdt[npde]);
     pt = pde2pt(pdt[npde]);
-    for (int n = 0; n < morenum; ++n)
-    {
+    for (int n = 0; n < morenum; ++n) {
         pt[n] = PAGE_FLOOR(offset) | (fd << 1);
         offset += PAGE_SIZE;
     }

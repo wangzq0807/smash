@@ -1,4 +1,5 @@
 #include "list.h"
+#include "lib/log.h"
 
 void
 list_push_back(List *pList, ListNode *pentity)
@@ -47,7 +48,11 @@ void
 list_remove_entity(List *pList, ListNode *pentity)
 {
     ListNode* next = pentity->le_next;
+    if (next != NULL && next->le_prev != pentity)
+        return;
     ListNode* prev = pentity->le_prev;
+    if (prev != NULL && prev->le_next != pentity)
+        return;
     if (next != NULL)
         next->le_prev = prev;
     else
