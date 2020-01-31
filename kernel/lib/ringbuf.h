@@ -49,7 +49,7 @@ static inline size_t
 ringbuf_get(RingBuf *ri, uint8_t *bytes, size_t num) {
     size_t ret = 0;
     while (!ringbuf_is_empty(ri) && ret < num) {
-        size_t pos = (ri->rb_head + ret) % ri->rb_size;
+        size_t pos = ri->rb_head % ri->rb_size;
         bytes[ret] = ri->rb_buf[pos];
         ret++;
         ri->rb_head++;
