@@ -65,7 +65,7 @@ pipe_read(void *pipeptr, void *buf, int size)
         sleep(pipe->p_rdwait);
     }
     ret = ringbuf_get(&pipe->p_ringbuf, (uint8_t*)buf, size);
-    KLOG(DEBUG, "pipe_read %x \n", ret);
+    KLOG(DEBUG, "pipe_read 0x%x \n", ret);
 
     wakeup(pipe->p_wrwait);
     pipe->p_wrwait = NULL;
@@ -80,7 +80,7 @@ pipe_write(void *pipeptr, const void *buf, int size)
     Pipe *pipe = (Pipe*)pipeptr;
     // KLOG(DEBUG, "pipe_write %x %x %x ", pipe->p_head, pipe->p_tail, size);
     ret = ringbuf_put(&pipe->p_ringbuf, (uint8_t*)buf, size);
-    KLOG(DEBUG, "pipe_write %x \n", ret);
+    KLOG(DEBUG, "pipe_write 0x%x \n", ret);
 
     wakeup(pipe->p_rdwait);
     pipe->p_rdwait = NULL;

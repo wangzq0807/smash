@@ -13,7 +13,7 @@ void
 on_page_fault(IrqFrame *irq)
 {
     vm_t linear = (vm_t)PAGE_FLOOR(get_cr2());
-    KLOG(DEBUG, "%s, CR2: %x", "on_page_fault", get_cr2());
+    KLOG(DEBUG, "%s, CR2: 0x%x", "on_page_fault", get_cr2());
     pt_t pt = get_pt(linear);
     int npte = get_pte_index(linear);
     if (pt[npte] & PAGE_PRESENT)
@@ -30,14 +30,15 @@ on_page_not_exist(vm_t linear, pt_t pt, int npte)
     Task* ts = current_task();
     int fd = FD_MASK(PAGE_MARK(pt[npte]) >> 1);
     int offset = PAGE_FLOOR(pt[npte]);
+    KLOG(DEBUG, "on_page_not_exist %d", fd);
     VFile *vf = ts->ts_filps[fd];
-    if (fd < MAX_FD && vf != NULL)
+    if (vf != NULL)
     {
         vm_alloc_page(linear);
         file_read(vf->f_inode, offset, (void *)PAGE_FLOOR(linear), PAGE_SIZE);
     }
     else
     {
-        KLOG(ERROR, "page not exist error %x", pt[npte]);
+        KLOG(ERROR, "page not exist error 0x%x", pt[npte]);
     }
 }

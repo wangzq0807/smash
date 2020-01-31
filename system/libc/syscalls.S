@@ -1,4 +1,15 @@
 
+# #define SYSCALL(num, syscall)   \
+# int syscall()                   \
+# {                               \
+#     register int ret;           \
+#     __asm__ volatile (          \
+#         "int $0x80 \n"          \
+#         :"=a"(ret)              \
+#         :"a"(num)               \
+#     );                          \
+#     return ret;                 \
+# }
 
 #define SYSCALL(num, func)  \
 .global func;               \

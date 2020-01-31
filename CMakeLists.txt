@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.0)
 
 add_subdirectory(boot)
 add_subdirectory(kernel)
-add_subdirectory(usr)
+add_subdirectory(system)
 add_subdirectory(test)
 
 # 安装bootloader,内核,应用

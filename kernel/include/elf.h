@@ -80,6 +80,6 @@ typedef struct
 
 
 uint32_t
-LoadElf(int fd, const IndexNode *inode);
+LoadElf(int fd);
 
 #endif // __ELF_H__

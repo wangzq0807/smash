@@ -1,6 +1,6 @@
 set -e
 
-usrDir=$binDir/usr
+usrDir=$binDir/system
 
 create_sysfile() {
     # 创建dev和bin目录

@@ -117,7 +117,7 @@ on_timer_handler(IrqFrame *irqframe)
 void
 on_ignore_handler(IrqFrame *irqframe)
 {
-    KLOG(WARN, " ignore %x\n", irqframe->if_EIP);
+    KLOG(WARN, " ignore 0x%x\n", irqframe->if_EIP);
 }
 
 void set_trap_handler(int num, trap_func f)

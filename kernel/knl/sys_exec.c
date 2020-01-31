@@ -113,14 +113,14 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
 
     // 释放当前进程的所有打开文件和物理内存
     Task *curtask = current_task();
-    // for (int i = 2; i < MAX_FD; ++i) {
-    //     VFile *vf = curtask->ts_filps[i];
-    //     if (vf != NULL) {
-    //         // file_close(vf->f_inode);
-    //         release_vfile(vf);
-    //         curtask->ts_filps[i] = NULL;
-    //     }
-    // }
+    for (int i = 2; i < MAX_FD; ++i) {
+        VFile *vf = curtask->ts_filps[i];
+        if (vf != NULL) {
+            // file_close(vf->f_inode);
+            release_vfile(vf);
+            curtask->ts_filps[i] = NULL;
+        }
+    }
     VFile* vf = alloc_vfile();
     vf->f_inode = fnode;
     int fd = map_vfile(vf);
@@ -132,8 +132,9 @@ sys_execve(IrqFrame *irqframe, const char *execfile, const char **argv, char **e
     // 将参数拷贝到用户态堆栈中
     irqframe->if_ESP = copy_args(irqframe->if_ESP, argc, argsz);
 
-    irqframe->if_EIP = LoadElf(fd, fnode);
-    file_close(fnode);
+    irqframe->if_EIP = LoadElf(fd);
+    // file_close(fnode);
+    KLOG(DEBUG, "exec map %d %d", fd, curtask->ts_filps[fd]->f_inode->in_inum);
 
     return 0;
 }
@@ -143,8 +144,8 @@ _free_task_memory(Task *task)
 {
     pdt_t cur_pdt = (pdt_t)pym2vm(PAGE_FLOOR(task->ts_tss.t_CR3));
     int max_pde = (size_t)&_VMA / PAGE_HUGE_SIZE;
-    KLOG(DEBUG, "_free_task_memory pid:%d, cr3: %x", task->ts_pid, task->ts_tss.t_CR3);
-    for (uint32_t npde = 1; npde < max_pde; ++npde) {
+    KLOG(DEBUG, "_free_task_memory pid:%d, cr3: 0x%x", task->ts_pid, task->ts_tss.t_CR3);
+    for (uint32_t npde = 0; npde < max_pde; ++npde) {
         if (cur_pdt[npde] & PAGE_PRESENT) {
             pt_t pt = pde2pt(cur_pdt[npde]);
             for (uint32_t npte = 0; npte < PAGE_ENTRY_NUM; ++npte) {

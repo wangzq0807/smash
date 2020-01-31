@@ -219,7 +219,7 @@ bitmap_dump(BitMap* pbitmap, const int begbyte, const uint32_t bytenum)
     const int endpos = (endbyte + step - 1) / step;
     for (int i = begpos; i + 4 < endpos; i+= 4)
     {
-        KLOG(ERROR, "bitmap_dump %d: %X %X %X %X", i*step, bmbuf[i], bmbuf[i+1], bmbuf[i+2], bmbuf[i+3]);
+        KLOG(ERROR, "bitmap_dump %d: 0x%x 0x%x 0x%x 0x%x", i*step, bmbuf[i], bmbuf[i+1], bmbuf[i+2], bmbuf[i+3]);
     }
 }
 

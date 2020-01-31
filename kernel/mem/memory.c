@@ -13,7 +13,7 @@ size_t kernel_heap_size = 0;
 void
 _vm_init()
 {
-    KLOG(DEBUG, "heap %x, size %x", kernel_heap_beg, kernel_heap_size);
+    KLOG(DEBUG, "heap 0x%x, size 0x%x", kernel_heap_beg, kernel_heap_size);
     // 清除boot的映射
     // pdt_t pdt = get_pdt();
     // pdt[0] = 0;
@@ -32,7 +32,7 @@ vm_alloc()
 {
     pym_t paddr = frame_alloc();
     vm_t vaddr = pym2vm(paddr);
-    KLOG(DEBUG, "vm_alloc %x", vaddr);
+    KLOG(DEBUG, "vm_alloc 0x%x", vaddr);
     memset((void*)vaddr, 0, PAGE_SIZE);
     return (void*)vaddr;
     // pdt_t pdt = get_pdt();
@@ -107,7 +107,7 @@ vm_fork_page(vm_t addr)
     pt_t pt = get_pt(addr);
     int npte = get_pte_index(addr);
     int nref = frame_get_ref(PAGE_FLOOR(pt[npte]));
-    KLOG(DEBUG, "fork_page addr:%x ref:%d", addr, nref);
+    KLOG(DEBUG, "fork_page addr:0x%x ref:%d", addr, nref);
     if (nref == 1) {
         pt[npte] |= PAGE_WRITE;
         return 0;
@@ -140,7 +140,7 @@ vm_alloc_page(vm_t addr)
 {
     pde_t pde = get_pde(addr);
     if ((pde & PAGE_PRESENT) == 0) {
-        KLOG(ERROR, "addr:%x is invalid!", addr);
+        KLOG(ERROR, "addr:0x%x is invalid!", addr);
         return -1;
     }
     pym_t pyaddr = frame_alloc();
@@ -348,7 +348,7 @@ alloc_page_table(pde_t *pde)
 vm_t
 vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
 {
-    KLOG(DEBUG, "vm_map_file %x %d", addr, offset);
+    KLOG(DEBUG, "vm_map_file addr:0x%x len:%d file:%d off:%d", addr, length, fd, offset);
     if (PAGE_MARK(addr) > 0)
         return 0;
     pdt_t pdt = get_pdt();
@@ -357,8 +357,10 @@ vm_map_file(vm_t addr, size_t length, int fd, off_t offset)
         alloc_page_table(&pdt[npde]);
     pt_t pt = pde2pt(pdt[npde]);
     int npte = get_pte_index(addr);
-    if (pt[npte] & PAGE_PRESENT)
+    if (pt[npte] & PAGE_PRESENT) {
+        KLOG(ERROR, "vm_map_file addr:%x is used!!", addr);
         return 0;
+    }
     // 所需映射的总页面数
     const int npage = PAGE_CEILING(length) >> PAGE_SHIFT;
     // TODO: 失败后,要回收已映射的页表项

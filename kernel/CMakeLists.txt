@@ -26,7 +26,7 @@ set (KERNAL_SRCS
 	./arch/boot/boottrap.c
 	./main.c
 	./arch/intr.S
-	../usr/core/syscalls.S
+	../system/libc/syscalls.S
 	./knl/sys_file.c
 	./knl/sys_fork.c
 	./knl/syscalls.c

@@ -5,6 +5,7 @@
 #include "memory.h"
 #include "fs/file.h"
 #include "lib/log.h"
+#include "arch/task.h"
 
 #define PT_NULL     0       /* Program header table entry unused */                                                                                                                           
 #define PT_LOAD     1       /* Loadable program segment */
@@ -46,8 +47,6 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
         {
         case PT_LOAD:
         {
-            if (cur_phdr->p_vaddr == 0)
-                break;
             //int prot = ToMMapProt(cur_phdr->p_flags);
             Elf32_Addr vaddr = cur_phdr->p_vaddr;
             Elf32_Word memsz = cur_phdr->p_memsz;
@@ -55,9 +54,10 @@ LoadElfProg(int fd, const IndexNode *inode, uint32_t offset, uint32_t num)
             Elf32_Word alignsz = 0;
             if (cur_phdr->p_align > 1)
             {
+                Elf32_Addr org_vaddr = vaddr;
                 vaddr = vaddr / cur_phdr->p_align * cur_phdr->p_align;
                 fileOff = fileOff / cur_phdr->p_align * cur_phdr->p_align;
-                alignsz = cur_phdr->p_vaddr - vaddr;
+                alignsz = org_vaddr - vaddr; 
                 memsz += alignsz;
             }
             void* pmap = (void*)vm_map_file((vm_t)vaddr, memsz, fd, fileOff);
@@ -109,8 +109,11 @@ void ElfLog(int level, const char* str)
 typedef void (*startFunc)();
 
 uint32_t
-LoadElf(int fd, const IndexNode *inode)
+LoadElf(int fd)
 {
+    KLOG(DEBUG, "LoadElf %d", fd);
+    Task *tsk = current_task();
+    IndexNode *inode = tsk->ts_filps[fd]->f_inode;
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)vm_alloc();
     file_read(inode, 0, ehdr, sizeof(Elf32_Ehdr));
     // 检查elf iednt
@@ -119,7 +122,7 @@ LoadElf(int fd, const IndexNode *inode)
     // }
 
     if (ehdr->e_type != ET_EXEC) {
-        KLOG(ERROR, "elf not exe");
+        KLOG(WARN, "elf not exe");
     }
 
     // 加载program

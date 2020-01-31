@@ -230,6 +230,7 @@ release_inode(IndexNode *inode)
 {
     inode->in_refs -= 1;
     if (inode->in_refs == 0) {
+        KLOG(DEBUG, "release_inode %d", inode->in_inum);
         if (inode->in_status & INODE_DIRTY) {
             // 读磁盘上的inode缓冲区
             const blk_t inode_begin = _get_inode_pos(inode->in_dev);

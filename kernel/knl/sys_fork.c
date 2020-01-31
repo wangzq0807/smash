@@ -19,7 +19,7 @@ setup_new_tss(IrqFrame *irq, Task *new_task)
      ******************************/
     X86TSS *new_tss = &new_task->ts_tss;
     new_tss->t_CR3 = vm2pym((vm_t)vm_alloc());
-    KLOG(DEBUG, "new cr3 %x", new_tss->t_CR3);
+    KLOG(DEBUG, "new cr3 0x%x", new_tss->t_CR3);
     new_tss->t_EIP = irq->if_EIP;       // 将子任务的eip指向fork调用的下一条指令
     new_tss->t_EFLAGS = irq->if_EFLAGS;
     new_tss->t_EAX = 0;                         // 构造子任务的fork返回值

@@ -36,10 +36,11 @@ ringbuf_available(const RingBuf *ri) {
 static inline size_t
 ringbuf_put(RingBuf *ri, const uint8_t *bytes, size_t num) {
     size_t ret = 0;
-    while (!ringbuf_is_full(ri)) {
-        size_t pos = (ri->rb_tail + ret) % ri->rb_size;
+    while (!ringbuf_is_full(ri) && ret < num) {
+        size_t pos = ri->rb_tail % ri->rb_size;
         ri->rb_buf[pos] = bytes[ret];
         ret++;
+        ri->rb_tail++;
     }
     return ret;
 }
@@ -51,6 +52,7 @@ ringbuf_get(RingBuf *ri, uint8_t *bytes, size_t num) {
         size_t pos = (ri->rb_head + ret) % ri->rb_size;
         bytes[ret] = ri->rb_buf[pos];
         ret++;
+        ri->rb_head++;
     }
     return ret;
 }

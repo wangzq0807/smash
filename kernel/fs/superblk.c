@@ -61,12 +61,12 @@ dump_super_block(dev_t dev)
 #ifdef KLOG_ENABLE
     const SuperBlock *sb = get_super_block(dev);
     KLOG(DEBUG, "Super Block:");
-    KLOG(DEBUG, "sb_magic %x", sb->sb_magic);
-    KLOG(DEBUG, "sb_inodes %x", sb->sb_inodes);
-    KLOG(DEBUG, "sb_zones %x", sb->sb_zones);
-    KLOG(DEBUG, "sb_imap_blocks %x", sb->sb_imap_blocks);
-    KLOG(DEBUG, "sb_zmap_blocks %x", sb->sb_zmap_blocks);
-    KLOG(DEBUG, "sb_first_datazone %x", sb->sb_first_datazone);
-    KLOG(DEBUG, "sb_log_zone_size %x", sb->sb_log_zone_size);
+    KLOG(DEBUG, "sb_magic 0x%x", sb->sb_magic);
+    KLOG(DEBUG, "sb_inodes 0x%x", sb->sb_inodes);
+    KLOG(DEBUG, "sb_zones 0x%x", sb->sb_zones);
+    KLOG(DEBUG, "sb_imap_blocks 0x%x", sb->sb_imap_blocks);
+    KLOG(DEBUG, "sb_zmap_blocks 0x%x", sb->sb_zmap_blocks);
+    KLOG(DEBUG, "sb_first_datazone 0x%x", sb->sb_first_datazone);
+    KLOG(DEBUG, "sb_log_zone_size 0x%x", sb->sb_log_zone_size);
 #endif // KLOG_ENABLE
 }

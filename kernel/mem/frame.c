@@ -64,7 +64,7 @@ int
 frame_add_ref(pym_t paddr)
 {
     int nIndex = paddr >> PAGE_SHIFT;
-    KLOG(DEBUG, "frame_add_ref %x %d", paddr, frame_nodes[nIndex].fd_ref);
+    KLOG(DEBUG, "frame_add_ref 0x%x %d", paddr, frame_nodes[nIndex].fd_ref);
     frame_nodes[nIndex].fd_ref++;
     return 0;
 }
